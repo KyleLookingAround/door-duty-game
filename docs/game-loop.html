@@ -1,0 +1,324 @@
+<title>Door Duty Game Loop</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Limelight&family=Figtree:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a design bible in the game's own night-lobby look — three loop rings that feed each other, then economy, tech-to-landmark map, ideas and roadmap */
+:root {
+  --ink: #12151b;
+  --panel: #1b2029;
+  --raised: #232a35;
+  --line: #2e3542;
+  --brass: #d4a94f;
+  --frost: #9cc4ec;
+  --rose: #e79a86;
+  --ok: #6fcf97;
+  --dizzy: #b48cf0;
+  --text: #ece6d8;
+  --mute: #949aa7;
+  --f-display: "Limelight", "Didot", Georgia, serif;
+  --f-body: "Figtree", system-ui, -apple-system, sans-serif;
+  --f-mono: "DM Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+body { background: var(--ink); color: var(--text); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1080px; margin: 0 auto; box-sizing: border-box;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px; display: grid; gap: 56px; }
+h1, h2 { font-family: var(--f-display); font-weight: 400; margin: 0; text-wrap: balance; }
+h1 { color: var(--brass); font-size: clamp(36px, 7vw, 60px); line-height: 1; }
+h2 { font-size: clamp(24px, 4vw, 32px); line-height: 1.1; }
+h3 { font-size: 16px; margin: 0; }
+p { margin: 0; max-width: 66ch; color: var(--mute); }
+p strong, li strong { color: var(--text); font-weight: 600; }
+.eyebrow { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--brass); }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+section { display: grid; gap: 18px; }
+header { display: grid; gap: 14px; }
+header p { font-size: 17px; color: var(--text); opacity: .85; }
+.key { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12px; color: var(--mute); }
+.kitem { display: inline-flex; align-items: center; gap: 6px; }
+.st { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
+.st.built { background: rgba(111,207,151,.14); color: var(--ok); }
+.st.ready { background: rgba(212,169,79,.16); color: var(--brass); }
+.st.next { border: 1px solid var(--brass); color: var(--brass); }
+.st.later { border: 1px dashed var(--line); color: var(--mute); }
+
+/* loops */
+.loops { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 10px; align-items: start; }
+.loop { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.loop .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.loop .scale { font: 500 12px var(--f-mono); color: var(--mute); }
+.loop svg { width: 100%; max-width: 340px; height: auto; justify-self: center; display: block; }
+.loop svg .node { cursor: pointer; }
+.loop svg .node:focus { outline: none; }
+.loop svg .node:focus-visible circle.hit { stroke: var(--text); stroke-width: 2; }
+.detail { min-height: 4.6em; font-size: 13px; color: var(--text); background: var(--ink); border-radius: 10px; padding: 10px 12px; border: 1px solid var(--line); }
+.detail b { color: var(--brass); font-weight: 600; }
+.detail .st { margin-left: 6px; vertical-align: 1px; }
+.flow { align-self: center; display: grid; gap: 6px; justify-items: center; text-align: center; width: 112px; }
+.flow .arrow { font-size: 22px; color: var(--brass); line-height: 1; }
+.flow span { font-size: 12px; color: var(--mute); line-height: 1.35; }
+.feedback { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; background: var(--raised); border: 1px dashed var(--brass); border-radius: 12px; padding: 12px 14px; font-size: 13px; }
+.feedback .arrow { font-size: 22px; color: var(--brass); }
+@media (max-width: 860px) {
+  .loops { grid-template-columns: 1fr; }
+  .flow { width: auto; grid-auto-flow: column; justify-content: center; align-items: center; gap: 10px; }
+  .flow .arrow { transform: rotate(90deg); }
+}
+
+/* tables */
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 13px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); font-weight: 600; background: var(--panel); }
+tr:last-child td { border-bottom: 0; }
+td .mono { color: var(--text); }
+.in { color: var(--ok); } .out { color: var(--rose); }
+
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.card ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13px; color: var(--mute); }
+
+/* landmarks */
+.marks { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.mark { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; align-content: start; }
+.mark h3 { font-family: var(--f-display); font-weight: 400; font-size: 20px; color: var(--text); }
+.locks { display: flex; flex-wrap: wrap; gap: 6px; }
+.lock { font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 6px; background: var(--ink); border: 1px solid var(--line); color: var(--text); }
+.lock.have { border-color: rgba(111,207,151,.5); color: var(--ok); }
+.mark p { font-size: 13px; }
+
+.road { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; counter-reset: step; }
+.road li { display: grid; grid-template-columns: 36px 1fr auto; gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--line); counter-increment: step; }
+.road li::before { content: counter(step); font: 500 14px var(--f-mono); color: var(--brass); padding-top: 1px; }
+.road li div { min-width: 0; }
+.road li p { font-size: 13px; }
+.ideas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ideas span { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--raised); color: var(--text); border: 1px solid var(--line); }
+.ideas::before { content: "Includes"; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); align-self: center; margin-right: 2px; }
+@media (prefers-reduced-motion: no-preference) { .loop svg .node circle.dot { transition: r .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Door Duty · design bible</div>
+    <h1>The game loop</h1>
+    <p>You run a small entrance-engineering firm. Every job is a crowd-science puzzle, every month is a set of bills, and the whole career is a climb from shopfront doors to the town's landmarks. Three loops, each feeding the next.</p>
+    <div class="key"><span class="kitem"><span class="st built">Built</span> in the published prototype</span><span class="kitem"><span class="st next">Next</span> agreed plan</span><span class="kitem"><span class="st later">Later</span> roadmap</span></div>
+  </header>
+
+  <section aria-labelledby="loopsH">
+    <h2 id="loopsH">Three loops</h2>
+    <p>Tap any step to see what happens there. The arrows between the rings are what one loop hands to the next.</p>
+    <div class="loops" id="loops"></div>
+  </section>
+
+  <section aria-labelledby="econH">
+    <div class="eyebrow">Economy</div>
+    <h2 id="econH">Where the money goes</h2>
+    <p>Jobs pay well once; fitted buildings pay a little every month. Overheads are the money sink: every hire and every move is a bet that it pays for itself. Figures are the prototype's current values.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Flow</th><th>Source</th><th>Size</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td class="in">In</td><td><strong>Job fee</strong> on sign-off: par hardware cost plus your margin</td><td class="mono">margin = 30% of par (min £3k) + £800 per tier</td><td><span class="st built">Built</span></td></tr>
+        <tr><td class="in">In</td><td><strong>Specialist premium</strong> for tech-gated jobs</td><td class="mono">margin × 1.6</td><td><span class="st built">Built</span></td></tr>
+        <tr><td class="in">In</td><td><strong>Maintenance</strong> from every fitted building; a service engineer adds 40%</td><td class="mono">£100 + 0.7% of fee per star, monthly</td><td><span class="st built">Built</span></td></tr>
+        <tr><td class="in">In</td><td><strong>Sales manager / HQ</strong> margin boosts</td><td class="mono">+30% / +20% of margin</td><td><span class="st built">Built</span></td></tr>
+        <tr><td class="out">Out</td><td><strong>Hardware</strong> for each job</td><td class="mono">£2.5k swing → £20k wide drum</td><td><span class="st built">Built</span></td></tr>
+        <tr><td class="out">Out</td><td><strong>Research</strong>, paid up front, takes months</td><td class="mono">£6k–£70k · 1–5 months</td><td><span class="st built">Built</span></td></tr>
+        <tr><td class="out">Out</td><td><strong>Rent</strong>: garage, workshop, HQ</td><td class="mono">£500 / £1.5k / £3.5k monthly</td><td><span class="st built">Built</span></td></tr>
+        <tr><td class="out">Out</td><td><strong>Wages</strong>: fitters, doormen, engineer, sales</td><td class="mono">£1.2k–£2.2k each, monthly</td><td><span class="st built">Built</span></td></tr>
+        <tr><td class="out">Out</td><td><strong>Moving premises</strong></td><td class="mono">£25k workshop · £60k HQ</td><td><span class="st built">Built</span></td></tr>
+        <tr><td>Risk</td><td><strong>Overdraft</strong>: no research, hiring or moving; below −£15k the crew walks out</td><td class="mono">cash &lt; £0</td><td><span class="st built">Built</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="cols">
+      <div class="card"><h3>Reputation</h3><p>Stars from every job add up. They decide which clients will talk to you (0★ to 14★ on the High Street) and which premises will rent to you (6★ workshop, 14★ HQ).</p></div>
+      <div class="card"><h3>Stars</h3><p>★ pass the client's goals. ★★ at or under the surveyor's par cost. ★★★ under par with no bumps or safety stops. More stars, more maintenance money.</p></div>
+      <div class="card"><h3>The surveyor</h3><p>Every contract is solved by simulation before it's offered: targets come from the best design found, so every job is provably beatable and never a repeat of your last few answers.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="techH">
+    <div class="eyebrow">Career</div>
+    <h2 id="techH">Paradoxes, tech and landmarks</h2>
+    <p>Each tech teaches one piece of crowd science and adds new twists to buildings you already know. Landmarks are combination locks: you're only offered one once you've mastered every paradox it needs.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Paradox</th><th>The counterintuitive bit</th><th>Tech</th><th>Status</th></tr></thead>
+      <tbody id="paradoxRows"></tbody>
+    </table></div>
+    <h3 style="margin-top:8px">Landmarks</h3>
+    <div class="marks" id="marks"></div>
+  </section>
+
+  <section aria-labelledby="townH">
+    <div class="eyebrow">Structure</div>
+    <h2 id="townH">One town that grows</h2>
+    <div class="cols">
+      <div class="card"><h3>Everyday buildings evolve</h3><p>The café, bank and hotel never go stale. New tech brings new twists to them: research queue barriers and the bank asks you to sort its cash-machine queue.</p></div>
+      <div class="card"><h3>Sites have character</h3><p>Every building comes with fixed street furniture that shapes the crowd: café tables, a cash-machine queue, a taxi rank, library steps with one ramp, portico columns, a bus stop dropping surges. Reading the site is part of the puzzle.</p></div>
+      <div class="card"><h3>New clients arrive</h3><p>As your reputation grows, new buildings appear on the map: an office block, a cinema, a second hotel. Fresh clients without a whole new area.</p></div>
+      <div class="card"><h3>Landmarks are finales</h3><p>Locked sites sit on the map showing what they need. Each opens with a hand-built opening night, then generates multi-stage jobs where one bottleneck feeds the next.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="ideasH">
+    <div class="eyebrow">More that fits</div>
+    <h2 id="ideasH">Other ideas</h2>
+    <div class="cols">
+      <div class="card"><h3>New guests</h3><ul>
+        <li><strong>Umbrellas</strong> on rainy days make everyone wider.</li>
+        <li><strong>Prams and delivery trolleys</strong> need a step-free door too.</li>
+        <li><strong>Cyclists with bikes</strong> can't use a revolving door at all.</li>
+        <li><strong>Tourists</strong> ride the door round on purpose to take photos.</li>
+        <li><strong>Phone zombies</strong> react late and miss their exit.</li>
+        <li><strong>Kids</strong> run ahead and race the wings.</li>
+      </ul></div>
+      <div class="card"><h3>Calendar and weather</h3><ul>
+        <li><strong>Heatwave</strong>: doors propped open, and cooling replaces heating.</li>
+        <li><strong>Christmas windows</strong> stop shoppers dead outside the store.</li>
+        <li><strong>Black Friday</strong> opening rush at the department store.</li>
+        <li><strong>Marathon day</strong> closes one side of the street.</li>
+        <li><strong>Rush-hour shape</strong>: a test that runs a whole day, in by morning and out by evening.</li>
+      </ul></div>
+      <div class="card"><h3>Running the firm</h3><ul>
+        <li><strong>Rival firm</strong> bids on the same tenders: undercut them on price or beat them on stars.</li>
+        <li><strong>Wear and servicing</strong>: neglected doors slow down and jam.</li>
+        <li><strong>Insurance</strong>: every bump becomes a claim on your premiums.</li>
+        <li><strong>Surprise inspections</strong> from the fire officer or an access auditor.</li>
+        <li><strong>Green star</strong>: the client's heating bill as a score.</li>
+      </ul></div>
+      <div class="card"><h3>Long-term hooks</h3><ul>
+        <li><strong>Paradox journal</strong>: each paradox you master is written up with the real science behind it.</li>
+        <li><strong>Blueprint book</strong>: save a design and reuse it on later jobs.</li>
+        <li><strong>Local paper headlines</strong> about your best and worst jobs.</li>
+        <li><strong>Daily contract</strong> on a shared seed so friends can compare costs.</li>
+        <li><strong>Programmable doors</strong>: write rules like "if the queue is over 10, speed up".</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="roadH">
+    <div class="eyebrow">Build order</div>
+    <h2 id="roadH">Roadmap</h2>
+    <ol class="road">
+      <li><div><h3>Job and month loops on the High Street</h3><p>Eight clients with hand-picked opening twists, surveyor-checked contracts, callbacks, seasons.</p></div><span class="st built">Built</span></li>
+      <li><div><h3>R&amp;D tree, staff, premises and overheads</h3><p>Ten techs in three branches, research that takes months, monthly wages and rent, specialist jobs that only open with the right tech.</p></div><span class="st built">Built</span></li>
+      <li><div><h3>Street furniture and new guests</h3><p>Every building has its own furniture: café tables, a cash-machine queue, a reception desk, a taxi rank, library steps with one ramp, a bus stop that drops surges, portico columns. People route round it, and it changes which doors work.</p><div class="ideas"><span>Prams and delivery trolleys</span><span>Cyclists with bikes</span><span>Umbrellas on rainy days</span></div></div><span class="st built">Built</span></li>
+      <li><div><h3>Pillars, queue barriers and fire drills</h3><p>A new Crowd science research branch. Lane barriers split a door into in and out; a pillar just inside an exit takes the crowd's push so the doorway jams less. Fire-drill jobs sound the alarm after the rush: revolving doors fold flat and the lobby has to empty against the clock.</p></div><span class="st built">Built</span></li>
+      <li><div><h3>Calendar, weather and the street map</h3><p>The High Street is now a painted street scene you swipe along, with each client's building drawn in its own style and the doors you fitted on its ground floor. It changes through the year: blossom, full trees, autumn leaves, snow and stars. One event a month, shown three months ahead: January sales, storm season, marathon day, a heatwave where lobbies must stay cool, Black Friday and Christmas windows with crowds standing in front of them. Seasonal tenders pay 25% more margin.</p><div class="ideas"><span>Whole-day rush shape</span></div></div><span class="st built">Built</span></li>
+      <li><div><h3>Running the firm</h3><p>Doors wear every month: worn ones pay less maintenance, and broken ones pay nothing until you service them (tap the building). Insurance is loaded for every bump on your record, with the odd injury claim. Inspectors re-test old jobs for safety and step-free access: a pass earns a certificate worth 10% more maintenance, and a fail brings a fine and a callback. A lobby kept snug in the cold earns a green star, worth 15% more.</p></div><span class="st built">Built</span></li>
+      <li><div><h3>Market Square, Office Towers and a rival</h3><p>A second street opens at 18★: a museum with grand steps, a cinema that empties at once when the film ends, a gym full of cyclists, and a health centre. At its end, Office Towers is the second landmark: the stack effect pulls cold air in at every door, and the day comes in three waves. It needs Draught lobbies, Wide-drum revolving and Heat pumps. Brassworks Ltd starts bidding on tenders you leave sitting, and their cheap work comes back to you as rescue jobs that pay 30% more.</p><div class="ideas"><span>Paradox journal</span><span>Local paper headlines</span><span>Lift zoning</span></div></div><span class="st built">Built</span></li>
+      <li><div><h3>Station Quarter</h3><p>The first combination landmark, at the end of the High Street. It only takes bids from a firm with Ticket gates, Tidal-flow gates and Door staff training, plus 16★. Instead of doors you build a gate line: single-file lanes with paddles. The morning rush pours in, then trains empty up the escalators every few seconds. Auto lanes turn to face the heavier queue, and the goal is that 9 in 10 commuters get through within a set time.</p><div class="ideas"><span>Escalator standing</span><span>Phone zombies</span><span>Tourists riding round on purpose</span></div></div><span class="st built">Built</span></li>
+      <li><div><h3>Concert venue and airport</h3><p>Multi-stage chains where fixing one bottleneck moves the crush to the next. Stages repeat across jobs, so saving a design you trust starts to matter.</p><div class="ideas"><span>Blueprint book</span><span>Kids racing ahead</span></div></div><span class="st later">Later</span></li>
+      <li><div><h3>Endgame</h3><p>For players who've mastered every paradox: doors you program yourself, and a shared daily job to compare against friends.</p><div class="ideas"><span>Programmable doors</span><span>Daily contract</span></div></div><span class="st later">Later</span></li>
+    </ol>
+  </section>
+</div>
+
+<script>
+const LOOPS = [
+  { key: 'job', name: 'One job', scale: '≈ 2–5 minutes', color: '#9cc4ec', steps: [
+    ['Tender', 'A client on the street wants an entrance. The card shows the fee and the twists: tight budget, fragile guests, a listed door.', 'built'],
+    ['Survey', 'The surveyor simulates every sensible layout first. That sets a target the best design can beat and the par cost for two stars.', 'built'],
+    ['Design', 'Fill each bay with a wall, revolving, swing or sliding door. Tune wings, speed, mouth and core, and add researched options.', 'built'],
+    ['Rush hour', 'A 40-second crowd runs through your entrance. Watch bumps, go-rounds, the lobby temperature and who gets turned away.', 'built'],
+    ['Tweak', 'Read what went wrong and adjust. The hint tells you which rule you broke, never the answer.', 'built'],
+    ['Sign off', 'Pass and the client pays. Your stars depend on cost against par and a clean run.', 'built'],
+  ]},
+  { key: 'month', name: 'One month', scale: '≈ 3–6 jobs', color: '#d4a94f', steps: [
+    ['Take jobs', 'Work through tenders and callbacks. There is no limit inside a month, only the jobs on offer.', 'built'],
+    ['Fees in', 'Every fitted building pays maintenance based on its fee and stars.', 'built'],
+    ['Bills out', 'Rent on your premises and wages for anyone you have hired.', 'built'],
+    ['Research', 'Projects tick down a month. Finished tech goes straight into the workshop and new specialist tenders.', 'built'],
+    ['Callbacks', 'Some clients ring back: a cold snap, a busier street, an older crowd. Your old doors stay, so you only pay for what you add. A service engineer halves these.', 'built'],
+    ['New tenders', 'Stale tenders refresh with the season. Winter brings colder jobs and more callbacks.', 'built'],
+  ]},
+  { key: 'career', name: 'The career', scale: '≈ hours', color: '#b48cf0', steps: [
+    ['Research', 'Spend profit on tech. Higher tiers need bigger premises, so research and property grow together.', 'built'],
+    ['New twists', 'Each tech adds twists to buildings you already know, and specialist jobs only firms with the tech are offered.', 'built'],
+    ['Town grows', 'Reputation brings new buildings onto the map, each with its own street furniture.', 'next'],
+    ['Landmark opens', 'Master every paradox a landmark needs and it unlocks: the station, the stadium, the concert venue, the airport.', 'next'],
+    ['Opening night', 'A hand-built finale at the landmark, then multi-stage contracts where the bottleneck moves as you fix it.', 'later'],
+    ['New paradox', 'The landmark teaches a new combination, and its tech flows back into everyday jobs.', 'later'],
+  ]},
+];
+const FLOWS = ['profit, stars and the design you used', 'spare cash and reputation'];
+const STATUS = { built: 'Built', ready: 'Ready', next: 'Next', later: 'Later' };
+
+function ringSVG(loop, idx) {
+  const W = 360, H = 260, cx = 180, cy = 130, r = 72, n = loop.steps.length;
+  const pts = loop.steps.map((_, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + r * Math.cos(a), cy + r * Math.sin(a), a]; });
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="group" aria-label="${loop.name} loop">`;
+  s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${loop.color}" stroke-opacity=".35" stroke-width="2"/>`;
+  // arrowheads between steps, clockwise
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + (i + 0.5) * 2 * Math.PI / n, x = cx + r * Math.cos(a), y = cy + r * Math.sin(a), rot = a * 180 / Math.PI + 90;
+    s += `<path d="M -5 -4 L 3 0 L -5 4" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(rot - 90).toFixed(1)})" fill="none" stroke="${loop.color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  s += `<text x="${cx}" y="${cy - 4}" text-anchor="middle" fill="#ece6d8" font-family="Limelight, Georgia, serif" font-size="18">${loop.name}</text>`;
+  s += `<text x="${cx}" y="${cy + 16}" text-anchor="middle" fill="#949aa7" font-family="DM Mono, monospace" font-size="11">${loop.scale}</text>`;
+  pts.forEach(([x, y, a], i) => {
+    const [label, , st] = loop.steps[i];
+    const lx = cx + (r + 18) * Math.cos(a), ly = cy + (r + 18) * Math.sin(a);
+    const anchor = Math.abs(Math.cos(a)) < 0.2 ? 'middle' : Math.cos(a) > 0 ? 'start' : 'end';
+    const dy = Math.sin(a) < -0.6 ? -2 : Math.sin(a) > 0.6 ? 12 : 4;
+    const filled = st === 'built' || st === 'ready';
+    s += `<g class="node" tabindex="0" role="button" data-loop="${idx}" data-step="${i}" aria-label="${label}">
+      <circle class="hit" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="16" fill="transparent"/>
+      <circle class="dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="8" fill="${filled ? loop.color : '#12151b'}" stroke="${loop.color}" stroke-width="2" ${st === 'later' ? 'stroke-dasharray="3 3"' : ''}/>
+      <text x="${lx.toFixed(1)}" y="${(ly + dy).toFixed(1)}" text-anchor="${anchor}" fill="#ece6d8" font-family="Figtree, system-ui, sans-serif" font-size="12.5" font-weight="600">${label}</text>
+    </g>`;
+  });
+  return s + '</svg>';
+}
+const host = document.getElementById('loops');
+host.innerHTML = LOOPS.map((l, i) => `
+  <div class="loop" style="border-top: 3px solid ${l.color}">
+    <div class="head"><span class="eyebrow" style="color:${l.color}">Loop ${i + 1}</span><span class="scale">${l.steps.filter(s => s[2] === 'built' || s[2] === 'ready').length}/${l.steps.length} steps playable</span></div>
+    ${ringSVG(l, i)}
+    <div class="detail" id="detail${i}" aria-live="polite"></div>
+  </div>
+  ${i < 2 ? `<div class="flow"><div class="arrow">→</div><span>${FLOWS[i]}</span></div>` : ''}`).join('') +
+  `<div class="feedback"><span class="arrow">↺</span><span><strong>Back to loop 1:</strong> new tech, harder twists and bigger clients make the next job a different puzzle, and the surveyor makes sure it isn't one you've already solved.</span></div>`;
+
+function show(li, si) {
+  const [label, text, st] = LOOPS[li].steps[si];
+  document.getElementById('detail' + li).innerHTML = `<b>${si + 1}. ${label}</b><span class="st ${st}">${STATUS[st]}</span><br>${text}`;
+  host.querySelectorAll(`.node[data-loop="${li}"] circle.dot`).forEach((c, j) => c.setAttribute('r', j === si ? 11 : 8));
+}
+host.addEventListener('click', e => { const n = e.target.closest('.node'); if (n) show(+n.dataset.loop, +n.dataset.step); });
+host.addEventListener('keydown', e => { const n = e.target.closest('.node'); if (n && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); show(+n.dataset.loop, +n.dataset.step); } });
+LOOPS.forEach((_, i) => show(i, 0));
+
+const PARADOXES = [
+  ['Revolving door', 'The middle of the door barely moves (v = ω·r), so a bigger solid core gets people out faster.', 'Core, wings, speed', 'built'],
+  ['Stack effect', 'Tall buildings suck air through the door. That is why revolving doors exist.', 'Draught lobbies, tower seals', 'built'],
+  ['Presence sensing', 'Slowing down for the one older guest gets more people through than slowing down for everyone.', 'Presence sensors', 'built'],
+  ['Pillar at the exit', 'An obstacle just in front of a doorway breaks up the jam and speeds up evacuation. In the game it cuts a big crowd\'s time through a single door by about 20%, but slows small crowds slightly.', 'Pillars', 'built'],
+  ['One snaking queue', 'One line feeding five desks beats five lines: a slow customer only holds up one desk.', 'Queue barriers', 'next'],
+  ['Tidal flow', 'Flip gate directions with the rush and you need fewer gates.', 'Tidal-flow gates', 'built'],
+  ['Escalator standing', 'Standing on both sides beats "walk on the left" on tall escalators, but not on short ones.', 'Escalators', 'later'],
+  ['Lift zoning', 'Express lifts that skip floors beat lifts that stop everywhere.', 'Lift dispatch', 'later'],
+  ['Paternoster', 'A revolving door turned vertical: loop speed against time to step on.', 'Paternoster', 'later'],
+  ['Moving walkways', 'The fast middle helps, but people pile up at the ends.', 'Travelators', 'later'],
+  ['Carousel line', 'A painted stand-back line gets everyone their bags sooner.', 'Floor markings', 'later'],
+  ["Braess's paradox", 'Adding a shortcut slows everyone; closing a route can speed things up.', 'Demolition permits', 'later'],
+  ['The moving bottleneck', 'Fix one choke point and the crush moves to the next.', 'Event stewarding', 'later'],
+];
+document.getElementById('paradoxRows').innerHTML = PARADOXES.map(([n, t, tech, st]) =>
+  `<tr><td><strong>${n}</strong></td><td style="color:var(--mute)">${t}</td><td>${tech}</td><td><span class="st ${st}">${STATUS[st]}</span></td></tr>`).join('');
+
+const HAVE = new Set(['Revolving doors', 'Draught lobbies', 'Pillars', 'Queue barriers', 'Ticket gates', 'Tidal-flow gates', 'Door staff training', 'Wide-drum revolving', 'Heat pumps']);
+const MARKS = [
+  ['Station Quarter', ['Ticket gates', 'Tidal-flow gates', 'Door staff training'], 'Built. Morning tide in, evening tide out, through the same gate line. Escalator standing comes later.'],
+  ['Office towers', ['Draught lobbies', 'Wide-drum revolving', 'Heat pumps'], 'Built. The stack effect at the door, a 9am wave in off the underground, and 5pm out. Lifts come later.'],
+  ['Shopping centre', ['Revolving doors', 'Escalators', 'Demolition permits'], 'The fix is removing a walkway.'],
+  ['Stadium', ['Pillars', 'Ticket gates', 'Queue barriers'], 'Match day in, then everyone out at the final whistle.'],
+  ['Concert venue', ['Pillars', 'Queue barriers', 'Event stewarding'], 'Queue, bag checks, standing crowd, bars, then the exit rush. Five stages, one moving bottleneck.'],
+  ['Airport', ['Queue barriers', 'Travelators', 'Floor markings', 'Revolving doors'], 'The longest chain: kerb, check-in, security, gate, then back through baggage and out.'],
+];
+document.getElementById('marks').innerHTML = MARKS.map(([n, needs, t]) => `
+  <div class="mark"><h3>${n}</h3><div class="locks">${needs.map(x => `<span class="lock ${HAVE.has(x) ? 'have' : ''}">${HAVE.has(x) ? '✓ ' : ''}${x}</span>`).join('')}</div><p>${t}</p></div>`).join('');
+</script>
