@@ -104,7 +104,7 @@ export function openCompany(tab) {
   let body = '';
   if (coTab === 'research') {
     const busy = S.research.length, free = P.labs - busy;
-    body = `<p>${busy ? `Researching ${S.research.map(r => `<b style="color:var(--text)">${techName(r.key)}</b> (${r.left} month${r.left > 1 ? 's' : ''} left)`).join(', ')}. ` : ''}${free > 0 ? `${free} bench${free > 1 ? 'es' : ''} free.` : 'All benches busy.'} Projects finish at the end of the month.</p>` +
+    body = `<p>${busy ? `Researching ${S.research.map(r => `<b style="color:var(--text)">${techName(r.key)}</b> (${r.left} month${r.left > 1 ? 's' : ''} left)`).join(', ')}. ` : ''}${free > 0 ? `${free} bench${free > 1 ? 'es' : ''} free.` : 'All benches busy.'} Projects finish at the end of the month, and each one opens the next in its branch.</p>` +
       BRANCHES.map(([b, label]) => { const nodes = TECH.filter(t => t.branch === b).map(t => {
         const owned = S.unlocks[t.key], doing = S.research.find(r => r.key === t.key);
         const missing = (t.req || []).filter(r => !S.unlocks[r]);
@@ -124,7 +124,7 @@ export function openCompany(tab) {
         return { html, later: !owned && !doing && !action };
       });
       const now = nodes.filter(n => !n.later), later = nodes.filter(n => n.later);
-      return `<div class="branch"><div class="eyebrow">${label}</div>${now.map(n => n.html).join('')}${later.length ? `<details class="more"${now.length ? '' : ' open'}><summary>${later.length} more ${later.length > 1 ? 'need' : 'needs'} bigger premises or earlier research ›</summary><div>${later.map(n => n.html).join('')}</div></details>` : ''}</div>`;
+      return `<div class="branch"><div class="eyebrow">${label}</div>${now.map(n => n.html).join('')}${later.length ? `<details class="more"><summary>${later.length} more ${later.length > 1 ? 'need' : 'needs'} bigger premises or earlier research ›</summary><div>${later.map(n => n.html).join('')}</div></details>` : ''}</div>`;
       }).join('');
   } else if (coTab === 'guide') {
     const owned = TECH.filter(t => S.unlocks[t.key] && LESSONS[t.key]);

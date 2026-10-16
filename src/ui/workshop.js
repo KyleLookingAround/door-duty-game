@@ -130,7 +130,7 @@ export function renderEditor() {
     `<div class="seg${doorTypes.length === 2 ? ' two' : ''}">${doorTypes.map(typeBtn).join('')}</div>`;
   if (s.type === 'revolve') {
     const w = s.rpm * TAU / 60, tip = w * (s.wide ? WIDE_R : REV_R), safe = V_SAFE + (s.padded ? 0.3 : 0);
-    html += `
+    html += `${flowSeg}
       <div class="row"><span class="lbl">Wings</span><div class="stepper"><button type="button" id="wm" ${locked || s.wings <= 2 ? 'disabled' : ''} aria-label="Fewer wings">−</button><div class="dots">${Array.from({ length: 6 }, (_, i) => `<i class="${i < s.wings ? 'on' : ''}"></i>`).join('')}</div><button type="button" id="wp" ${locked || s.wings >= 6 ? 'disabled' : ''} aria-label="More wings">+</button></div><output>${s.wings}</output></div>
       ${range('eRpm', 'rpm', 'Speed', 1, 10, 0.5, s.rpm.toFixed(1) + ' rpm')}
       ${range('eMouth', 'mouth', 'Mouth', 20, 70, 1, '±' + s.mouth + '°', 'mouth')}
@@ -141,7 +141,7 @@ export function renderEditor() {
       ${opt('eWide', 'wide', 'Wide drum', PRICE.wide, s.wings <= 3 ? 'bigger compartments; wheelchairs can ride with 3 wings' : 'bigger compartments; drop to 3 wings to take wheelchairs')}
       ${staffOpt()}
       ${opt('ePil', 'pillar', 'Pillar inside the exit', PRICE.pillar, 'takes the crowd\'s push in a fire drill', 'pillars')}
-      ${flowSeg}${laterNote()}`;
+      ${laterNote()}`;
   } else if (s.type === 'swing' || s.type === 'slider') {
     html += `${flowSeg}
       ${s.type === 'slider' ? `<label class="toggle"><span>Push-button only<small>Opens just for wheelchair users. Everyone else uses another door.</small></span><input type="checkbox" id="eBtn" ${s.button ? 'checked' : ''} ${locked ? 'disabled' : ''}></label>` : ''}
