@@ -54,6 +54,8 @@ export function build() {
   const app = bundle('src/ui/main.js');
   const core = bundle('src/worker.js');
   const shell = readFileSync(resolve(ROOT, 'src/shell.html'), 'utf8');
+  // GitHub Pages serves the page as-is: without these a phone renders it as a shrunken desktop page
+  if (!/^<!doctype html>/i.test(shell) || !/<meta name="viewport"/.test(shell)) throw new Error('build failed: src/shell.html needs <!doctype html> and a viewport meta tag');
   const html = shell
     .replace('<!--CORE-->', () => `<script id="core" type="text/plain">\n${core.replace(/<\/script/g, '<\\/script')}</script>`)
     .replace('<!--APP-->', () => `<script>\n${app.replace(/<\/script/g, '<\\/script')}</script>`)
