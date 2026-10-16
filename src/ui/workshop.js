@@ -79,8 +79,11 @@ export function resetPreview() {
 function designDirty() { if (W.mode === 'result') { W.mode = 'design'; } W.passed = false; resetPreview(); updateHud(); updateCost(); }
 function updateCost() {
   const c = W.contract, cost = designCost(W.design, c.existing), paid = charge(S, cost);
-  $('kCost').textContent = money(cost) + (paid !== cost ? ` (you pay ${kmoney(paid)})` : ''); $('kCost').className = cost > c.budget ? 'over' : '';
-  $('kBudget').textContent = money(c.budget); $('kPar').textContent = money(c.par.cost); $('kFee').textContent = money(feeOf(S, c));
+  // list price, and what you actually pay once the fitting crew and supplier discounts come off
+  $('kCost').innerHTML = money(cost) + (paid !== cost ? `<small>you pay ${kmoney(paid)}</small>` : ''); $('kCost').className = cost > c.budget ? 'over' : '';
+  $('kBudget').textContent = money(c.budget); $('kPar').textContent = money(c.par.cost);
+  const profit = feeOf(S, c) - paid;
+  $('kFee').textContent = money(profit); $('kFee').className = cost > c.budget || profit < 0 ? 'over' : cost <= c.par.cost ? 'good' : '';
   const tb = $('testBtn');
   if (W.mode === 'test') tb.textContent = 'Stop test';
   else if (W.passed) tb.textContent = `Sign off · ${money(feeOf(S, c) - paid)} profit`;
@@ -188,6 +191,14 @@ function refreshEditorLight() {
 const SPEEDS = [1, 3, 8];
 export function showSpeed() { const sp = S.speed || 3; $('ffBtn').textContent = sp + '×'; $('ffBtn').setAttribute('aria-pressed', sp > 1); $('ffBtn').setAttribute('aria-label', `Test speed ${sp} times`); $('skipBtn').hidden = !(W && W.mode === 'test'); }
 
+function startTest() {
+  if (W.design.every(s => s.type === 'wall')) { toast('Add at least one door', true); return; }
+  W.world = new World(worldCfg(W.contract, W.design, techOf(S)));
+  W.mode = 'test'; W.passed = false; W.fx = []; W.lastEvT = -1; W.steps = 0;
+  if (coachEl.id === 'run') coachDone();
+  renderEditor(); updateHud(); showSpeed();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 export function evaluateTest() {
   const c = W.contract, g = c.goals, r = { ...W.world.stats, minTemp: W.world.minTemp, maxTemp: W.world.maxTemp, wait: W.world.waitP90() };
   if (c.drill && r.evac == null) r.evac = null;
@@ -195,13 +206,14 @@ export function evaluateTest() {
   W.mode = 'result'; W.passed = pass; W.stars = stars; W.cost = cost; W.result = r;
   sheet(`<div class="stars">${[0, 1, 2].map(i => `<span class="${i < stars ? '' : 'off'}">★</span>`).join('')}</div>
     <h3>${pass ? (stars === 3 ? 'Flawless install' : 'Client signs off') : 'Not good enough yet'}</h3>
-    <p>${pass ? `Profit ${money(feeOf(S, c) - charge(S, cost))}${stars < 2 ? ` · the surveyor did it for ${money(c.par.cost)} (list)` : ''}.` : hint}</p>
+    ${pass ? `<div><div class="bignum">${money(feeOf(S, c) - charge(S, cost))}</div><p>profit when you sign off${stars < 2 ? `. The surveyor did it for ${money(c.par.cost)}: match that for a second star` : stars < 3 ? '. No bumps or safety stops for a third star' : ''}.</p></div>` : `<p>${hint}</p>`}
     ${green ? '<p class="note"><strong style="color:var(--ok)">🌿 Green star.</strong> The lobby stayed snug, so the client\'s heating bills drop. They\'ll pay 15% more maintenance.</p>' : ''}
     ${pass && r.bumps ? `<p class="note">${r.bumps} bump${r.bumps > 1 ? 's' : ''} go on your insurance record: +${money(45 * r.bumps)} a month while this install stands.</p>` : ''}
     <ul class="list">${rows.map(([a, v, gl, ok]) => `<li class="${ok === true ? 'pass' : ok === false ? 'fail' : ''}"><span>${a} <span style="color:var(--mute)">${gl}</span></span><span>${v}</span></li>`).join('')}</ul>
-    <div style="display:flex;gap:8px"><button class="ghost" type="button" id="rEdit">Keep tweaking</button>${pass ? `<button class="go" type="button" id="rSign">Sign off</button>` : ''}</div>`);
+    <div style="display:flex;gap:8px">${pass ? `<button class="ghost" type="button" id="rEdit">Keep tweaking</button><button class="go" type="button" id="rSign">Sign off</button>` : `<button class="ghost" type="button" id="rAgain">Watch again</button><button class="go" type="button" id="rEdit">Change the doors</button>`}</div>`);
   $('rEdit').onclick = () => { closeSheet(); renderEditor(); };
   if (pass) $('rSign').onclick = () => { closeSheet(); signOffJob(); };
+  else $('rAgain').onclick = () => { closeSheet(); startTest(); };
   setTimeout(() => coach('result', () => document.querySelector('#sheet .list')), 300);
   renderEditor();
 }
@@ -288,10 +300,6 @@ export function initWorkshop() {
     const c = W.contract;
     if (W.mode === 'test') { resetPreview(); renderEditor(); updateHud(); showSpeed(); return; }
     if (W.passed) return signOffJob();
-    if (W.design.every(s => s.type === 'wall')) { toast('Add at least one door', true); return; }
-    W.world = new World(worldCfg(c, W.design, techOf(S)));
-    W.mode = 'test'; W.fx = []; W.lastEvT = -1; W.steps = 0;
-    if (coachEl.id === 'run') coachDone();
-    renderEditor(); updateHud(); showSpeed();
+    startTest();
   });
 }

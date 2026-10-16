@@ -68,7 +68,7 @@ function showIntro() {
     $('iGo').onclick = () => { S.seenIntro = true; S.tut = { done: {} }; save(); closeSheet(); renderStreet(); };
     $('iSkip').onclick = () => { S.seenIntro = true; S.tut = { done: {}, off: true }; save(); closeSheet(); };
     // however the intro is dismissed, it only shows once
-    $('sheetWrap').addEventListener('click', e => { if (e.target === $('sheetWrap') && !S.seenIntro) { S.seenIntro = true; S.tut = S.tut || { done: {} }; save(); setTimeout(renderStreet, 50); } });
+    onSheetClosed.push(() => { if (!S.seenIntro) { S.seenIntro = true; S.tut = S.tut || { done: {} }; save(); setTimeout(renderStreet, 50); } });
   }
 }
 

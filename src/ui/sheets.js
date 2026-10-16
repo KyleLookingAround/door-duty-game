@@ -6,7 +6,7 @@ import { BRANCHES, LESSONS, TECH } from '../content/tech.js';
 import { CALLBACKS, RIVAL } from '../content/town.js';
 import { TWISTS } from '../content/twists.js';
 import { MONTHS, candidates } from '../game/contracts.js';
-import { costMult, feeOf, insurance, monthlyIncome, overheads, prem, rep, serviceCost, techName, techOf, upkeep } from '../game/economy.js';
+import { charge, costMult, feeOf, insurance, monthlyIncome, overheads, prem, rep, serviceCost, techName, techOf, upkeep } from '../game/economy.js';
 import { fire, hire, movePremises, service, startResearch } from '../game/jobs.js';
 import { CLAIM_EXCESS, INSPECTION_FINE, endMonth } from '../game/month.js';
 import { coach } from './coach.js';
@@ -53,14 +53,15 @@ export async function openBrief(i, fromWorkshop) {
     ${c.specialist ? '<p class="note"><strong style="color:var(--brass)">Specialist job.</strong> Only firms with the right R&amp;D get offered this one, so your margin is 60% bigger.</p>' : ''}
     ${c.novelty ? '<p class="note">The surveyor added a wrinkle because your recent jobs used the same answer.</p>' : ''}
     <div class="facts">
-      <div class="fact"><span>Fee</span><b>${kmoney(feeOf(S, c))}</b></div>
-      <div class="fact"><span>Budget</span><b>${kmoney(c.budget)}</b></div>
+      <div class="fact"><span>They pay you</span><b>${kmoney(feeOf(S, c))}</b></div>
+      <div class="fact"><span>Door budget</span><b>${kmoney(c.budget)}</b></div>
+      <div class="fact"><span>Profit at par</span><b style="color:var(--ok)">${kmoney(feeOf(S, c) - charge(S, c.par.cost))}</b></div>
       <div class="fact"><span>Outside</span><b>${c.outsideTemp}°C</b></div>
-      <div class="fact"><span>Arriving</span><b>${(c.crowd.in * 60).toFixed(0)}/min</b></div>
-      <div class="fact"><span>Leaving</span><b>${(c.crowd.out * 60).toFixed(0)}/min</b></div>
+      <div class="fact"><span>In / out a min</span><b>${(c.crowd.in * 60).toFixed(0)} / ${(c.crowd.out * 60).toFixed(0)}</b></div>
       <div class="fact"><span>Frontage</span><b>${c.slots} bay${c.slots > 1 ? 's' : ''}</b></div>
     </div>
     ${guest.length ? `<p>Crowd: ${guest.join(', ')}.</p>` : ''}
+    <h4>To pass</h4>
     <ul class="list">
       <li><span>Through in a 40s rush</span><span>≥ ${g.through}</span></li>
       <li><span>Bumps</span><span>≤ ${g.bumps}</span></li>
@@ -74,7 +75,7 @@ export async function openBrief(i, fromWorkshop) {
       ${c.drill ? `<li><span>Fire drill at ${c.drill.at}s: ${c.drill.n} people, lobby clear within</span><span>${g.evac}s</span></li>` : ''}
       ${c.rules && c.rules.forbid && !c.landmark ? `<li><span>Not allowed</span><span>${c.rules.forbid.map(t => TYPE_LABEL[t].toLowerCase() + ' doors').join(', ')}</span></li>` : ''}
       ${c.rules && c.rules.fixed ? `<li><span>Fixed by the client</span><span>bay ${(+Object.keys(c.rules.fixed)[0]) + 1}</span></li>` : ''}
-      <li><span>Surveyor's par (cheapest pass found)</span><span>${money(c.par.cost)}</span></li>
+      <li><span>Surveyor's par: the cheapest pass they found</span><span>${money(c.par.cost)}</span></li>
     </ul>
     <p class="note">★ pass · ★★ at or under par · ★★★ under par with no bumps or safety stops.${costMult(S) < 1 ? ` Prices shown are list prices; you pay ${Math.round(costMult(S) * 100)}% of them.` : ''}</p>
     <div class="legend"><span><i style="background:var(--frost)"></i>arriving</span><span><i style="background:var(--rose)"></i>leaving</span><span><i style="background:#fff;border:3px solid var(--frost);box-sizing:border-box"></i>older</span><span><i style="background:var(--frost);border-radius:3px"></i>wheelchair</span><span><i style="background:#b48cf0"></i>pram</span><span><i style="background:#d4a94f;border-radius:2px;height:3px;width:14px;vertical-align:3px"></i>bike</span><span><i style="background:#9b7a4a;border-radius:2px"></i>suitcase</span><span><i style="background:#6b7280"></i>standing still</span></div>
@@ -99,12 +100,12 @@ let coTab = 'research';
 export function openCompany(tab) {
   if (tab) coTab = tab;
   const P = prem(S), broke = S.cash < 0;
-  const tabs = `<div class="seg">${[['research', 'Research'], ['staff', 'Staff'], ['premises', 'Premises'], ['guide', 'Guide']].map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${coTab === k}">${l}</button>`).join('')}</div>`;
+  const tabs = `<div class="seg cotabs">${[['research', 'Research'], ['staff', 'Staff'], ['premises', 'Premises'], ['guide', 'Guide']].map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${coTab === k}">${l}</button>`).join('')}</div>`;
   let body = '';
   if (coTab === 'research') {
     const busy = S.research.length, free = P.labs - busy;
     body = `<p>${busy ? `Researching ${S.research.map(r => `<b style="color:var(--text)">${techName(r.key)}</b> (${r.left} month${r.left > 1 ? 's' : ''} left)`).join(', ')}. ` : ''}${free > 0 ? `${free} bench${free > 1 ? 'es' : ''} free.` : 'All benches busy.'} Projects finish at the end of the month.</p>` +
-      BRANCHES.map(([b, label]) => `<div class="branch"><div class="eyebrow">${label}</div>${TECH.filter(t => t.branch === b).map(t => {
+      BRANCHES.map(([b, label]) => { const nodes = TECH.filter(t => t.branch === b).map(t => {
         const owned = S.unlocks[t.key], doing = S.research.find(r => r.key === t.key);
         const missing = (t.req || []).filter(r => !S.unlocks[r]);
         const tierOk = t.tier <= P.tier;
@@ -113,16 +114,25 @@ export function openCompany(tab) {
         else if (doing) state = `<span class="pill open">${doing.left} mo</span>`;
         else if (!tierOk) state = `<span class="pill lock">Tier ${t.tier}</span>`;
         else if (missing.length) state = `<span class="pill lock">Locked</span>`;
-        else action = `<button class="go" type="button" data-k="${t.key}" ${broke || free <= 0 || S.cash < t.price ? 'disabled' : ''}>${kmoney(t.price)} · ${t.months} mo</button>`;
+        else {
+          // say why a project can't start rather than just greying the button
+          const block = broke ? 'Overdrawn' : free <= 0 ? 'Benches busy' : S.cash < t.price ? `Need ${kmoney(t.price - S.cash)} more` : '';
+          action = `<div style="display:grid;gap:4px;justify-items:end"><button class="go" type="button" data-k="${t.key}" ${block ? 'disabled' : ''}>${kmoney(t.price)} · ${t.months} mo</button>${block ? `<span class="why">${block}</span>` : ''}</div>`;
+        }
         const why = !owned && !doing ? (!tierOk ? `Needs ${PREMISES[t.tier - 1].name.toLowerCase()} premises. ` : missing.length ? `Needs ${missing.map(techName).join(', ')}. ` : '') : '';
-        return `<div class="node ${owned ? 'owned' : doing ? 'doing' : action ? 'avail' : 'locked'}"><div><b>${t.name}</b><p>${why}${t.text}${t.opens ? `<br><span class="opens">Opens specialist jobs: ${t.opens}</span>` : ''}</p></div>${state || action}</div>`;
-      }).join('')}</div>`).join('');
+        const html = `<div class="node ${owned ? 'owned' : doing ? 'doing' : action ? 'avail' : 'locked'}"><div><b>${t.name}</b><p>${why}${t.text}${t.opens ? `<br><span class="opens">Opens specialist jobs: ${t.opens}</span>` : ''}</p></div>${state || action}</div>`;
+        return { html, later: !owned && !doing && !action };
+      });
+      const now = nodes.filter(n => !n.later), later = nodes.filter(n => n.later);
+      return `<div class="branch"><div class="eyebrow">${label}</div>${now.map(n => n.html).join('')}${later.length ? `<details class="more"${now.length ? '' : ' open'}><summary>${later.length} more ${later.length > 1 ? 'need' : 'needs'} bigger premises or earlier research ›</summary><div>${later.map(n => n.html).join('')}</div></details>` : ''}</div>`;
+      }).join('');
   } else if (coTab === 'guide') {
     const owned = TECH.filter(t => S.unlocks[t.key] && LESSONS[t.key]);
     body = `<p>Everything the game has taught you, any time you need it.</p>
       <div class="branch"><div class="eyebrow">The basics</div>${BASICS.map(([k, t]) => `<button class="lessonrow" type="button" data-lesson="${k}"><b>${t}</b><span>›</span></button>`).join('')}</div>
       <div class="branch"><div class="eyebrow">Your research</div>${owned.length ? owned.map(t => `<button class="lessonrow" type="button" data-lesson="${t.key}"><b>${t.name}</b><span>›</span></button>`).join('') : '<p class="note">Lessons for new kit appear here as your research finishes.</p>'}</div>
-      <button class="ghost" type="button" id="tutReplay">Replay the walk-through</button>`;
+      <button class="ghost" type="button" id="tutReplay">Replay the walk-through</button>
+      <div class="branch"><div class="eyebrow">Start again</div><p class="note">Wipes this firm: cash, clients, research and staff.</p><button class="ghost" type="button" id="coNew">Start a new firm</button></div>`;
   } else if (coTab === 'staff') {
     const hired = STAFF.filter(s => S.staff[s.key]).length;
     body = `<p>Wages come out at the end of every month. Your ${P.name.toLowerCase()} has room for ${P.staff} hire${P.staff > 1 ? 's' : ''}; ${hired} taken.</p>` +
@@ -130,7 +140,7 @@ export function openCompany(tab) {
         const on = S.staff[s.key], needs = s.req && !S.unlocks[s.req];
         const btn = on ? `<button class="ghost" type="button" data-fire="${s.key}">Let go</button>`
           : needs ? `<span class="pill lock">Research first</span>`
-          : `<button class="go" type="button" data-hire="${s.key}" ${broke || hired >= P.staff ? 'disabled' : ''}>Hire</button>`;
+          : (() => { const block = broke ? 'Overdrawn' : hired >= P.staff ? 'No room: move premises' : ''; return `<div style="display:grid;gap:4px;justify-items:end"><button class="go" type="button" data-hire="${s.key}" ${block ? 'disabled' : ''}>Hire</button>${block ? `<span class="why">${block}</span>` : ''}</div>`; })();
         return `<div class="node ${on ? 'owned' : needs ? 'locked' : 'avail'}"><div><b>${s.name} · ${money(s.wage)}/mo</b><p>${needs ? `Needs ${techName(s.req)}. ` : ''}${s.text}</p></div>${btn}</div>`;
       }).join('');
   } else {
@@ -139,7 +149,7 @@ export function openCompany(tab) {
         const cur = i === (S.premises || 0), past = i < (S.premises || 0), next = i === (S.premises || 0) + 1;
         const repOk = rep(S) >= (p.rep || 0);
         const btn = cur ? '<span class="pill done">Current</span>' : past ? '<span class="pill lock">Outgrown</span>'
-          : next ? (repOk ? `<button class="go" type="button" data-move="${i}" ${broke || S.cash < p.price ? 'disabled' : ''}>Move · ${kmoney(p.price)}</button>` : `<span class="pill lock">${p.rep}★ rep</span>`)
+          : next ? (repOk ? `<div style="display:grid;gap:4px;justify-items:end"><button class="go" type="button" data-move="${i}" ${broke || S.cash < p.price ? 'disabled' : ''}>Move · ${kmoney(p.price)}</button>${S.cash < p.price ? `<span class="why">Need ${kmoney(p.price - S.cash)} more</span>` : ''}</div>` : `<span class="pill lock">${p.rep}★ rep</span>`)
           : '<span class="pill lock">Later</span>';
         return `<div class="node ${cur ? 'owned' : next && repOk ? 'avail' : 'locked'}"><div><b>${p.name} · ${money(p.rent)}/mo rent</b><p>${p.text} Research tier ${p.tier}, ${p.labs} bench${p.labs > 1 ? 'es' : ''}, ${p.staff} staff.</p></div>${btn}</div>`;
       }).join('');
@@ -148,7 +158,7 @@ export function openCompany(tab) {
     <div class="facts"><div class="fact"><span>Cash</span><b class="${broke ? 'neg' : ''}">${kmoney(S.cash)}</b></div><div class="fact"><span>In / month</span><b>${kmoney(monthlyIncome(S))}</b></div><div class="fact"><span>Out / month</span><b>${kmoney(overheads(S))}</b></div></div>
     ${broke ? '<p class="note"><span class="hot">You\'re overdrawn.</span> You can\'t start research, hire or move until you\'re back in the black.</p>' : ''}
     ${tabs}${body}
-    <div style="display:flex;gap:8px"><button class="ghost" type="button" id="coNew" style="flex:1">Start a new firm</button><button class="ghost" type="button" id="coClose" style="flex:1">Close</button></div>`);
+    <button class="ghost" type="button" id="coClose">Back to the street</button>`);
   const sh = $('sheet');
   sh.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { const top = sh.scrollTop; openCompany(b.dataset.tab); sh.scrollTop = 0; });
   sh.querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
@@ -167,7 +177,7 @@ export function openCompany(tab) {
   sh.querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => openLesson(b.dataset.lesson, () => openCompany()));
   if ($('tutReplay')) $('tutReplay').onclick = () => { S.tut = { done: {} }; save(); closeSheet(); toast('Walk-through on: it picks up as you play'); setTimeout(renderStreet, 300); };
   // starting over wipes the save, so it takes two taps
-  $('coNew').onclick = () => {
+  if ($('coNew')) $('coNew').onclick = () => {
     const btn = $('coNew');
     if (!btn.classList.contains('armed')) {
       btn.classList.add('armed'); btn.textContent = 'Tap again: lose everything';
@@ -220,7 +230,7 @@ export function initSheets() {
       <div class="learn">${done.filter(k => LESSONS[k]).map(k => `<button class="ghost small" type="button" data-lesson="${k}">How to use ${techName(k)}</button>`).join('')}</div>` : ''}
     ${walked.length ? `<p><span class="hot">Your staff walked out</span> over unpaid wages: ${walked.join(', ')}.</p>` : S.cash < 0 ? '<p><span class="hot">You\'re overdrawn.</span> Win jobs or let staff go. Below −£15k your crew will walk out.</p>' : ''}
     <p>${calls.length ? 'Clients on the phone:' : inc ? 'Every fitted client is happy.' : 'Win a tender to start earning maintenance fees.'}</p>
-    ${calls.length ? `<ul class="list">${calls.map(p => `<li><span>${p.name}</span><span>${p.reason}</span></li>`).join('')}</ul>` : ''}
+    ${calls.length ? `<ul class="list">${calls.map(p => `<li style="display:block"><span style="font-family:inherit;color:var(--text);font-weight:600">${p.name}</span><br><span style="font-family:inherit;color:var(--mute)">${CALLBACKS[p.reason] || p.reason}. No maintenance until you fix it.</span></li>`).join('')}</ul>` : ''}
     ${evNow ? `<p><strong style="color:var(--brass)">${evNow.label} this month.</strong> ${evNow.text} Tenders pay 25% more margin.</p>` : ''}
     ${(() => { const nx = eventOf(S.month + 1); return nx ? `<p class="note">Next month: ${nx.label}.</p>` : ''; })()}
     ${winter ? '<p class="note">Winter: colder tenders and more callbacks.</p>' : ''}

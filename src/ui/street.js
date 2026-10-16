@@ -18,6 +18,20 @@ export function frontHTML(slots, n) {
   const count = slots ? slots.length : n;
   return `<div class="front" aria-hidden="true">${Array.from({ length: count }, (_, i) => `<i class="${slots && slots[i] ? cls[slots[i].type] : 'empty'}"></i>`).join('')}</div>`;
 }
+// "Lark Café · Café" says the same thing twice; only show the kind when it adds something
+const sameWord = (name, label) => name.toLowerCase().includes(label.toLowerCase().split(' ')[0]);
+// clients who won't talk to you yet: one compact line each, the nearest first
+function laterList(list) {
+  const r = rep(S);
+  const sorted = [...list].sort((a, b) => a.rep - b.rep);
+  const nextAt = sorted.find(p => p.rep > r);
+  return `<div class="later">${sorted.map(p => {
+    const research = r >= p.rep && !needsMet(S, p);
+    const req = research ? `Research ${needsText(S, p)}` : `${p.rep}★`;
+    const k = KINDS[p.kind];
+    return `<div><span><b>${p.name}</b>${sameWord(p.name, k.label) ? '' : ` · ${k.label}`}${streetOf(p) === 'market' ? ' · Market Square' : ''}</span><span class="req${research || p === nextAt ? ' next' : ''}${research ? ' wide' : ''}">${req}</span></div>`;
+  }).join('')}</div>`;
+}
 export function renderStreet() {
   if (refreshPlots(S).includes('market')) setTimeout(() => toast('Market Square is open: five new clients, and a rival firm'), 600);
   $('sCash').textContent = kmoney(S.cash);
@@ -73,7 +87,7 @@ export function renderStreet() {
     const where = streetOf(p) === 'market' ? ' · Market Square' : '';
     return `<button class="plot${p.status === 'locked' || p.status === 'rival' ? ' locked' : ''}" type="button" data-i="${p.i}" ${p.status === 'locked' || p.status === 'rival' ? 'disabled' : ''}>
       ${frontHTML(p.status === 'rival' ? rivalInstall(p) : p.install, p.contract ? p.contract.slots : k.slots)}
-      <span><span class="name">${p.name}</span> <span class="kind">· ${k.label}${where}</span><span class="stline" style="display:block">${line}</span></span>
+      <span><span class="name">${p.name}</span>${(() => { const bits = [sameWord(p.name, k.label) ? '' : k.label, where ? 'Market Square' : ''].filter(Boolean); return bits.length ? ` <span class="kind">· ${bits.join(' · ')}</span>` : ''; })()}<span class="stline" style="display:block">${line}</span></span>
       ${pill}</button>`;
   };
   const fitted = S.plots.filter(p => p.status === 'fitted' || p.status === 'rival');
@@ -81,7 +95,7 @@ export function renderStreet() {
   $('streetHead').textContent = live.length ? `On the table · ${live.length}` : 'Nothing on the table this month';
   $('street').innerHTML = live.map(row).join('');
   $('ledgerRest').innerHTML = (fitted.length ? `<div class="eyebrow ledhead">Your clients · ${fitted.filter(p => p.status === 'fitted').length}</div>${fitted.map(row).join('')}` : '')
-    + (later.length ? `<div class="eyebrow ledhead">Not yet</div>${later.map(row).join('')}` : '');
+    + (later.length ? `<div class="eyebrow ledhead">Not yet · you have ${rep(S)}★</div>${laterList(later)}` : '');
   $('ledger').querySelectorAll('.plot').forEach(b => b.addEventListener('click', guarded(() => { const p = S.plots[+b.dataset.i]; if (p.status === 'fitted') openClient(p.i); else if (p.status === 'open' || p.status === 'callback') openBrief(p.i); })));
   save();
   for (const p of S.plots) if ((p.status === 'open' || p.status === 'callback') && p.contract && !p.contract.solved) survey(p);
