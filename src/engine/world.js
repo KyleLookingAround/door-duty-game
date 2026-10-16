@@ -1,13 +1,14 @@
-// ---------- Multi-door entrance simulation (no DOM) ----------
-const TAU = Math.PI * 2;
-const SLOT_W = 3.0;      // m per frontage slot
-const WORLD_HH = 3.6;    // half height
-const REV_R = 1.15;      // revolving drum radius
-const WIDE_R = 1.42;     // wide-drum revolving door (R&D)
-const V_SAFE = 0.75;
-const BLADE_T = 0.035, WALL_T = 0.05;
+// Crowd simulation for one entrance: people, doors, collisions, heat. No DOM.
+// A World is built from a config (doors, crowd, site furniture, weather) and stepped at a fixed dt.
+export const TAU = Math.PI * 2;
+export const SLOT_W = 3.0;      // m per frontage slot
+export const WORLD_HH = 3.6;    // half height
+export const REV_R = 1.15;      // revolving drum radius
+export const WIDE_R = 1.42;     // wide-drum revolving door (R&D)
+export const V_SAFE = 0.75;
+export const BLADE_T = 0.035, WALL_T = 0.05;
 
-const GUEST = {
+export const GUEST = {
   normal:  { r: [0.18, 0.22], walk: [1.1, 1.4], safe: 1.0, react: [0.3, 1.1] },
   elderly: { r: [0.19, 0.22], walk: [0.65, 0.85], safe: 0.6, react: [0.8, 1.8] },
   wheel:   { r: [0.33, 0.35], walk: [0.85, 1.0], safe: 0.8, react: [0.4, 1.0], stepfree: true },
@@ -15,12 +16,12 @@ const GUEST = {
   pram:    { r: [0.30, 0.33], walk: [0.9, 1.05], safe: 0.8, react: [0.4, 1.0], stepfree: true },   // prams and delivery trolleys
   bike:    { r: [0.28, 0.32], walk: [1.0, 1.2], safe: 1.0, react: [0.4, 0.9], noRevolve: true },  // cyclists wheeling a bike
 };
-const MIX_TYPES = ['elderly', 'wheel', 'case', 'pram', 'bike'];
+export const MIX_TYPES = ['elderly', 'wheel', 'case', 'pram', 'bike'];
 // seconds to tap through a ticket gate
-const TAP = { normal: 0.9, elderly: 1.8, wheel: 2.0, case: 1.4, pram: 1.8, bike: 2.0 };
+export const TAP = { normal: 0.9, elderly: 1.8, wheel: 2.0, case: 1.4, pram: 1.8, bike: 2.0 };
 
 // does the segment (x0,y0)-(x1,y1) pass through the box? (slab test)
-function segHitsBox(x0, y0, x1, y1, bx0, by0, bx1, by1) {
+export function segHitsBox(x0, y0, x1, y1, bx0, by0, bx1, by1) {
   let t0 = 0, t1 = 1;
   const dx = x1 - x0, dy = y1 - y0;
   for (const [p, q] of [[-dx, x0 - bx0], [dx, bx1 - x0], [-dy, y0 - by0], [dy, by1 - y0]]) {
@@ -31,7 +32,7 @@ function segHitsBox(x0, y0, x1, y1, bx0, by0, bx1, by1) {
   return true;
 }
 // nearest point on an obstacle to (x, y): circles, rectangles and standing people
-function obstacleNearest(o, x, y) {
+export function obstacleNearest(o, x, y) {
   if (o.kind === 'rect') {
     const qx = Math.max(o.x0, Math.min(o.x1, x)), qy = Math.max(o.y0, Math.min(o.y1, y));
     return { qx, qy, t: 0 };
@@ -40,8 +41,8 @@ function obstacleNearest(o, x, y) {
   return { qx: o.x + dx / d * o.r, qy: o.y + dy / d * o.r, t: 0 };
 }
 
-function modT(a) { a %= TAU; return a < 0 ? a + TAU : a; }
-function arcOverlap(a0, la, b0, lb) {
+export function modT(a) { a %= TAU; return a < 0 ? a + TAU : a; }
+export function arcOverlap(a0, la, b0, lb) {
   const d = modT(b0 - a0);
   let len = 0, best = null;
   for (const s of [d, d - TAU]) {
@@ -50,12 +51,12 @@ function arcOverlap(a0, la, b0, lb) {
   }
   return { len, mid: best ? a0 + (best[0] + best[1]) / 2 : 0 };
 }
-function makeRng(seed) {
+export function makeRng(seed) {
   let s = (seed >>> 0) || 1;
   return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
 }
 
-class World {
+export class World {
   // cfg: { slots:[{type,wings,mouth,core,rpm,padded,curtain}], crowd:{in,out,mix:{elderly,wheel,case}},
   //        outsideTemp, duration, seed, heater, wind, brakes, radar, signs, rain, site }
   // site: { obstacles:[{kind:'circle'|'rect'|'person',...}], rampBays:[i], spawnIn:{x,spread,p}, surge:{every,n,x,spread} }
@@ -697,4 +698,3 @@ class World {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { World, GUEST, TAP, MIX_TYPES, SLOT_W, REV_R, WIDE_R, V_SAFE, TAU, makeRng };

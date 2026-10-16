@@ -1,0 +1,2042 @@
+[
+ {
+  "case": {
+   "k": "cafe",
+   "tn": "none",
+   "first": true,
+   "month": 9,
+   "ev": null,
+   "cb": null,
+   "seed": 1000
+  },
+  "twists": [
+   "tight"
+  ],
+  "goals": {
+   "bumps": 3,
+   "minTemp": null,
+   "access": false,
+   "laps": null,
+   "through": 50
+  },
+  "par": "si,so",
+  "cost": 5000,
+  "fee": 10500,
+  "budget": 11000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 13
+ },
+ {
+  "case": {
+   "k": "cafe",
+   "tn": "mid",
+   "first": false,
+   "month": 6,
+   "ev": null,
+   "cb": null,
+   "seed": 1037
+  },
+  "twists": [
+   "listed",
+   "cold"
+  ],
+  "goals": {
+   "bumps": 4,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "through": 54
+  },
+  "par": "r4,si",
+  "cost": 6000,
+  "fee": 11500,
+  "budget": 12000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": -5
+ },
+ {
+  "case": {
+   "k": "cafe",
+   "tn": "late",
+   "first": false,
+   "month": 11,
+   "ev": "xmas",
+   "cb": null,
+   "seed": 1074
+  },
+  "twists": [
+   "stepfree",
+   "drill"
+  ],
+  "goals": {
+   "bumps": 3,
+   "minTemp": 19,
+   "access": true,
+   "laps": null,
+   "evac": 11,
+   "through": 51
+  },
+  "par": "siV,soV",
+  "cost": 29000,
+  "fee": 51500,
+  "budget": 46500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 4
+ },
+ {
+  "case": {
+   "k": "cafe",
+   "tn": "late",
+   "first": false,
+   "month": 1,
+   "ev": "storm",
+   "cb": "cold",
+   "seed": 1111
+  },
+  "twists": [
+   "cold",
+   "fragile",
+   "listed"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "through": 42
+  },
+  "par": "r4,r4S",
+  "cost": 13500,
+  "fee": 22000,
+  "budget": 23500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": -4
+ },
+ {
+  "case": {
+   "k": "cafe",
+   "tn": "mid",
+   "first": false,
+   "month": 3,
+   "ev": "marathon",
+   "cb": "busier",
+   "seed": 1148
+  },
+  "twists": [
+   "surge",
+   "nofire",
+   "rain"
+  ],
+  "goals": {
+   "bumps": 4,
+   "minTemp": 16,
+   "access": false,
+   "laps": 1,
+   "through": 61
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 16500,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 10
+ },
+ {
+  "case": {
+   "k": "pharmacy",
+   "tn": "none",
+   "first": true,
+   "month": 9,
+   "ev": null,
+   "cb": null,
+   "seed": 1185
+  },
+  "twists": [
+   "fragile",
+   "narrow"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "through": 32
+  },
+  "par": "r4S",
+  "cost": 13500,
+  "fee": 20000,
+  "budget": 23500,
+  "relaxed": false,
+  "slots": 1,
+  "temp": 3
+ },
+ {
+  "case": {
+   "k": "pharmacy",
+   "tn": "mid",
+   "first": false,
+   "month": 6,
+   "ev": null,
+   "cb": null,
+   "seed": 1222
+  },
+  "twists": [
+   "stepfree",
+   "listed"
+  ],
+  "goals": {
+   "bumps": 3,
+   "minTemp": null,
+   "access": true,
+   "laps": null,
+   "through": 46
+  },
+  "par": "r4,s",
+  "cost": 6000,
+  "fee": 11500,
+  "budget": 12000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 20
+ },
+ {
+  "case": {
+   "k": "pharmacy",
+   "tn": "late",
+   "first": false,
+   "month": 11,
+   "ev": "xmas",
+   "cb": null,
+   "seed": 1259
+  },
+  "twists": [
+   "tight",
+   "drill"
+  ],
+  "goals": {
+   "bumps": 3,
+   "minTemp": 19,
+   "access": false,
+   "laps": null,
+   "evac": 18,
+   "through": 46
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 20500,
+  "budget": 11000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 4
+ },
+ {
+  "case": {
+   "k": "pharmacy",
+   "tn": "late",
+   "first": false,
+   "month": 1,
+   "ev": "storm",
+   "cb": "cold",
+   "seed": 1296
+  },
+  "twists": [
+   "drill",
+   "tight",
+   "cold"
+  ],
+  "goals": {
+   "bumps": 3,
+   "minTemp": 19,
+   "access": false,
+   "laps": null,
+   "evac": 19,
+   "through": 44
+  },
+  "par": "sV",
+  "cost": 14500,
+  "fee": 28000,
+  "budget": 17000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": -7
+ },
+ {
+  "case": {
+   "k": "pharmacy",
+   "tn": "mid",
+   "first": false,
+   "month": 3,
+   "ev": "marathon",
+   "cb": "busier",
+   "seed": 1333
+  },
+  "twists": [
+   "surge",
+   "nofire",
+   "rain"
+  ],
+  "goals": {
+   "bumps": 3,
+   "minTemp": 16,
+   "access": false,
+   "laps": 1,
+   "through": 51
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 16500,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 8
+ },
+ {
+  "case": {
+   "k": "bank",
+   "tn": "mid",
+   "first": false,
+   "month": 6,
+   "ev": null,
+   "cb": null,
+   "seed": 1370
+  },
+  "twists": [
+   "stepfree",
+   "nofire"
+  ],
+  "goals": {
+   "bumps": 4,
+   "minTemp": null,
+   "access": true,
+   "laps": null,
+   "through": 78
+  },
+  "par": "s",
+  "cost": 6000,
+  "fee": 11500,
+  "budget": 12000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 18
+ },
+ {
+  "case": {
+   "k": "bank",
+   "tn": "late",
+   "first": false,
+   "month": 11,
+   "ev": "xmas",
+   "cb": null,
+   "seed": 1407
+  },
+  "twists": [
+   "drill",
+   "tight"
+  ],
+  "goals": {
+   "bumps": 4,
+   "minTemp": 19,
+   "access": false,
+   "laps": null,
+   "evac": 13,
+   "through": 69
+  },
+  "par": "sX",
+  "cost": 11000,
+  "fee": 22500,
+  "budget": 11000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 4
+ },
+ {
+  "case": {
+   "k": "bank",
+   "tn": "late",
+   "first": false,
+   "month": 1,
+   "ev": "storm",
+   "cb": "cold",
+   "seed": 1444
+  },
+  "twists": [
+   "cold",
+   "fragile",
+   "surge"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 16,
+   "access": false,
+   "laps": 1,
+   "through": 76
+  },
+  "par": "siV,soV",
+  "cost": 22000,
+  "fee": 33500,
+  "budget": 36000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": -5
+ },
+ {
+  "case": {
+   "k": "bank",
+   "tn": "mid",
+   "first": false,
+   "month": 3,
+   "ev": "marathon",
+   "cb": "busier",
+   "seed": 1481
+  },
+  "twists": [
+   "surge",
+   "listed",
+   "nofire"
+  ],
+  "goals": {
+   "bumps": 5,
+   "minTemp": 16,
+   "access": false,
+   "laps": 1,
+   "through": 76
+  },
+  "par": "r4,s",
+  "cost": 9500,
+  "fee": 16500,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 10
+ },
+ {
+  "case": {
+   "k": "office",
+   "tn": "none",
+   "first": true,
+   "month": 9,
+   "ev": null,
+   "cb": null,
+   "seed": 1518
+  },
+  "twists": [
+   "surge"
+  ],
+  "goals": {
+   "bumps": 7,
+   "minTemp": 16,
+   "access": false,
+   "laps": 1,
+   "through": 110
+  },
+  "par": "r4,r4",
+  "cost": 27000,
+  "fee": 37500,
+  "budget": 32000,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 6
+ },
+ {
+  "case": {
+   "k": "office",
+   "tn": "mid",
+   "first": false,
+   "month": 6,
+   "ev": null,
+   "cb": null,
+   "seed": 1555
+  },
+  "twists": [
+   "rain",
+   "fragile"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": null,
+   "access": false,
+   "laps": null,
+   "through": 110
+  },
+  "par": "si,so",
+  "cost": 5000,
+  "fee": 10500,
+  "budget": 10500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 20
+ },
+ {
+  "case": {
+   "k": "office",
+   "tn": "late",
+   "first": false,
+   "month": 11,
+   "ev": "xmas",
+   "cb": null,
+   "seed": 1592
+  },
+  "twists": [
+   "stepfree",
+   "wind",
+   "fragile"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 19,
+   "access": true,
+   "laps": null,
+   "through": 97
+  },
+  "par": "sV",
+  "cost": 14500,
+  "fee": 28000,
+  "budget": 25000,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 4
+ },
+ {
+  "case": {
+   "k": "office",
+   "tn": "late",
+   "first": false,
+   "month": 1,
+   "ev": "storm",
+   "cb": "cold",
+   "seed": 1629
+  },
+  "twists": [
+   "cold",
+   "tight",
+   "narrow"
+  ],
+  "goals": {
+   "bumps": 7,
+   "minTemp": 19,
+   "access": false,
+   "laps": null,
+   "through": 113
+  },
+  "par": "sV",
+  "cost": 14500,
+  "fee": 28000,
+  "budget": 17000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": -3
+ },
+ {
+  "case": {
+   "k": "office",
+   "tn": "mid",
+   "first": false,
+   "month": 3,
+   "ev": "marathon",
+   "cb": "busier",
+   "seed": 1666
+  },
+  "twists": [
+   "surge",
+   "nofire",
+   "fragile"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 16,
+   "access": false,
+   "laps": 1,
+   "through": 117
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 16500,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 11
+ },
+ {
+  "case": {
+   "k": "hotel",
+   "tn": "none",
+   "first": true,
+   "month": 9,
+   "ev": null,
+   "cb": null,
+   "seed": 1703
+  },
+  "twists": [
+   "listed"
+  ],
+  "goals": {
+   "bumps": 4,
+   "minTemp": 18,
+   "access": false,
+   "laps": null,
+   "through": 63
+  },
+  "par": "r4,r4",
+  "cost": 13500,
+  "fee": 20000,
+  "budget": 23500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 7
+ },
+ {
+  "case": {
+   "k": "hotel",
+   "tn": "mid",
+   "first": false,
+   "month": 6,
+   "ev": null,
+   "cb": null,
+   "seed": 1740
+  },
+  "twists": [
+   "fragile",
+   "tight"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 18,
+   "access": false,
+   "laps": null,
+   "through": 81
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 15000,
+  "budget": 11000,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 18
+ },
+ {
+  "case": {
+   "k": "hotel",
+   "tn": "late",
+   "first": false,
+   "month": 11,
+   "ev": "xmas",
+   "cb": null,
+   "seed": 1777
+  },
+  "twists": [
+   "stepfree",
+   "wind",
+   "fragile"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 19,
+   "access": true,
+   "laps": null,
+   "through": 76
+  },
+  "par": "sV,sV",
+  "cost": 29000,
+  "fee": 51500,
+  "budget": 46500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 3
+ },
+ {
+  "case": {
+   "k": "hotel",
+   "tn": "late",
+   "first": false,
+   "month": 1,
+   "ev": "storm",
+   "cb": "cold",
+   "seed": 1814
+  },
+  "twists": [
+   "rain",
+   "stepfree",
+   "cold"
+  ],
+  "goals": {
+   "bumps": 5,
+   "minTemp": 19,
+   "access": true,
+   "laps": null,
+   "through": 94
+  },
+  "par": "sV,sV",
+  "cost": 29000,
+  "fee": 51500,
+  "budget": 46500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": -4
+ },
+ {
+  "case": {
+   "k": "hotel",
+   "tn": "mid",
+   "first": false,
+   "month": 3,
+   "ev": "marathon",
+   "cb": "busier",
+   "seed": 1851
+  },
+  "twists": [
+   "surge",
+   "cold",
+   "nofire"
+  ],
+  "goals": {
+   "bumps": 5,
+   "minTemp": 18,
+   "access": false,
+   "laps": 1,
+   "through": 74
+  },
+  "par": "r4C,r4C,r4C",
+  "cost": 51000,
+  "fee": 73500,
+  "budget": 79500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": -6
+ },
+ {
+  "case": {
+   "k": "library",
+   "tn": "none",
+   "first": true,
+   "month": 9,
+   "ev": null,
+   "cb": null,
+   "seed": 1888
+  },
+  "twists": [
+   "stepfree",
+   "fragile"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 16,
+   "access": true,
+   "laps": null,
+   "through": 48
+  },
+  "par": "r4S,r4S,sB",
+  "cost": 33000,
+  "fee": 45500,
+  "budget": 52500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 8
+ },
+ {
+  "case": {
+   "k": "library",
+   "tn": "mid",
+   "first": false,
+   "month": 6,
+   "ev": null,
+   "cb": null,
+   "seed": 1925
+  },
+  "twists": [
+   "bikes",
+   "listed"
+  ],
+  "goals": {
+   "bumps": 4,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "bikes": true,
+   "through": 71
+  },
+  "par": "r4,s",
+  "cost": 9500,
+  "fee": 15000,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 19
+ },
+ {
+  "case": {
+   "k": "library",
+   "tn": "late",
+   "first": false,
+   "month": 11,
+   "ev": "xmas",
+   "cb": null,
+   "seed": 1962
+  },
+  "twists": [
+   "bikes",
+   "stepfree",
+   "wind"
+  ],
+  "goals": {
+   "bumps": 5,
+   "minTemp": 19,
+   "access": true,
+   "laps": null,
+   "bikes": true,
+   "through": 80
+  },
+  "par": "sV",
+  "cost": 14500,
+  "fee": 28000,
+  "budget": 25000,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 4
+ },
+ {
+  "case": {
+   "k": "library",
+   "tn": "late",
+   "first": false,
+   "month": 1,
+   "ev": "storm",
+   "cb": "cold",
+   "seed": 1999
+  },
+  "twists": [
+   "cold",
+   "bikes"
+  ],
+  "goals": {
+   "bumps": 4,
+   "minTemp": 19,
+   "access": false,
+   "laps": null,
+   "bikes": true,
+   "through": 68
+  },
+  "par": "sV",
+  "cost": 14500,
+  "fee": 28000,
+  "budget": 25000,
+  "relaxed": false,
+  "slots": 3,
+  "temp": -5
+ },
+ {
+  "case": {
+   "k": "library",
+   "tn": "mid",
+   "first": false,
+   "month": 3,
+   "ev": "marathon",
+   "cb": "busier",
+   "seed": 2036
+  },
+  "twists": [
+   "surge",
+   "nofire",
+   "stepfree"
+  ],
+  "goals": {
+   "bumps": 5,
+   "minTemp": 16,
+   "access": true,
+   "laps": 1,
+   "through": 86
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 16500,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 9
+ },
+ {
+  "case": {
+   "k": "store",
+   "tn": "none",
+   "first": true,
+   "month": 9,
+   "ev": null,
+   "cb": null,
+   "seed": 2073
+  },
+  "twists": [
+   "nofire",
+   "cold"
+  ],
+  "goals": {
+   "bumps": 6,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "through": 100
+  },
+  "par": "r4,r4",
+  "cost": 27000,
+  "fee": 37500,
+  "budget": 43500,
+  "relaxed": false,
+  "slots": 4,
+  "temp": -6
+ },
+ {
+  "case": {
+   "k": "store",
+   "tn": "mid",
+   "first": false,
+   "month": 6,
+   "ev": null,
+   "cb": null,
+   "seed": 2110
+  },
+  "twists": [
+   "narrow",
+   "tight"
+  ],
+  "goals": {
+   "bumps": 8,
+   "minTemp": null,
+   "access": false,
+   "laps": null,
+   "through": 139
+  },
+  "par": "si,so",
+  "cost": 5000,
+  "fee": 10500,
+  "budget": 11000,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 17
+ },
+ {
+  "case": {
+   "k": "store",
+   "tn": "late",
+   "first": false,
+   "month": 11,
+   "ev": "xmas",
+   "cb": null,
+   "seed": 2147
+  },
+  "twists": [
+   "narrow",
+   "tight"
+  ],
+  "goals": {
+   "bumps": 9,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "through": 132
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 16500,
+  "budget": 11000,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 4
+ },
+ {
+  "case": {
+   "k": "store",
+   "tn": "late",
+   "first": false,
+   "month": 1,
+   "ev": "storm",
+   "cb": "cold",
+   "seed": 2184
+  },
+  "twists": [
+   "cold",
+   "fragile",
+   "nofire"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "through": 134
+  },
+  "par": "sV,sV",
+  "cost": 29000,
+  "fee": 43000,
+  "budget": 46500,
+  "relaxed": false,
+  "slots": 4,
+  "temp": -4
+ },
+ {
+  "case": {
+   "k": "store",
+   "tn": "mid",
+   "first": false,
+   "month": 3,
+   "ev": "marathon",
+   "cb": "busier",
+   "seed": 2221
+  },
+  "twists": [
+   "surge",
+   "fragile",
+   "rain"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 16,
+   "access": false,
+   "laps": 1,
+   "through": 151
+  },
+  "par": "s,s",
+  "cost": 19000,
+  "fee": 29500,
+  "budget": 31500,
+  "relaxed": false,
+  "slots": 4,
+  "temp": 11
+ },
+ {
+  "case": {
+   "k": "station",
+   "tn": "none",
+   "first": true,
+   "month": 9,
+   "ev": null,
+   "cb": null,
+   "seed": 2258
+  },
+  "twists": [
+   "stepfree"
+  ],
+  "goals": {
+   "bumps": 6,
+   "minTemp": null,
+   "access": true,
+   "laps": null,
+   "through": 86,
+   "wait": 21
+  },
+  "par": "g,gW",
+  "cost": 16000,
+  "fee": 27000,
+  "budget": 27000,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 8
+ },
+ {
+  "case": {
+   "k": "station",
+   "tn": "mid",
+   "first": false,
+   "month": 6,
+   "ev": null,
+   "cb": null,
+   "seed": 2295
+  },
+  "twists": [
+   "stepfree",
+   "rain"
+  ],
+  "goals": {
+   "bumps": 8,
+   "minTemp": null,
+   "access": true,
+   "laps": null,
+   "through": 117,
+   "wait": 27
+  },
+  "par": "gW,gi,go",
+  "cost": 23000,
+  "fee": 37000,
+  "budget": 37500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 21
+ },
+ {
+  "case": {
+   "k": "station",
+   "tn": "late",
+   "first": false,
+   "month": 11,
+   "ev": "xmas",
+   "cb": null,
+   "seed": 2332
+  },
+  "twists": [
+   "narrow",
+   "bikes"
+  ],
+  "goals": {
+   "bumps": 7,
+   "minTemp": null,
+   "access": false,
+   "laps": null,
+   "bikes": true,
+   "through": 91,
+   "wait": 16
+  },
+  "par": "gD,gWD",
+  "cost": 16000,
+  "fee": 29500,
+  "budget": 27000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 4
+ },
+ {
+  "case": {
+   "k": "station",
+   "tn": "late",
+   "first": false,
+   "month": 1,
+   "ev": "storm",
+   "cb": "cold",
+   "seed": 2369
+  },
+  "twists": [
+   "narrow",
+   "bikes",
+   "fragile"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": null,
+   "access": false,
+   "laps": null,
+   "bikes": true,
+   "through": 69,
+   "wait": 24.5
+  },
+  "par": "gD,gWD",
+  "cost": 16000,
+  "fee": 29500,
+  "budget": 27000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 2
+ },
+ {
+  "case": {
+   "k": "station",
+   "tn": "mid",
+   "first": false,
+   "month": 3,
+   "ev": "marathon",
+   "cb": "busier",
+   "seed": 2406
+  },
+  "twists": [
+   "surge",
+   "rain",
+   "stepfree"
+  ],
+  "goals": {
+   "bumps": 10,
+   "minTemp": null,
+   "access": true,
+   "laps": null,
+   "through": 99,
+   "wait": 27.5
+  },
+  "par": "g,gW",
+  "cost": 16000,
+  "fee": 29500,
+  "budget": 27000,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 8
+ },
+ {
+  "case": {
+   "k": "museum",
+   "tn": "none",
+   "first": true,
+   "month": 9,
+   "ev": null,
+   "cb": null,
+   "seed": 2443
+  },
+  "twists": [],
+  "goals": {
+   "bumps": 3,
+   "minTemp": 18,
+   "access": false,
+   "laps": null,
+   "through": 49
+  },
+  "par": "r4,r4",
+  "cost": 27000,
+  "fee": 37500,
+  "budget": 43500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 6
+ },
+ {
+  "case": {
+   "k": "museum",
+   "tn": "mid",
+   "first": false,
+   "month": 6,
+   "ev": null,
+   "cb": null,
+   "seed": 2480
+  },
+  "twists": [
+   "rain"
+  ],
+  "goals": {
+   "bumps": 5,
+   "minTemp": 18,
+   "access": false,
+   "laps": null,
+   "through": 78
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 15000,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 17
+ },
+ {
+  "case": {
+   "k": "museum",
+   "tn": "late",
+   "first": false,
+   "month": 11,
+   "ev": "xmas",
+   "cb": null,
+   "seed": 2517
+  },
+  "twists": [
+   "cold",
+   "fragile"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 18,
+   "access": false,
+   "laps": null,
+   "through": 76
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 16500,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": -5
+ },
+ {
+  "case": {
+   "k": "museum",
+   "tn": "late",
+   "first": false,
+   "month": 1,
+   "ev": "storm",
+   "cb": "cold",
+   "seed": 2554
+  },
+  "twists": [
+   "cold",
+   "drill",
+   "tight"
+  ],
+  "goals": {
+   "bumps": 5,
+   "minTemp": 19,
+   "access": false,
+   "laps": null,
+   "evac": 25,
+   "through": 66
+  },
+  "par": "sVX",
+  "cost": 16000,
+  "fee": 30500,
+  "budget": 17000,
+  "relaxed": false,
+  "slots": 3,
+  "temp": -5
+ },
+ {
+  "case": {
+   "k": "museum",
+   "tn": "mid",
+   "first": false,
+   "month": 3,
+   "ev": "marathon",
+   "cb": "busier",
+   "seed": 2591
+  },
+  "twists": [
+   "surge",
+   "cold",
+   "wind"
+  ],
+  "goals": {
+   "bumps": 4,
+   "minTemp": 18,
+   "access": false,
+   "laps": 1,
+   "through": 38
+  },
+  "par": "r4N",
+  "cost": 13500,
+  "fee": 22000,
+  "budget": 23500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": -5
+ },
+ {
+  "case": {
+   "k": "cinema",
+   "tn": "none",
+   "first": true,
+   "month": 9,
+   "ev": null,
+   "cb": null,
+   "seed": 2628
+  },
+  "twists": [],
+  "goals": {
+   "bumps": 4,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "through": 51
+  },
+  "par": "r3,r3",
+  "cost": 24000,
+  "fee": 34000,
+  "budget": 39000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 9
+ },
+ {
+  "case": {
+   "k": "cinema",
+   "tn": "mid",
+   "first": false,
+   "month": 6,
+   "ev": null,
+   "cb": null,
+   "seed": 2665
+  },
+  "twists": [
+   "tight",
+   "nofire"
+  ],
+  "goals": {
+   "bumps": 4,
+   "minTemp": null,
+   "access": false,
+   "laps": null,
+   "through": 64
+  },
+  "par": "s",
+  "cost": 6000,
+  "fee": 11500,
+  "budget": 11000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 17
+ },
+ {
+  "case": {
+   "k": "cinema",
+   "tn": "late",
+   "first": false,
+   "month": 11,
+   "ev": "xmas",
+   "cb": null,
+   "seed": 2702
+  },
+  "twists": [
+   "surge",
+   "bikes",
+   "cold"
+  ],
+  "goals": {
+   "bumps": 6,
+   "minTemp": 19,
+   "access": false,
+   "laps": 1,
+   "bikes": true,
+   "through": 87
+  },
+  "par": "sV,sV",
+  "cost": 29000,
+  "fee": 51500,
+  "budget": 46500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": -7
+ },
+ {
+  "case": {
+   "k": "cinema",
+   "tn": "late",
+   "first": false,
+   "month": 1,
+   "ev": "storm",
+   "cb": "cold",
+   "seed": 2739
+  },
+  "twists": [
+   "cold",
+   "tight",
+   "drill"
+  ],
+  "goals": {
+   "bumps": 5,
+   "minTemp": 19,
+   "access": false,
+   "laps": null,
+   "evac": 17,
+   "through": 63
+  },
+  "par": "sV",
+  "cost": 14500,
+  "fee": 28000,
+  "budget": 17000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": -6
+ },
+ {
+  "case": {
+   "k": "cinema",
+   "tn": "mid",
+   "first": false,
+   "month": 3,
+   "ev": "marathon",
+   "cb": "busier",
+   "seed": 2776
+  },
+  "twists": [
+   "surge",
+   "stepfree",
+   "fragile"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 16,
+   "access": true,
+   "laps": 1,
+   "through": 77
+  },
+  "par": "s,s",
+  "cost": 19000,
+  "fee": 29500,
+  "budget": 31500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 8
+ },
+ {
+  "case": {
+   "k": "gym",
+   "tn": "none",
+   "first": true,
+   "month": 9,
+   "ev": null,
+   "cb": null,
+   "seed": 2813
+  },
+  "twists": [],
+  "goals": {
+   "bumps": 5,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "through": 60
+  },
+  "par": "r4,r4",
+  "cost": 27000,
+  "fee": 37500,
+  "budget": 43500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 7
+ },
+ {
+  "case": {
+   "k": "gym",
+   "tn": "mid",
+   "first": false,
+   "month": 6,
+   "ev": null,
+   "cb": null,
+   "seed": 2850
+  },
+  "twists": [
+   "rain",
+   "cold"
+  ],
+  "goals": {
+   "bumps": 7,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "through": 89
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 15000,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": -3
+ },
+ {
+  "case": {
+   "k": "gym",
+   "tn": "late",
+   "first": false,
+   "month": 11,
+   "ev": "xmas",
+   "cb": null,
+   "seed": 2887
+  },
+  "twists": [
+   "narrow",
+   "nofire"
+  ],
+  "goals": {
+   "bumps": 7,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "through": 93
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 16500,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 1,
+  "temp": 3
+ },
+ {
+  "case": {
+   "k": "gym",
+   "tn": "late",
+   "first": false,
+   "month": 1,
+   "ev": "storm",
+   "cb": "cold",
+   "seed": 2924
+  },
+  "twists": [
+   "surge",
+   "stepfree",
+   "cold"
+  ],
+  "goals": {
+   "bumps": 6,
+   "minTemp": 19,
+   "access": true,
+   "laps": 1,
+   "through": 114
+  },
+  "par": "sV,sV",
+  "cost": 29000,
+  "fee": 51500,
+  "budget": 46500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": -4
+ },
+ {
+  "case": {
+   "k": "gym",
+   "tn": "mid",
+   "first": false,
+   "month": 3,
+   "ev": "marathon",
+   "cb": "busier",
+   "seed": 2961
+  },
+  "twists": [
+   "surge",
+   "listed",
+   "rain"
+  ],
+  "goals": {
+   "bumps": 7,
+   "minTemp": 16,
+   "access": false,
+   "laps": 1,
+   "through": 109
+  },
+  "par": "r4,s",
+  "cost": 9500,
+  "fee": 16500,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 11
+ },
+ {
+  "case": {
+   "k": "clinic",
+   "tn": "none",
+   "first": true,
+   "month": 9,
+   "ev": null,
+   "cb": null,
+   "seed": 2998
+  },
+  "twists": [
+   "stepfree",
+   "fragile"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 18,
+   "access": true,
+   "laps": null,
+   "through": 27
+  },
+  "par": "r4S,sB",
+  "cost": 19500,
+  "fee": 28000,
+  "budget": 32500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 10
+ },
+ {
+  "case": {
+   "k": "clinic",
+   "tn": "mid",
+   "first": false,
+   "month": 6,
+   "ev": null,
+   "cb": null,
+   "seed": 3035
+  },
+  "twists": [
+   "fragile"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 18,
+   "access": false,
+   "laps": null,
+   "through": 53
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 15000,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 20
+ },
+ {
+  "case": {
+   "k": "clinic",
+   "tn": "late",
+   "first": false,
+   "month": 11,
+   "ev": "xmas",
+   "cb": null,
+   "seed": 3072
+  },
+  "twists": [
+   "stepfree",
+   "cold",
+   "fragile"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 19,
+   "access": true,
+   "laps": null,
+   "through": 53
+  },
+  "par": "sV",
+  "cost": 14500,
+  "fee": 28000,
+  "budget": 25000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": -4
+ },
+ {
+  "case": {
+   "k": "clinic",
+   "tn": "late",
+   "first": false,
+   "month": 1,
+   "ev": "storm",
+   "cb": "cold",
+   "seed": 3109
+  },
+  "twists": [
+   "cold",
+   "bikes"
+  ],
+  "goals": {
+   "bumps": 3,
+   "minTemp": 19,
+   "access": false,
+   "laps": null,
+   "bikes": true,
+   "through": 58
+  },
+  "par": "sV",
+  "cost": 14500,
+  "fee": 28000,
+  "budget": 25000,
+  "relaxed": false,
+  "slots": 2,
+  "temp": -6
+ },
+ {
+  "case": {
+   "k": "clinic",
+   "tn": "mid",
+   "first": false,
+   "month": 3,
+   "ev": "marathon",
+   "cb": "busier",
+   "seed": 3146
+  },
+  "twists": [
+   "surge",
+   "nofire",
+   "rain"
+  ],
+  "goals": {
+   "bumps": 3,
+   "minTemp": 18,
+   "access": false,
+   "laps": 1,
+   "through": 59
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 16500,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 12
+ },
+ {
+  "case": {
+   "k": "towers",
+   "tn": "none",
+   "first": true,
+   "month": 9,
+   "ev": null,
+   "cb": null,
+   "seed": 3183
+  },
+  "twists": [],
+  "goals": {
+   "bumps": 6,
+   "minTemp": 15,
+   "access": false,
+   "laps": null,
+   "through": 42,
+   "wait": 33
+  },
+  "par": "r4",
+  "cost": 13500,
+  "fee": 23500,
+  "budget": 23500,
+  "relaxed": true,
+  "slots": 4,
+  "temp": 4
+ },
+ {
+  "case": {
+   "k": "towers",
+   "tn": "mid",
+   "first": false,
+   "month": 6,
+   "ev": null,
+   "cb": null,
+   "seed": 3220
+  },
+  "twists": [
+   "stepfree",
+   "fragile"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 19,
+   "access": true,
+   "laps": null,
+   "through": 127,
+   "wait": 11
+  },
+  "par": "s,s",
+  "cost": 19000,
+  "fee": 31500,
+  "budget": 31500,
+  "relaxed": false,
+  "slots": 4,
+  "temp": 20
+ },
+ {
+  "case": {
+   "k": "towers",
+   "tn": "late",
+   "first": false,
+   "month": 11,
+   "ev": "xmas",
+   "cb": null,
+   "seed": 3257
+  },
+  "twists": [
+   "rain",
+   "bikes"
+  ],
+  "goals": {
+   "bumps": 7,
+   "minTemp": 19,
+   "access": false,
+   "laps": null,
+   "bikes": true,
+   "through": 111,
+   "wait": 13
+  },
+  "par": "sV",
+  "cost": 14500,
+  "fee": 27500,
+  "budget": 25000,
+  "relaxed": false,
+  "slots": 4,
+  "temp": 2
+ },
+ {
+  "case": {
+   "k": "towers",
+   "tn": "late",
+   "first": false,
+   "month": 1,
+   "ev": "storm",
+   "cb": "cold",
+   "seed": 3294
+  },
+  "twists": [
+   "cold",
+   "fragile",
+   "bikes"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 19,
+   "access": false,
+   "laps": null,
+   "bikes": true,
+   "through": 98,
+   "wait": 18.5
+  },
+  "par": "sV",
+  "cost": 14500,
+  "fee": 35000,
+  "budget": 25000,
+  "relaxed": false,
+  "slots": 4,
+  "temp": -7
+ },
+ {
+  "case": {
+   "k": "towers",
+   "tn": "mid",
+   "first": false,
+   "month": 3,
+   "ev": "marathon",
+   "cb": "busier",
+   "seed": 3331
+  },
+  "twists": [
+   "surge",
+   "rain",
+   "wind"
+  ],
+  "goals": {
+   "bumps": 8,
+   "minTemp": 19,
+   "access": false,
+   "laps": null,
+   "through": 86,
+   "wait": 23
+  },
+  "par": "r4N,r4N,r4N",
+  "cost": 40500,
+  "fee": 68000,
+  "budget": 64000,
+  "relaxed": false,
+  "slots": 4,
+  "temp": 4
+ },
+ {
+  "case": {
+   "k": "townhall",
+   "tn": "none",
+   "first": true,
+   "month": 9,
+   "ev": null,
+   "cb": null,
+   "seed": 3368
+  },
+  "twists": [
+   "stepfree",
+   "surge"
+  ],
+  "goals": {
+   "bumps": 4,
+   "minTemp": 16,
+   "access": true,
+   "laps": 1,
+   "through": 70
+  },
+  "par": "r4,r4,sB",
+  "cost": 33000,
+  "fee": 45500,
+  "budget": 52500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 9
+ },
+ {
+  "case": {
+   "k": "townhall",
+   "tn": "mid",
+   "first": false,
+   "month": 6,
+   "ev": null,
+   "cb": null,
+   "seed": 3405
+  },
+  "twists": [
+   "fragile",
+   "stepfree"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 16,
+   "access": true,
+   "laps": null,
+   "through": 93
+  },
+  "par": "s,s",
+  "cost": 19000,
+  "fee": 27500,
+  "budget": 31500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 17
+ },
+ {
+  "case": {
+   "k": "townhall",
+   "tn": "late",
+   "first": false,
+   "month": 11,
+   "ev": "xmas",
+   "cb": null,
+   "seed": 3442
+  },
+  "twists": [
+   "rain",
+   "narrow"
+  ],
+  "goals": {
+   "bumps": 5,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "through": 87
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 16500,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 2
+ },
+ {
+  "case": {
+   "k": "townhall",
+   "tn": "late",
+   "first": false,
+   "month": 1,
+   "ev": "storm",
+   "cb": "cold",
+   "seed": 3479
+  },
+  "twists": [
+   "cold",
+   "wind",
+   "bikes"
+  ],
+  "goals": {
+   "bumps": 5,
+   "minTemp": 19,
+   "access": false,
+   "laps": null,
+   "bikes": true,
+   "through": 85
+  },
+  "par": "sV",
+  "cost": 14500,
+  "fee": 28000,
+  "budget": 25000,
+  "relaxed": false,
+  "slots": 3,
+  "temp": -6
+ },
+ {
+  "case": {
+   "k": "townhall",
+   "tn": "mid",
+   "first": false,
+   "month": 3,
+   "ev": "marathon",
+   "cb": "busier",
+   "seed": 3516
+  },
+  "twists": [
+   "surge",
+   "nofire",
+   "listed"
+  ],
+  "goals": {
+   "bumps": 5,
+   "minTemp": 16,
+   "access": false,
+   "laps": 1,
+   "through": 87
+  },
+  "par": "r4,s,s",
+  "cost": 19000,
+  "fee": 29500,
+  "budget": 31500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 9
+ }
+]

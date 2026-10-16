@@ -1,193 +1,26 @@
-// ---------- Contracts: generation, pricing, solver ----------
+// Contracts: generating a job, pricing hardware, and the surveyor that solves it.
+// Pure: no DOM. The surveyor runs headless simulations of candidate designs to set a fair target and price.
+import { World, makeRng, SLOT_W } from '../engine/world.js';
+import { BUILDING, KINDS, buildSite } from '../content/buildings/index.js';
+import { EVENTS, xmasBays } from '../content/events.js';
+import { TWIST_POOL, TWIST_REQ, CONFLICTS, clashes, isSpecialist } from '../content/twists.js';
 // Each building's first contract is a hand-picked "hook" that breaks the stock answers.
 // Later contracts draw twists from the same pool, and a novelty check stops repeats.
-const KINDS = {
-  cafe:     { label: 'Café',             slots: 2, in: 0.7, out: 0.7, mix: {},
-              hook: { twists: ['tight'], temp: 13 } },
-  pharmacy: { label: 'Pharmacy',         slots: 2, in: 0.55, out: 0.5, mix: { elderly: 0.2 },
-              hook: { twists: ['fragile', 'narrow'], temp: 3 } },
-  bank:     { label: 'Bank',             slots: 2, in: 0.9, out: 0.8, mix: {},
-              hook: { twists: ['wind'], temp: 1 } },
-  office:   { label: 'Office block',     slots: 3, in: 2.0, out: 0.4, mix: {},
-              hook: { twists: ['surge'], temp: 6, budgetCap: 32000 } },
-  hotel:    { label: 'Hotel',            slots: 3, in: 1.0, out: 1.0, mix: { case: 0.4 }, comfort: 18,
-              hook: { twists: ['listed'], temp: 7 } },
-  library:  { label: 'Library',          slots: 3, in: 0.9, out: 0.8, mix: { elderly: 0.2 }, comfort: 16,
-              hook: { twists: ['stepfree', 'fragile'], temp: 8 } },
-  store:    { label: 'Department store', slots: 4, in: 1.8, out: 1.4, mix: { elderly: 0.1, case: 0.1 },
-              hook: { twists: ['nofire', 'cold'], temp: 2 } },
-  station:  { label: 'Railway station',  slots: 3, in: 4.0, out: 0.5, mix: { case: 0.1 }, station: true,
-              hook: { twists: ['stepfree'], temp: 8 } },
-  // Market Square: the second street
-  museum:   { label: 'Museum',           slots: 3, in: 0.9, out: 0.8, mix: { elderly: 0.25, pram: 0.05 }, comfort: 18,
-              hook: { twists: ['listed', 'stepfree'], temp: 6 } },
-  cinema:   { label: 'Cinema',           slots: 2, in: 0.8, out: 0.15, mix: {}, cinema: true,
-              hook: { twists: [], temp: 9 } },
-  gym:      { label: 'Gym',              slots: 2, in: 1.3, out: 1.2, mix: { bike: 0.12 },
-              hook: { twists: ['bikes', 'wind'], temp: 7 } },
-  clinic:   { label: 'Health centre',    slots: 2, in: 0.7, out: 0.6, mix: { elderly: 0.35, wheel: 0.05, pram: 0.06 }, comfort: 18,
-              hook: { twists: ['stepfree', 'fragile'], temp: 10 } },
-  towers:   { label: 'Office towers',    slots: 4, in: 3.0, out: 2.6, mix: { case: 0.05 }, towers: true, comfort: 19,
-              hook: { twists: [], temp: 4 } },
-  townhall: { label: 'Town hall',        slots: 3, in: 1.1, out: 0.9, mix: { elderly: 0.15 }, comfort: 16,
-              hook: { twists: ['stepfree', 'surge'], temp: 9 } },
-};
+export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export const SEASON_T = [3, 4, 7, 10, 14, 17, 19, 18, 15, 11, 7, 4];
+export const TEST_SECONDS = 40;
+export const SIM_DT = 1 / 60;                  // shared by the surveyor and the in-game test
+export const RUN_SECONDS = TEST_SECONDS + 6;   // arrivals stop at 40s; the last people get 6s to clear the door
+export const PRICE = { revolve: 12000, wingExtra: 1500, bigCore: 2000, padded: 1500, sensor: 2000, wide: 8000, swing: 2500, slider: 6000, curtain: 3500, vestibule: 5000, pillar: 1500, lanes: 800, gates: 7000, gatesWide: 9000, tidal: 2500 };
 
-// Street furniture: fixed per building, built for however many bays the job has.
-// obstacles collide and steer people; decos and labels are drawing only.
-function buildSite(kind, n) {
-  const HW = n * SLOT_W / 2, cx = i => -HW + SLOT_W / 2 + i * SLOT_W, last = n - 1;
-  const S = { obstacles: [], decos: [], labels: [] };
-  const person = (x, y) => S.obstacles.push({ kind: 'person', x, y, r: 0.2 });
-  if (kind === 'cafe') {
-    const x0 = n > 1 ? cx(0) - 0.9 : -HW + 0.25, x1 = n > 1 ? cx(0) + 0.5 : -HW + 0.95;
-    S.obstacles.push({ kind: 'rect', x0, x1, y0: -2.2, y1: -1.3, tag: 'tables' });
-    S.obstacles.push({ kind: 'circle', x: cx(last) + 1.15, y: -0.75, r: 0.16, tag: 'aboard' });
-    S.labels.push({ x: (x0 + x1) / 2, y: -2.45, text: 'Café tables' });
-  } else if (kind === 'pharmacy') {
-    for (const x of n > 1 ? [cx(0) - 1.3, cx(last) + 1.3] : [-HW + 0.2, HW - 0.2]) S.obstacles.push({ kind: 'circle', x, y: -0.6, r: 0.12, tag: 'bollard' });
-    S.obstacles.push({ kind: 'rect', x0: -HW + 0.15, x1: -HW + 0.55, y0: 0.6, y1: 1.8, tag: 'shelf' });
-    S.labels.push({ x: -HW + 0.35, y: 2.05, text: 'Display' });
-  } else if (kind === 'bank') {
-    // the cash machine sits in the wall beside bay 1; its queue snakes along the pavement across bay 1's approach
-    const ax = n > 1 ? cx(0) + 1.3 : HW - 0.3;
-    S.decos.push({ kind: 'atm', x: ax, y: -0.08 });
-    // two at the machine, the rest lined up along the pavement: one solid obstacle people route round
-    person(ax + 0.05, -0.48); person(ax + 0.1, -1.0);
-    S.obstacles.push({ kind: 'rect', x0: ax - 1.85, x1: ax - 0.05, y0: -2.48, y1: -2.02, tag: 'queue' });
-    for (let k = 0; k < 4; k++) S.decos.push({ kind: 'queuer', x: ax - 0.3 - k * 0.46, y: -2.25 + (k % 2 ? 0.04 : -0.04) });
-    S.labels.push({ x: ax - 1.2, y: -2.6, text: 'Cash machine queue' });
-  } else if (kind === 'office') {
-    S.obstacles.push({ kind: 'rect', x0: -1.2, x1: 1.2, y0: 1.5, y1: 2.0, tag: 'desk' });
-    S.obstacles.push({ kind: 'rect', x0: cx(last) - 0.5, x1: cx(last) + 0.5, y0: -2.45, y1: -2.05, tag: 'bench' });
-    S.labels.push({ x: 0, y: 2.3, text: 'Reception' });
-    S.labels.push({ x: cx(last), y: -2.75, text: 'Smokers\' bench' });
-  } else if (kind === 'hotel') {
-    S.spawnIn = { x: -HW + 1.0, spread: 0.9, p: 0.55 };
-    S.decos.push({ kind: 'taxi', x: -HW + 0.6, y: -3.0 });
-    S.obstacles.push({ kind: 'rect', x0: cx(0) + 0.75, x1: cx(0) + 1.3, y0: 1.2, y1: 1.85, tag: 'trolley' });
-    S.labels.push({ x: -HW + 1.3, y: -2.55, text: 'Taxi rank' });
-  } else if (kind === 'library') {
-    if (n >= 3) {
-      S.rampBays = [1];
-      for (const i of [0, 2]) S.decos.push({ kind: 'steps', x0: cx(i) - 1.5, x1: cx(i) + 1.5, y0: -0.85, y1: -0.08 });
-      S.decos.push({ kind: 'ramp', x0: cx(1) - 1.5, x1: cx(1) + 1.5, y0: -0.85, y1: -0.08 });
-      S.labels.push({ x: cx(1), y: -1.1, text: 'Ramp' });
-    }
-    S.obstacles.push({ kind: 'circle', x: cx(last) + 1.0, y: -1.7, r: 0.24, tag: 'returns' });
-  } else if (kind === 'store') {
-    S.surge = { every: 9, n: 6, x: -HW + 1.3, spread: 0.9 };
-    S.decos.push({ kind: 'shelter', x0: -HW + 0.2, x1: -HW + 2.4, y0: -3.45, y1: -3.05 });
-    S.labels.push({ x: -HW + 1.3, y: -2.75, text: 'Bus stop' });
-    if (n >= 2) { const bx = cx(0) + 1.5; person(bx - 0.28, -1.15); person(bx + 0.27, -1.2); S.labels.push({ x: bx, y: -1.6, text: 'Window shoppers' }); }
-  } else if (kind === 'museum') {
-    // grand steps with a ramp at one end, and a school party waiting by the railings
-    if (n >= 3) { S.rampBays = [n - 1]; for (let i = 0; i < n - 1; i++) S.decos.push({ kind: 'steps', x0: cx(i) - 1.5, x1: cx(i) + 1.5, y0: -0.85, y1: -0.08 }); S.decos.push({ kind: 'ramp', x0: cx(last) - 1.5, x1: cx(last) + 1.5, y0: -0.85, y1: -0.08 }); S.labels.push({ x: cx(last), y: -1.1, text: 'Ramp' }); }
-    S.obstacles.push({ kind: 'rect', x0: -HW + 0.3, x1: -HW + 1.6, y0: -2.6, y1: -2.15, tag: 'queue' });
-    for (let k = 0; k < 3; k++) S.decos.push({ kind: 'queuer', x: -HW + 0.5 + k * 0.45, y: -2.38 });
-    S.labels.push({ x: -HW + 0.95, y: -2.8, text: 'School party' });
-    S.obstacles.push({ kind: 'rect', x0: -1.0, x1: 1.0, y0: 1.7, y1: 2.2, tag: 'desk' }); S.labels.push({ x: 0, y: 2.45, text: 'Cloakroom' });
-  } else if (kind === 'cinema') {
-    // poster stands either side, and the screens empty out at the back of the foyer
-    for (const x of [-HW + 0.35, HW - 0.35]) S.obstacles.push({ kind: 'rect', x0: x - 0.2, x1: x + 0.2, y0: -1.1, y1: -0.6, tag: 'poster' });
-    S.obstacles.push({ kind: 'rect', x0: -0.9, x1: 0.9, y0: 1.4, y1: 1.85, tag: 'desk' }); S.labels.push({ x: 0, y: 2.1, text: 'Popcorn' });
-    S.labels.push({ x: 0, y: 3.35, text: 'Screens' });
-  } else if (kind === 'gym') {
-    // bike racks along the pavement
-    for (let k = 0; k < 3; k++) S.obstacles.push({ kind: 'rect', x0: -HW + 0.3 + k * 0.5, x1: -HW + 0.36 + k * 0.5, y0: -2.5, y1: -1.9, tag: 'rack' });
-    S.labels.push({ x: -HW + 0.85, y: -2.75, text: 'Bike racks' });
-    S.obstacles.push({ kind: 'rect', x0: HW - 1.6, x1: HW - 0.3, y0: 1.5, y1: 1.95, tag: 'desk' }); S.labels.push({ x: HW - 0.95, y: 2.2, text: 'Turnstile desk' });
-  } else if (kind === 'clinic') {
-    // a ramp on the left bay, waiting-room chairs inside
-    if (n >= 2) { S.rampBays = [0]; S.decos.push({ kind: 'ramp', x0: cx(0) - 1.5, x1: cx(0) + 1.5, y0: -0.85, y1: -0.08 }); for (let i = 1; i < n; i++) S.decos.push({ kind: 'steps', x0: cx(i) - 1.5, x1: cx(i) + 1.5, y0: -0.85, y1: -0.08 }); S.labels.push({ x: cx(0), y: -1.1, text: 'Ramp' }); }
-    S.obstacles.push({ kind: 'rect', x0: HW - 1.9, x1: HW - 0.2, y0: 1.8, y1: 2.15, tag: 'bench' }); S.labels.push({ x: HW - 1.05, y: 2.4, text: 'Waiting room' });
-  } else if (kind === 'towers') {
-    // a tube exit dumps commuters at one end; security desk and the lift bank inside
-    S.surge = { every: 7, n: 7, x: -HW + 1.4, spread: 1.0, until: 16 };
-    S.decos.push({ kind: 'shelter', x0: -HW + 0.2, x1: -HW + 2.6, y0: -3.45, y1: -3.05 });
-    S.labels.push({ x: -HW + 1.4, y: -2.75, text: 'Underground exit' });
-    S.obstacles.push({ kind: 'rect', x0: -1.4, x1: 1.4, y0: 1.6, y1: 2.0, tag: 'desk' }); S.labels.push({ x: 0, y: 2.25, text: 'Security' });
-    for (const x of [-HW + 1.5, HW - 1.5]) S.decos.push({ kind: 'lifts', x0: x - 1.1, x1: x + 1.1, y0: 3.0, y1: 3.55 });
-    S.labels.push({ x: 0, y: 3.35, text: 'Lifts' });
-  } else if (kind === 'station') {
-    // ticket machines on the street side, the departure board and the escalators down to the platforms
-    S.obstacles.push({ kind: 'rect', x0: -HW + 0.15, x1: -HW + 0.75, y0: -1.75, y1: -1.35, tag: 'machines' });
-    S.obstacles.push({ kind: 'rect', x0: HW - 0.75, x1: HW - 0.15, y0: -1.75, y1: -1.35, tag: 'machines' });
-    S.labels.push({ x: -HW + 0.9, y: -2.0, text: 'Tickets' });
-    S.decos.push({ kind: 'board', x0: -1.4, x1: 1.4, y: 1.55 });
-    const ex = n >= 3 ? [cx(0), cx(last)] : [-HW + 1.2, HW - 1.2];
-    for (const x of ex) S.decos.push({ kind: 'escalator', x0: x - 0.7, x1: x + 0.7, y0: 2.5, y1: 3.6 });
-    S.labels.push({ x: 0, y: 3.25, text: 'Escalators to the platforms' });
-    S.trains = { every: 6, n: 16, from: 20, xs: ex };
-  } else if (kind === 'townhall') {
-    // portico columns flank each doorway
-    for (let i = 0; i <= n; i++) S.obstacles.push({ kind: 'circle', x: -HW + i * SLOT_W, y: -1.5, r: 0.32, tag: 'column' });
-    S.labels.push({ x: cx(0), y: -2.15, text: 'Portico' });
-  }
-  return S;
-}
-
-// Calendar: one event a month, the same every year, so you can see it coming
-const EVENTS = {
-  0:  { key: 'sales', label: 'January sales', text: 'Bargain hunters with bags. Every tender is busier, and shoppers carry big bags through the doors.' },
-  1:  { key: 'storm', label: 'Storm season', text: 'Gales and rain all month. Wind pushes air through open doors and wide mouths, and the queue outside wants in quickly.' },
-  3:  { key: 'marathon', label: 'Marathon day', text: 'Everyone rushes out to watch the runners. Lots of prams. The flow is mostly outward.' },
-  6:  { key: 'heatwave', label: 'Heatwave', text: 'Over 30°C outside. Lobbies need keeping cool, not warm: the same leaks now let the heat in.' },
-  10: { key: 'blackfriday', label: 'Black Friday', text: 'The biggest crowds of the year. Half as many people again, and they want in now.' },
-  11: { key: 'xmas', label: 'Christmas windows', text: 'Shop windows are dressed for Christmas, and people stop in front of them. A bay with a window display has a crowd standing in its way.' },
-};
-const eventOf = month => EVENTS[((month % 12) + 12) % 12] || null;
-// which bays get a Christmas window display
-const xmasBays = n => n <= 1 ? [] : n === 2 ? [1] : n === 3 ? [0] : [0, n - 1];
-
-// Twists: each one breaks a different stock answer
-const TWISTS = {
-  tight:    { label: 'Tight budget', text: 'A small budget, and the owner has ruled out a revolving door.' },
-  fragile:  { label: 'Fragile guests', text: 'Half the customers are older and bruise easily. One bump and you\'re in the local paper.' },
-  narrow:   { label: 'Narrow frontage', text: 'The shopfront is one bay wide. Whatever you fit has to do everything.' },
-  wind:     { label: 'Windy corner', text: 'A gale funnels down the street. Wide mouths and open doors let it straight in.' },
-  surge:    { label: '9am surge', text: 'Everyone arrives at once, and late staff who ride the door round again get reported to HR.' },
-  listed:   { label: 'Listed building', text: 'The brass revolving door in the centre bay is listed. You can\'t touch it, only work around it.' },
-  stepfree: { label: 'Step-free', text: 'Wheelchair users, prams and delivery trolleys must be able to get in. Standard revolving doors won\'t take them.' },
-  bikes:    { label: 'Cycle commuters', text: 'People wheel their bikes in from the street. A bike won\'t go through a revolving door, and turning cyclists away annoys the client.' },
-  rain:     { label: 'Rainy day', text: 'Umbrellas up: everyone takes more room and moves a little slower.' },
-  drill:    { label: 'Fire drill', text: 'After the rush the fire officer sounds the alarm, and the lobby has to empty fast. Revolving doors fold flat, every door becomes an exit, and crowds jam at narrow ones.' },
-  nofire:   { label: 'Fire officer', text: 'No swing doors: they jam in a crush.' },
-  cold:     { label: 'Cold snap', text: 'Freezing outside. Keep the lobby warm.' },
-};
-// a station only gets the twists that make sense at a gate line
-const STATION_POOL = ['fragile', 'stepfree', 'rain', 'surge', 'bikes', 'narrow'];
-const TWIST_POOL = ['tight', 'fragile', 'narrow', 'wind', 'surge', 'listed', 'stepfree', 'nofire', 'cold', 'bikes', 'rain', 'drill'];
-// twists only offered to firms with the right research
-const TWIST_REQ = { drill: t => t.pillars, wind: t => t.mouth };
-// Pairs that leave no workable door. Some become possible with R&D: those are
-// "specialist" jobs that only firms with the right tech get offered, at a premium.
-const CONFLICTS = [
-  ['tight', 'surge'], ['tight', 'listed'], ['narrow', 'listed'], ['narrow', 'stepfree'], ['narrow', 'surge'],
-  ['tight', 'cold', t => t.vestibule], ['tight', 'wind'],
-  ['stepfree', 'cold', t => t.wide || t.vestibule], ['stepfree', 'wind', t => t.wide],
-  ['bikes', 'cold', t => t.vestibule], ['bikes', 'wind', t => t.vestibule], ['bikes', 'tight'],
-];
-const clashes = (list, t, tech = {}) => CONFLICTS.some(([a, b, ok]) => ((a === t && list.includes(b)) || (b === t && list.includes(a))) && !(ok && ok(tech)));
-// twists that only specialist firms are offered (others in TWIST_REQ just need a basic tool researched)
-const SPECIAL_TWISTS = ['drill'];
-const isSpecialist = list => CONFLICTS.some(([a, b, ok]) => ok && list.includes(a) && list.includes(b)) || list.some(t => SPECIAL_TWISTS.includes(t));
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const SEASON_T = [3, 4, 7, 10, 14, 17, 19, 18, 15, 11, 7, 4];
-const TEST_SECONDS = 40;
-const SIM_DT = 1 / 60;                  // shared by the surveyor and the in-game test
-const RUN_SECONDS = TEST_SECONDS + 6;   // arrivals stop at 40s; the last people get 6s to clear the door
-const PRICE = { revolve: 12000, wingExtra: 1500, bigCore: 2000, padded: 1500, sensor: 2000, wide: 8000, swing: 2500, slider: 6000, curtain: 3500, vestibule: 5000, pillar: 1500, lanes: 800, gates: 7000, gatesWide: 9000, tidal: 2500 };
-
-function slotCost(s) {
+export function slotCost(s) {
   if (!s || s.type === 'wall') return 0;
   const extras = (s.pillar ? PRICE.pillar : 0);
   if (s.type === 'gates') return (s.wide ? PRICE.gatesWide : PRICE.gates) + (s.flow === 'auto' ? PRICE.tidal : 0);
   if (s.type === 'revolve') return extras + PRICE.revolve + (s.wide ? PRICE.wide : 0) + Math.max(0, s.wings - 3) * PRICE.wingExtra + (s.core >= 0.3 ? PRICE.bigCore : 0) + (s.padded ? PRICE.padded : 0) + (s.sensor ? PRICE.sensor : 0);
   return extras + (s.type === 'swing' ? PRICE.swing : PRICE.slider) + (s.curtain ? PRICE.curtain : 0) + (s.vestibule ? PRICE.vestibule : 0) + (s.lanes ? PRICE.lanes : 0);
 }
-function designCost(slots, existing) {
+export function designCost(slots, existing) {
   let c = 0;
   slots.forEach((s, i) => {
     const old = existing && existing[i];
@@ -208,7 +41,7 @@ function designCost(slots, existing) {
   return c;
 }
 // a position-free fingerprint of a design, for the novelty check
-function designSig(slots) {
+export function designSig(slots) {
   return slots.filter(s => s.type !== 'wall').map(s => {
     let t = s.type[0];
     if (s.flow && s.flow !== 'both') t += s.flow[0];
@@ -222,14 +55,14 @@ function designSig(slots) {
     return t;
   }).sort().join(',');
 }
-function violatesRules(contract, slots) {
+export function violatesRules(contract, slots) {
   const r = contract.rules || {};
   if (r.forbid && slots.some(s => r.forbid.includes(s.type))) return true;
   if (r.fixed) for (const [i, f] of Object.entries(r.fixed)) if (slots[i].type !== f.type) return true;
   return false;
 }
 
-function makeContract(kindKey, tier, month, seed, opts = {}) {
+export function makeContract(kindKey, tier, month, seed, opts = {}) {
   const k = KINDS[kindKey], rng = makeRng(seed * 7919 + 13), tech = opts.tech || {};
   const first = !!opts.first;
   const scale = first ? 1 : (1 + 0.1 * Math.min(tier, 6)) * (0.88 + rng() * 0.24);
@@ -247,7 +80,7 @@ function makeContract(kindKey, tier, month, seed, opts = {}) {
     const CB = { busier: 'surge', older: 'fragile', cold: 'cold', safety: 'fragile', access: 'stepfree' };
     if (opts.callback && CB[opts.callback] && !(k.station && opts.callback === 'cold')) twists.push(CB[opts.callback]);
     const n = tier >= 3 ? 2 : 1;
-    const pool = (k.station ? STATION_POOL : k.towers ? ['fragile', 'stepfree', 'rain', 'wind', 'bikes'] : TWIST_POOL).filter(t => !twists.includes(t) && (!TWIST_REQ[t] || TWIST_REQ[t](tech)));
+    const pool = (BUILDING[kindKey].twistPool || TWIST_POOL).filter(t => !twists.includes(t) && (!TWIST_REQ[t] || TWIST_REQ[t](tech)));
     while (twists.length < n + (opts.callback ? 1 : 0) && pool.length) {
       const t = pool.splice(Math.floor(rng() * pool.length), 1)[0];
       if (!clashes(twists, t, tech)) twists.push(t);
@@ -365,52 +198,29 @@ function makeContract(kindKey, tier, month, seed, opts = {}) {
   return c;
 }
 
-function worldCfg(contract, slots, tech) {
+export function worldCfg(contract, slots, tech) {
   const t = tech || {};
   return { slots, crowd: contract.crowd, outsideTemp: contract.outsideTemp, duration: TEST_SECONDS, seed: contract.seed,
     heater: t.heat2 ? 2.4 : t.heat ? 1.6 : 1, wind: contract.wind || 0, stack: contract.stack || 0, seals: !!t.seals, rain: !!contract.rain, site: contract.site, drill: contract.drill || null };
 }
 // how long a test runs: the 40s rush plus time for the last people to clear, or a fire drill's evacuation window
-const runSeconds = contract => contract.drill ? contract.drill.at + 35 : RUN_SECONDS;
+export const runSeconds = contract => contract.drill ? contract.drill.at + 35 : RUN_SECONDS;
 // shared by the surveyor and the in-game test, so both stop at exactly the same step
-const testOver = (contract, w) => !!contract.drill && w.stats.evac != null;
-function runHeadless(contract, slots, unlocks, dt = SIM_DT) {
+export const testOver = (contract, w) => !!contract.drill && w.stats.evac != null;
+export function runHeadless(contract, slots, unlocks, dt = SIM_DT) {
   const w = new World(worldCfg(contract, slots, unlocks));
   const n = Math.round(runSeconds(contract) / dt);
   for (let i = 0; i < n && !testOver(contract, w); i++) w.step(dt);
   return { ...w.stats, wait: w.waitP90(), minTemp: w.minTemp, maxTemp: w.maxTemp, evac: w.stats.evac == null ? (contract.drill ? 99 : null) : w.stats.evac };
 }
-function meetsSoft(contract, r) {
+export function meetsSoft(contract, r) {
   const g = contract.goals;
   return r.bumps <= g.bumps && (g.minTemp == null || r.minTemp >= g.minTemp) && (g.maxTemp == null || r.maxTemp <= g.maxTemp) && (g.wait == null || r.wait <= g.wait) && (!g.access || r.accessFail === 0) && (!g.bikes || r.bikeFail === 0) && (g.laps == null || r.laps <= g.laps)
     && (g.evac == null || r.evac <= g.evac);
 }
 
-function stationCandidates(contract, unlocks) {
-  const n = contract.slots, out = [], wall = { type: 'wall' };
-  const G = (flow, o = {}) => ({ type: 'gates', flow, wide: false, ...o });
-  const needWide = contract.goals.access || contract.goals.bikes;
-  const staffs = unlocks.doorman ? [false, true] : [false];
-  const sets = [];
-  for (let k = Math.max(1, n - 1); k <= n; k++) {
-    const pats = [Array(k).fill('both')];
-    if (unlocks.tidal) pats.push(Array(k).fill('auto'));
-    if (k >= 2) { pats.push([...Array(k - 1).fill('in'), 'out']); pats.push(['in', ...Array(k - 2).fill('both'), 'out']); }
-    if (k >= 3) pats.push(['in', 'out', 'out'], ['in', 'in', 'both']);
-    for (const pat of pats) sets.push(pat.slice(0, k));
-  }
-  for (const pat of sets) for (const staff of staffs) for (const wideAt of needWide ? [Math.floor(pat.length / 2)] : [-1, Math.floor(pat.length / 2)]) {
-    const items = pat.map((f, i) => G(f, { wide: i === wideAt, doorman: staff || undefined }));
-    const s = Array.from({ length: n }, () => ({ ...wall }));
-    const idx = items.length === n ? items.map((_, i) => i) : items.length === 1 ? [Math.floor((n - 1) / 2)] : items.map((_, i) => Math.round(i * (n - 1) / (items.length - 1)));
-    items.forEach((it, i) => { s[idx[i]] = it; });
-    out.push(s);
-  }
-  const seen = new Set();
-  return out.filter(s => { const key = JSON.stringify(s); if (seen.has(key)) return false; seen.add(key); return true; });
-}
-function candidates(contract, unlocks) {
-  if (contract.landmark === 'station') return stationCandidates(contract, unlocks);
+export function candidates(contract, unlocks) {
+  if (BUILDING[contract.kind].candidates) return BUILDING[contract.kind].candidates(contract, unlocks);   // e.g. the station's gate lines
   const n = contract.slots, out = [], tw = contract.twists || [];
   const wall = { type: 'wall' };
   const cold = contract.goals.minTemp != null || contract.goals.maxTemp != null;   // either way, leaky doors need help
@@ -515,12 +325,12 @@ function candidates(contract, unlocks) {
 }
 
 // several surveys can run at once; the one the player is waiting on goes first
-const GATE = { focus: null, active: new Set() };
-async function yieldStep(job) {
+export const GATE = { focus: null, active: new Set() };
+export async function yieldStep(job) {
   await new Promise(res => setTimeout(res, 0));
   while (GATE.focus != null && GATE.focus !== job && GATE.active.has(GATE.focus)) await new Promise(res => setTimeout(res, 15));
 }
-async function solveContract(contract, unlocks, onProgress) {
+export async function solveContract(contract, unlocks, onProgress) {
   const cands = candidates(contract, unlocks);
   const results = [];
   for (let i = 0; i < cands.length; i++) {
@@ -591,19 +401,18 @@ async function solveContract(contract, unlocks, onProgress) {
   return contract;
 }
 
-if (typeof module !== 'undefined') module.exports = { buildSiteTowers: null, STATION_POOL, stationCandidates, EVENTS, eventOf, xmasBays, buildSite, runSeconds, testOver, TWIST_REQ, KINDS, TWISTS, TWIST_POOL, CONFLICTS, MONTHS, makeContract, worldCfg, isSpecialist, solveContract, designCost, designSig, slotCost, candidates, runHeadless, violatesRules, TEST_SECONDS, PRICE };
 
 // Make a contract and solve it, retrying when the result would be a bad puzzle:
 //  - unfair: nothing passes without watering the goals down -> reroll the twists
 //  - free: the existing doors already pass (a callback you fix for £0) -> add a counter-twist
 //  - repeat: the best answer matches one the player used recently -> add a counter-twist
-async function generateSolved(contract, unlocks, recent, onProgress) {
+export async function generateSolved(contract, unlocks, recent, onProgress) {
   const job = contract.job != null ? contract.job : contract.seed;
   GATE.active.add(job);
   try { return await generateSolvedInner(contract, unlocks, recent, onProgress, job); }
   finally { GATE.active.delete(job); }
 }
-async function generateSolvedInner(contract, unlocks, recent, onProgress, job) {
+export async function generateSolvedInner(contract, unlocks, recent, onProgress, job) {
   contract.job = job;
   let c = contract, best = null;
   const MAX = 3;
@@ -645,4 +454,4 @@ async function generateSolvedInner(contract, unlocks, recent, onProgress, job) {
   if (c.broken) throw new Error('survey failed');
   return c;
 }
-if (typeof module !== 'undefined') { module.exports.generateSolved = generateSolved; module.exports.GATE = GATE; }
+export { KINDS, buildSite };

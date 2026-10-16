@@ -1,3 +1,5 @@
+# Browser smoke test: plays the built game like a careful player for N months and reports par failures and JS errors.
+# usage: python3 tools/bot.py [ROUNDS] [--dev]   (default 48 rounds against dist/index.html; --dev serves src/ over http)
 from playwright.sync_api import sync_playwright
 import pathlib, json, time, sys
 LOG=[]
@@ -65,10 +67,17 @@ with sync_playwright() as p:
     b=p.chromium.launch()
     pg=b.new_page(viewport={'width':390,'height':800},device_scale_factor=1)
     errs=[]; pg.on('pageerror',lambda e:errs.append(str(e))); pg.on('console',lambda m: m.type=='error' and 'TUNNEL' not in m.text and errs.append(m.text))
-    pg.goto('file://'+str(pathlib.Path('index.html').resolve()))
+    ROOT = pathlib.Path(__file__).resolve().parent.parent
+    if '--dev' in sys.argv:
+        import http.server, threading, functools
+        srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(ROOT)))
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        pg.goto(f'http://127.0.0.1:{srv.server_address[1]}/src/shell.html')
+    else:
+        pg.goto('file://'+str(ROOT / 'dist' / 'index.html'))
     pg.wait_for_timeout(300); pg.click('#iSkip' if pg.query_selector('#iSkip') else '#iGo'); pg.wait_for_timeout(300)
     pg.click('[data-view="list"]'); pg.wait_for_timeout(300)
-    ROUNDS = int(sys.argv[1]) if len(sys.argv) > 1 else 48
+    ROUNDS = next((int(a) for a in sys.argv[1:] if a.isdigit()), 48)
     for rnd in range(ROUNDS):
         st=state(pg)
         avail=[q for q in st['plots'] if q['status'] in ('open','callback')]

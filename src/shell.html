@@ -205,6 +205,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
 .tag.more { background: transparent; border: 1px solid var(--line); color: var(--mute); }
 .wsbar h2 { font-family: var(--f-display); font-weight: 400; font-size: 20px; margin: 0; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stage { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: #0e1116; }
+/* the job screen's street runs the full width of the window, past the column; the frontage stays centred */
+.stage { width: 100vw; margin-left: calc(50% - 50vw); border-radius: 0; border-left: 0; border-right: 0; }
+html { overflow-x: clip; }
 .stage canvas { display: block; width: 100%; touch-action: manipulation; }
 .hud { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
 .chip { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 5px 6px; min-width: 0; }
@@ -258,11 +261,11 @@ input[type=range] { width: 100%; accent-color: var(--brass); height: 28px; margi
       <div class="stat"><span>Cash</span><b id="sCash">£20,000</b></div>
       <div class="stat"><span>Rep</span><b id="sRep">0★</b></div>
       <div class="stat"><span>Month</span><b id="sMonth">Oct 26</b></div>
-      <button class="stat fsbtn" type="button" id="fsBtn" aria-label="Full screen" title="Full screen"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 8V3h5M12 3h5v5M17 12v5h-5M8 17H3v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <button class="stat fsbtn" type="button" id="fsBtn" aria-label="Full screen" title="Full screen" hidden><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path id="fsIcon" d="M3 8V3h5M12 3h5v5M17 12v5h-5M8 17H3v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
     </div>
   </div>
   <div class="streettabs seg two" id="streetTabs" hidden></div>
-  <div class="secthead"><h2 id="streetTitle">High Street</h2><span id="incomeLine" style="flex:1;text-align:right">No contracts fitted yet</span><button class="fsbtn" type="button" id="fsBtn" aria-label="Full screen" title="Full screen" hidden><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path id="fsIcon" d="M3 8V3h5M12 3h5v5M17 12v5h-5M8 17H3v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+  <div class="secthead"><h2 id="streetTitle">High Street</h2><span id="incomeLine" style="flex:1;text-align:right">No contracts fitted yet</span></div>
   <div class="cal" id="cal" aria-label="Calendar"></div>
   <div class="seg two viewtabs" id="viewTabs" role="group" aria-label="View"></div>
   <div class="mapbox" id="map"></div>
@@ -297,11 +300,7 @@ input[type=range] { width: 100%; accent-color: var(--brass); height: 28px; margi
 <div class="toast" id="toast"></div>
 
 <div class="coach" id="coach" hidden><div class="ring" id="coachRing"></div><div class="bubble" id="coachBubble" role="dialog" aria-live="polite"><b id="coachTitle"></b><p id="coachText"></p><div class="cbtns"><button class="ghost small" type="button" id="coachSkip">Skip the walk-through</button><button class="go small" type="button" id="coachOk">Got it</button></div></div></div>
-<script id="core">
-/*ENGINE*/
-/*GEN*/
-</script>
-<script>
-/*UI*/
-</script>
+<!--CORE-->
+<!--APP-->
+<script type="module" src="ui/main.js"></script>
 

@@ -1,0 +1,21 @@
+{
+  "name": "door-duty-game",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Door Duty Contractors: a crowd-science tycoon/puzzle game",
+  "scripts": {
+    "dev": "echo 'open http://localhost:8080/src/shell.html' && python3 -m http.server 8080",
+    "build": "node tools/build.mjs",
+    "watch": "node tools/build.mjs --watch",
+    "serve": "python3 -m http.server 8080 -d dist",
+    "test": "node --test test/*.test.js",
+    "test:full": "GOLDEN=full node --test test/*.test.js",
+    "sim": "node tools/sim.mjs",
+    "bot": "python3 tools/bot.py",
+    "record-golden": "node tools/record-golden.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
