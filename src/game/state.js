@@ -2,7 +2,7 @@
 import { PLOTS } from '../content/buildings/index.js';
 
 export const SAVE_KEY = 'doorduty-tycoon-v2';
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 const newPlot = (p, i) => ({ ...p, i, status: 'locked', contract: null, install: null, stars: 0, fee: 0, tier: 0 });
 
@@ -29,6 +29,8 @@ export function migrate(S) {
   if (S.monthJobs == null) S.monthJobs = 0;
   // v5: moving premises takes time ({ to, left } while it's happening)
   if (S.moving === undefined) S.moving = null;
+  // v6: sliding doors got their own letter in design signatures (l, not s): forget the old recent answers
+  if ((S.version || 0) < 6) S.recent = [];
   S.version = SAVE_VERSION;
   return S;
 }

@@ -48,7 +48,7 @@
    "laps": null,
    "through": 54
   },
-  "par": "r4,s",
+  "par": "l,r4",
   "cost": 6000,
   "fee": 11500,
   "budget": 12000,
@@ -78,7 +78,7 @@
    "evac": 11,
    "through": 51
   },
-  "par": "siV,soV",
+  "par": "liV,loV",
   "cost": 29000,
   "fee": 51500,
   "budget": 46500,
@@ -138,7 +138,7 @@
    "laps": 1,
    "through": 61
   },
-  "par": "s",
+  "par": "l",
   "cost": 9500,
   "fee": 16500,
   "budget": 17500,
@@ -196,7 +196,7 @@
    "laps": null,
    "through": 46
   },
-  "par": "r4,s",
+  "par": "l,r4",
   "cost": 6000,
   "fee": 11500,
   "budget": 12000,
@@ -226,7 +226,7 @@
    "evac": 18,
    "through": 46
   },
-  "par": "s",
+  "par": "l",
   "cost": 9500,
   "fee": 20500,
   "budget": 11000,
@@ -257,7 +257,7 @@
    "evac": 19,
    "through": 44
   },
-  "par": "sV",
+  "par": "lV",
   "cost": 14500,
   "fee": 28000,
   "budget": 17000,
@@ -287,7 +287,7 @@
    "laps": 1,
    "through": 51
   },
-  "par": "s",
+  "par": "l",
   "cost": 9500,
   "fee": 16500,
   "budget": 17500,
@@ -316,7 +316,7 @@
    "laps": null,
    "through": 78
   },
-  "par": "s",
+  "par": "l",
   "cost": 6000,
   "fee": 11500,
   "budget": 12000,
@@ -346,7 +346,7 @@
    "evac": 13,
    "through": 69
   },
-  "par": "sX",
+  "par": "lX",
   "cost": 11000,
   "fee": 22500,
   "budget": 11000,
@@ -406,7 +406,7 @@
    "laps": 1,
    "through": 76
   },
-  "par": "r4,s",
+  "par": "l,r4",
   "cost": 9500,
   "fee": 16500,
   "budget": 17500,
@@ -493,7 +493,7 @@
    "laps": null,
    "through": 97
   },
-  "par": "sV",
+  "par": "lV",
   "cost": 14500,
   "fee": 28000,
   "budget": 25000,
@@ -523,7 +523,7 @@
    "laps": null,
    "through": 113
   },
-  "par": "sV",
+  "par": "lV",
   "cost": 14500,
   "fee": 28000,
   "budget": 17000,
@@ -553,7 +553,7 @@
    "laps": 1,
    "through": 117
   },
-  "par": "s",
+  "par": "l",
   "cost": 9500,
   "fee": 16500,
   "budget": 17500,
@@ -610,7 +610,7 @@
    "laps": null,
    "through": 81
   },
-  "par": "s",
+  "par": "l",
   "cost": 9500,
   "fee": 15000,
   "budget": 11000,
@@ -640,7 +640,7 @@
    "laps": null,
    "through": 76
   },
-  "par": "sV,sV",
+  "par": "lV,lV",
   "cost": 29000,
   "fee": 51500,
   "budget": 46500,
@@ -670,7 +670,7 @@
    "laps": null,
    "through": 94
   },
-  "par": "sV,sV",
+  "par": "lV,lV",
   "cost": 29000,
   "fee": 51500,
   "budget": 46500,
@@ -729,7 +729,7 @@
    "laps": null,
    "through": 48
   },
-  "par": "r4S,r4S,sB",
+  "par": "lB,r4S,r4S",
   "cost": 33000,
   "fee": 45500,
   "budget": 52500,
@@ -759,7 +759,7 @@
    "bikes": true,
    "through": 71
   },
-  "par": "r4,s",
+  "par": "l,r4",
   "cost": 9500,
   "fee": 15000,
   "budget": 17500,
@@ -790,7 +790,7 @@
    "bikes": true,
    "through": 80
   },
-  "par": "sV",
+  "par": "lV",
   "cost": 14500,
   "fee": 28000,
   "budget": 25000,
@@ -820,7 +820,7 @@
    "bikes": true,
    "through": 68
   },
-  "par": "sV",
+  "par": "lV",
   "cost": 14500,
   "fee": 28000,
   "budget": 25000,
@@ -850,7 +850,7 @@
    "laps": 1,
    "through": 86
   },
-  "par": "s",
+  "par": "l",
   "cost": 9500,
   "fee": 16500,
   "budget": 17500,
@@ -937,7 +937,7 @@
    "laps": null,
    "through": 132
   },
-  "par": "s",
+  "par": "l",
   "cost": 9500,
   "fee": 16500,
   "budget": 11000,
@@ -967,7 +967,7 @@
    "laps": null,
    "through": 134
   },
-  "par": "sV,sV",
+  "par": "lV,lV",
   "cost": 29000,
   "fee": 43000,
   "budget": 46500,
@@ -997,7 +997,7 @@
    "laps": 1,
    "through": 151
   },
-  "par": "s,s",
+  "par": "l,l",
   "cost": 19000,
   "fee": 29500,
   "budget": 31500,
@@ -1205,7 +1205,7 @@
    "laps": 1,
    "through": 83
   },
-  "par": "r4,s,s",
+  "par": "l,l,r4",
   "cost": 19000,
   "fee": 27500,
   "budget": 31500,
@@ -1234,7 +1234,7 @@
    "laps": null,
    "through": 76
   },
-  "par": "s",
+  "par": "l",
   "cost": 9500,
   "fee": 16500,
   "budget": 17500,
@@ -1265,7 +1265,7 @@
    "evac": 25,
    "through": 66
   },
-  "par": "sVX",
+  "par": "lVX",
   "cost": 16000,
   "fee": 30500,
   "budget": 17000,
@@ -1381,7 +1381,7 @@
    "bikes": true,
    "through": 87
   },
-  "par": "sV,sV",
+  "par": "lV,lV",
   "cost": 29000,
   "fee": 51500,
   "budget": 46500,
@@ -1412,7 +1412,7 @@
    "evac": 17,
    "through": 63
   },
-  "par": "sV",
+  "par": "lV",
   "cost": 14500,
   "fee": 28000,
   "budget": 17000,
@@ -1442,7 +1442,7 @@
    "laps": 1,
    "through": 77
   },
-  "par": "s,s",
+  "par": "l,l",
   "cost": 19000,
   "fee": 29500,
   "budget": 31500,
@@ -1497,7 +1497,7 @@
    "laps": null,
    "through": 112
   },
-  "par": "s,s",
+  "par": "l,l",
   "cost": 12000,
   "fee": 18000,
   "budget": 21000,
@@ -1526,7 +1526,7 @@
    "laps": null,
    "through": 93
   },
-  "par": "s",
+  "par": "l",
   "cost": 9500,
   "fee": 16500,
   "budget": 17500,
@@ -1556,7 +1556,7 @@
    "laps": 1,
    "through": 114
   },
-  "par": "sV,sV",
+  "par": "lV,lV",
   "cost": 29000,
   "fee": 51500,
   "budget": 46500,
@@ -1586,7 +1586,7 @@
    "laps": 1,
    "through": 109
   },
-  "par": "r4,s",
+  "par": "l,r4",
   "cost": 9500,
   "fee": 16500,
   "budget": 17500,
@@ -1615,7 +1615,7 @@
    "laps": null,
    "through": 27
   },
-  "par": "r4S,sB",
+  "par": "lB,r4S",
   "cost": 19500,
   "fee": 28000,
   "budget": 32500,
@@ -1643,7 +1643,7 @@
    "laps": null,
    "through": 53
   },
-  "par": "s",
+  "par": "l",
   "cost": 9500,
   "fee": 15000,
   "budget": 17500,
@@ -1673,7 +1673,7 @@
    "laps": null,
    "through": 53
   },
-  "par": "sV",
+  "par": "lV",
   "cost": 14500,
   "fee": 28000,
   "budget": 25000,
@@ -1703,7 +1703,7 @@
    "bikes": true,
    "through": 58
   },
-  "par": "sV",
+  "par": "lV",
   "cost": 14500,
   "fee": 28000,
   "budget": 25000,
@@ -1733,7 +1733,7 @@
    "laps": 1,
    "through": 59
   },
-  "par": "s",
+  "par": "l",
   "cost": 9500,
   "fee": 16500,
   "budget": 17500,
@@ -1790,7 +1790,7 @@
    "through": 127,
    "wait": 11
   },
-  "par": "s,s",
+  "par": "l,l",
   "cost": 19000,
   "fee": 31500,
   "budget": 31500,
@@ -1821,7 +1821,7 @@
    "through": 111,
    "wait": 13
   },
-  "par": "sV",
+  "par": "lV",
   "cost": 14500,
   "fee": 27500,
   "budget": 25000,
@@ -1853,7 +1853,7 @@
    "through": 98,
    "wait": 18.5
   },
-  "par": "sV",
+  "par": "lV",
   "cost": 14500,
   "fee": 35000,
   "budget": 25000,
@@ -1913,7 +1913,7 @@
    "laps": 1,
    "through": 70
   },
-  "par": "r4,r4,sB",
+  "par": "lB,r4,r4",
   "cost": 33000,
   "fee": 45500,
   "budget": 52500,
@@ -1942,7 +1942,7 @@
    "laps": null,
    "through": 93
   },
-  "par": "s,s",
+  "par": "l,l",
   "cost": 19000,
   "fee": 27500,
   "budget": 31500,
@@ -1971,7 +1971,7 @@
    "laps": null,
    "through": 87
   },
-  "par": "s",
+  "par": "l",
   "cost": 9500,
   "fee": 16500,
   "budget": 17500,
@@ -2002,7 +2002,7 @@
    "bikes": true,
    "through": 85
   },
-  "par": "sV",
+  "par": "lV",
   "cost": 14500,
   "fee": 28000,
   "budget": 25000,
@@ -2032,7 +2032,7 @@
    "laps": 1,
    "through": 87
   },
-  "par": "r4,s,s",
+  "par": "l,l,r4",
   "cost": 19000,
   "fee": 29500,
   "budget": 31500,
@@ -2086,7 +2086,7 @@
    "laps": 1,
    "through": 104
   },
-  "par": "s",
+  "par": "l",
   "cost": 9500,
   "fee": 16500,
   "budget": 17500,
@@ -2173,7 +2173,7 @@
    "laps": null,
    "through": 49
   },
-  "par": "s",
+  "par": "l",
   "cost": 9500,
   "fee": 15000,
   "budget": 17500,
@@ -2274,7 +2274,7 @@
    "evac": 12,
    "through": 76
   },
-  "par": "s,s",
+  "par": "l,l",
   "cost": 19000,
   "fee": 32000,
   "budget": 31500,

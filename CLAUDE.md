@@ -113,7 +113,6 @@ Other callbacks: paradox calls when research finishes (`content/paradoxes.js`), 
 ## Known issues / TODO
 
 The build plan is `docs/PLAN.md`: what's next, the tests each phase must pass, and the decisions already made.
-- `designSig` uses a door type's first letter, so swing and sliding doors share `s`: the anti-repeat rule can't tell them apart (Phase 1).
 
 - Real callbacks (inspections, the rival, paradox calls) still escalate if the doors already cope (generateSolvedInner); street-change checks don't, by design.
 - A chained level's survey takes 5 to 20 seconds (it improves the route one change at a time, not every combination).

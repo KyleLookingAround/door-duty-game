@@ -43,10 +43,12 @@ export function designCost(slots, existing) {
   return c;
 }
 // a position-free fingerprint of a design, for the novelty check
+// one letter per door type: swing and sliding doors both start with s, so sliders are l
+const SIG_CODE = { revolve: 'r', swing: 's', slider: 'l', gates: 'g' };
 export function designSig(slots) {
   if (!Array.isArray(slots)) return stageSig(slots);
   return slots.filter(s => s.type !== 'wall').map(s => {
-    let t = s.type[0];
+    let t = SIG_CODE[s.type] || s.type[0];
     if (s.flow && s.flow !== 'both') t += s.flow[0];
     if (s.type === 'gates') t += s.wide ? 'W' : '';
     if (s.type === 'revolve') t += (s.wide ? 'W' : '') + s.wings + (s.core >= 0.3 ? 'C' : '') + (s.mouth <= 32 ? 'N' : '') + (s.rpm <= 3.5 ? 'S' : '') + (s.sensor ? 'P' : '');
@@ -488,7 +490,8 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
     try { await solveContract(c, unlocks, f => onProgress && onProgress(f, attempt)); }
     catch (err) { c.relaxed = true; c.par = c.par || { cost: 0, slots: [], through: 0, sig: '' }; c.broken = true; }
     const free = c.par.cost === 0 && !!c.existing;
-    const repeat = !c.first && recent && recent.includes(c.par.sig);
+    // first visits count too: two new clients in a row shouldn't have the same answer either
+    const repeat = !!recent && recent.includes(c.par.sig);
     if (!c.relaxed && (!best || best.relaxed || best.free || best.repeat)) best = c;
     c.free = free; c.repeat = repeat;
     if (!c.relaxed && !free && !repeat) return c;
@@ -520,8 +523,11 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
     } else {
       const gapOnly = !c.par.sig.includes('r');
       const banned = c.existing ? ['listed', 'narrow'] : [];
-      const counters = gapOnly ? ['cold', 'wind'] : ['surge', 'fragile', 'tight', 'stepfree', 'wind'];
-      const ct = (c.opts && c.opts.tech) || unlocks, allowed = t => !c.twists.includes(t) && !banned.includes(t) && !clashes(c.twists, t, ct) && (!TWIST_REQ[t] || TWIST_REQ[t](ct));
+      // a new firm's first summer stays warm (see makeContract): no cold or gales, so the cheap open doors
+      // are beaten with a surge, step-free access or cyclists instead
+      const firstSummer = c.month < 12 && SEASON_T[c.month % 12] >= 12;
+      const counters = gapOnly ? (firstSummer ? ['surge', 'stepfree', 'bikes'] : ['cold', 'wind']) : ['surge', 'fragile', 'tight', 'stepfree', 'wind'];
+      const ct = (c.opts && c.opts.tech) || unlocks, allowed = t => !c.twists.includes(t) && !banned.includes(t) && !(firstSummer && (t === 'cold' || t === 'wind')) && !clashes(c.twists, t, ct) && (!TWIST_REQ[t] || TWIST_REQ[t](ct));
       let pool = counters.filter(allowed);
       if (!pool.length) pool = TWIST_POOL.filter(allowed);
       if (!pool.length) break;

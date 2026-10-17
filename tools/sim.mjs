@@ -7,7 +7,7 @@
 // usage: node tools/sim.mjs [months=24] [seed=1] [--quiet]
 import { freshState } from '../src/game/state.js';
 import { refreshPlots, settleCheck } from '../src/game/plots.js';
-import { generateSolved, runHeadless } from '../src/game/contracts.js';
+import { generateSolved, runHeadless, designSig } from '../src/game/contracts.js';
 import { grade, signOff, startResearch, service, hire, movePremises } from '../src/game/jobs.js';
 import { endMonth } from '../src/game/month.js';
 import { rep, prem, techOf, feeOf, charge, serviceCost, plotNeeds, jobsLeft, jobsPerMonth } from '../src/game/economy.js';
@@ -45,6 +45,7 @@ export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth 
       const r = runHeadless(c, c.par.slots, techOf(S));
       const g = grade(S, c, c.par.slots, r);
       if (!g.pass) { tally.parFails.push(`${MONTHS[S.month % 12]} ${S.year} ${p.name}: ${g.hint}`); continue; }
+      if ((S.recent || []).includes(designSig(c.par.slots))) tally.repeats = (tally.repeats || 0) + 1;   // the same answer as a recent job
       signOff(S, p, c, c.par.slots, g.stars, r);
       tally.jobs++;
       if (c.stage) { tally.inside = tally.inside || {}; const k = c.chain ? 'chain:' + c.chain.join('+') : c.stage; tally.inside[k] = (tally.inside[k] || 0) + 1; }
@@ -83,7 +84,7 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
   const t0 = Date.now();
   const { S, tally } = await simulate({ months: nums[0] || 24, seed: nums[1] || 1, log: quiet ? () => {} : console.log });
   console.log(`\ninside jobs: ${JSON.stringify(tally.inside || {})}`);
-  console.log(`jobs that waited for the crews: ${tally.waiting || 0}`);
+  console.log(`jobs that waited for the crews: ${tally.waiting || 0} · jobs that repeated a recent answer: ${tally.repeats || 0} of ${tally.jobs}`);
   console.log(`enquiries: ${tally.asked || 0} asked · ${tally.won || 0} ready in time · ${tally.lapsed || 0} lapsed · ${tally.quiet || 0} months with nothing on the table`);
   for (const f of tally.failed || []) console.log(`SURVEY FAILED: ${f.name} (${f.kind}) tier ${f.tier} month ${f.month} seed ${f.seed}: ${f.error} ${JSON.stringify(f.opts)}`);
   console.log(`\n${tally.jobs} jobs · rep ${rep(S)}★ · cash ${Math.round(S.cash)} · ${tally.coped || 0} clients coped with street changes · ${tally.calls || 0} called back · ${tally.falseAlarms} false alarms · ${tally.unsurveyable} unsurveyable · ${tally.skipped} skipped · ${((Date.now() - t0) / 1000).toFixed(0)}s`);

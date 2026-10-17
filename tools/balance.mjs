@@ -37,7 +37,7 @@ async function runTask(t) {
         rows.push({ cash: Math.round(row.cash), rep: row.rep, jobs: row.jobs, market: !!S.marketOpen, riverside: !!S.riversideOpen, research: S.research.length });
       },
     });
-    return { seed: t.seed, starts, rows, rep: rep(S), parFails: tally.parFails, failed: tally.failed || [], waiting: tally.waiting || 0, quiet: tally.quiet || 0, unlocks: Object.keys(S.unlocks).length };
+    return { seed: t.seed, starts, rows, rep: rep(S), parFails: tally.parFails, failed: tally.failed || [], waiting: tally.waiting || 0, repeats: tally.repeats || 0, jobs: tally.jobs, quiet: tally.quiet || 0, unlocks: Object.keys(S.unlocks).length };
   }
   if (t.type === 'survey') {
     const { makeContract, generateSolved } = await import('../src/game/contracts.js');
@@ -120,7 +120,7 @@ export function summarise(sims, surveys, months) {
       cash12: at(12, r => r.cash), cash24: at(24, r => r.cash),
       jobsPerMonth: +(s.rows[s.rows.length - 1].jobs / s.rows.length).toFixed(1),
       idleBenchMonths: s.rows.filter(r => r.research === 0).length,
-      quiet: s.quiet, waiting: s.waiting, parFails: s.parFails.length, failedSurveys: s.failed.length,
+      quiet: s.quiet, waiting: s.waiting, repeatShare: s.jobs ? +(s.repeats / s.jobs).toFixed(2) : 0, parFails: s.parFails.length, failedSurveys: s.failed.length,
     };
   });
   return { variety, pacing };
@@ -148,6 +148,7 @@ export function printReport(rep, base) {
   line('Months with an idle bench', f(P, 'idleBenchMonths'), B && f(B, 'idleBenchMonths'));
   line('Months with nothing on', f(P, 'quiet'), B && f(B, 'quiet'));
   line('Jobs that waited for the crews', f(P, 'waiting'), B && f(B, 'waiting'));
+  line('Share of jobs repeating a recent answer', f(P, 'repeatShare'), B && f(B, 'repeatShare'));
   line('Par failures', f(P, 'parFails'), B && f(B, 'parFails'));
   line('Surveys that failed', f(P, 'failedSurveys'), B && f(B, 'failedSurveys'));
 }
