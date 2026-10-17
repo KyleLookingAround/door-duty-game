@@ -7,7 +7,8 @@ export const EVENTS = {
   10: { key: 'blackfriday', label: 'Black Friday', text: 'The biggest crowds of the year. Half as many people again, and they want in now.' },
   11: { key: 'xmas', label: 'Christmas windows', text: 'Shop windows are dressed for Christmas, and people stop in front of them. A bay with a window display has a crowd standing in its way.' },
 };
-export const eventOf = month => EVENTS[((month % 12) + 12) % 12] || null;
+// a new firm (which starts in May) gets its first summer without a heatwave
+export const eventOf = month => { const ev = EVENTS[((month % 12) + 12) % 12] || null; return ev && ev.key === 'heatwave' && month < 12 ? null : ev; };
 // which bays get a Christmas window display
 export const xmasBays = n => n <= 1 ? [] : n === 2 ? [1] : n === 3 ? [0] : [0, n - 1];
 

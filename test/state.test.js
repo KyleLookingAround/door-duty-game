@@ -81,3 +81,44 @@ test('grading', () => {
   g = grade(S, c, design, { ...r, through: 9 });
   assert.ok(!g.pass); assert.match(g.hint, /Not enough got through/);
 });
+
+// ---- street changes: the causes of callbacks ----
+import { scheduleChange, landChange, changeWhere } from '../src/game/month.js';
+import { settleCheck } from '../src/game/plots.js';
+import { CHANGES } from '../src/content/changes.js';
+import { upkeep } from '../src/game/economy.js';
+
+test('a new firm starts in the spring, with no heatwave in its first summer', async () => {
+  const S = freshState(3);
+  assert.equal(S.month % 12, 4, 'May');
+  const { eventOf } = await import('../src/content/events.js');
+  assert.equal(eventOf(6), null, 'no heatwave in the first July');
+  assert.equal(eventOf(18).key, 'heatwave', 'but there is one the next year');
+});
+
+test('street changes go on the calendar ahead, and land on the clients they touch', () => {
+  const S = firm(21);
+  for (let k = 0; k < 20 && !(S.changes || []).length; k++) scheduleChange(S);
+  const ch = S.changes[0];
+  assert.ok(ch && ch.month === S.month + 2, 'two months ahead');
+  assert.ok(changeWhere(S, ch).length > 0);
+  // force a change on the High Street and land it
+  const busy = { key: 'busstop', month: S.month, street: 'high' };
+  const checked = landChange(S, busy);
+  assert.ok(checked.length > 0 && checked.length <= 3);
+  for (const p of checked) { assert.equal(p.status, 'checking'); assert.equal(p.reason, 'busier'); assert.equal(p.change, 'busstop'); }
+  for (const d of CHANGES) assert.ok(d.label && d.text && d.reason && d.max > 0);
+});
+
+test('a check either copes (the client remembers) or becomes a callback', () => {
+  const S = firm(22);
+  const [a, b] = S.plots.slice(0, 2);
+  a.status = b.status = 'checking'; a.change = b.change = 'busstop'; a.reason = b.reason = 'busier';
+  const pay = upkeep(S, a);
+  assert.equal(settleCheck(S, a, { existing: a.install, par: { cost: 0 } }), 'coped');
+  assert.equal(a.status, 'fitted'); assert.equal(a.coped, 1);
+  assert.ok(upkeep(S, a) > pay, 'riding out a change is worth a little more maintenance');
+  const tier = b.tier;
+  assert.equal(settleCheck(S, b, { existing: b.install, par: { cost: 5000 } }), 'call');
+  assert.equal(b.status, 'callback'); assert.equal(b.tier, tier + 1);
+});

@@ -9,7 +9,7 @@ const newPlot = (p, i) => ({ ...p, i, status: 'locked', contract: null, install:
 export function freshState(seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0) {
   return {
     version: SAVE_VERSION, upg: 1, seed: seed || 1, rng: seed || 1,
-    cash: 20000, month: 9, year: 2026, jobs: 0, unlocks: {}, log: [], recent: [], premises: 0, research: [], staff: {},
+    cash: 20000, month: 4, year: 2026, jobs: 0, unlocks: {}, log: [], recent: [], premises: 0, research: [], staff: {},
     plots: PLOTS.map(newPlot),
   };
 }

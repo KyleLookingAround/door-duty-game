@@ -71,7 +71,10 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   const k = KINDS[kindKey], rng = makeRng(seed * 7919 + 13), tech = opts.tech || {};
   const first = !!opts.first;
   const scale = first ? 1 : (1 + 0.1 * Math.min(tier, 6)) * (0.88 + rng() * 0.24);
-  let temp = first && k.hook.temp != null ? k.hook.temp : SEASON_T[month % 12] + Math.round(rng() * 5 - 3);
+  // a first visit uses its hand-picked conditions, but in the warm months it's warm (unless the hook is about cold),
+  // so a new firm starting in spring isn't fighting lobby temperatures from day one
+  const warm = SEASON_T[month % 12] >= 12 && !(k.hook.twists || []).includes('cold');
+  let temp = first && k.hook.temp != null ? (warm ? Math.max(k.hook.temp, SEASON_T[month % 12]) : k.hook.temp) : SEASON_T[month % 12] + Math.round(rng() * 5 - 3);
   let slots = k.slots;
   const mix = { ...k.mix };
   let crowdIn = k.in * scale, crowdOut = k.out * scale;
@@ -83,7 +86,7 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   if (first) twists = [...k.hook.twists];
   else {
     const CB = { busier: 'surge', older: 'fragile', cold: 'cold', safety: 'fragile', access: 'stepfree' };
-    if (opts.callback && CB[opts.callback] && !(k.station && opts.callback === 'cold')) twists.push(CB[opts.callback]);
+    if (opts.callback && CB[opts.callback] && !opts.check && !(k.station && opts.callback === 'cold')) twists.push(CB[opts.callback]);
     const n = tier >= 3 ? 2 : 1;
     const pool = (BUILDING[kindKey].twistPool || TWIST_POOL).filter(t => !twists.includes(t) && (!TWIST_REQ[t] || TWIST_REQ[t](tech)));
     while (twists.length < n + (opts.callback ? 1 : 0) && pool.length) {
@@ -106,7 +109,7 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   // cyclists need an open door: buildings that insist on a very warm lobby can't take them without draught lobbies
   if (k.comfort >= 18 && !tech.vestibule) twists = twists.filter(t => t !== 'bikes');
   // last-resort plain job: just the callback reason, nothing extra
-  if (opts.plain) twists = opts.callback ? twists.slice(0, 1) : [];
+  if (opts.plain) twists = opts.callback && !opts.check ? twists.slice(0, 1) : [];
   // narrow + listed or narrow + stepfree is impossible on one bay
   if (twists.includes('narrow') && (twists.includes('listed') || twists.includes('stepfree')) ) twists = twists.filter(t => t !== 'narrow');
 
@@ -121,7 +124,7 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
     if (t === 'tight') { c.budgetCap = 8000 + Math.min(tier, 6) * 1000 + (twists.includes('cold') ? 6000 : 0); c.rules.forbid = [...(c.rules.forbid || []), 'revolve']; }
     if (t === 'fragile') { mix.elderly = Math.max(mix.elderly || 0, 0.5); goals.bumpsCap = 0; }
     if (t === 'narrow') slots = Math.max(1, slots - 1);
-    if (t === 'wind') { c.wind = 3; temp = Math.min(temp, 4); }
+    if (t === 'wind') { c.wind = 3; if (!(first && warm)) temp = Math.min(temp, 4); }
     if (t === 'surge') { crowdIn *= 1.6; crowdOut *= 0.4; goals.laps = 1; }
     if (t === 'listed') { const mid = Math.floor((slots - 1) / 2); c.rules.fixed = { [mid]: { type: 'revolve', wings: 4, mouth: 40, core: 0.15, rpm: 4, flow: 'both' } }; }
     if (t === 'stepfree') { mix.wheel = Math.max(mix.wheel || 0, 0.06); mix.pram = Math.max(mix.pram || 0, 0.05); goals.access = true; }
@@ -153,6 +156,16 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
     if (why === 'older' || why === 'safety') mix.elderly = Math.min(0.85, Math.max(mix.elderly || 0, 0.5) + 0.12 * sev);
     if (why === 'access') { mix.wheel = Math.max(mix.wheel || 0, 0.06) + 0.03 * sev; mix.pram = Math.max(mix.pram || 0, 0.05) + 0.02 * sev; }
     if (why === 'hot') { temp = Math.max(temp, 28 + 2 * sev); c.heat = true; }
+  }
+  // a street change is a moderate shift in the client's normal day, not a full twist: doors with room to
+  // spare should ride it out
+  if (opts.check) {
+    const why = opts.callback;
+    if (why === 'busier') { crowdIn *= 1.25; crowdOut *= 1.15; }
+    if (why === 'older') mix.elderly = Math.min(0.6, (mix.elderly || 0) + 0.25);
+    if (why === 'cold') temp = Math.min(temp, SEASON_T[month % 12] - 7);
+    if (why === 'hot') { temp = Math.max(temp, 28); c.heat = true; }
+    if (why === 'access') { mix.wheel = Math.max(mix.wheel || 0, 0.05); mix.pram = Math.max(mix.pram || 0, 0.04); c.checkAccess = true; }
   }
   if (opts.existing) slots = opts.existing.length;   // a callback keeps the frontage you built
   if (k.station) slots = Math.max(slots, twists.includes('narrow') ? 2 : 3);
@@ -198,6 +211,7 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   goals.bumps = goals.bumpsCap != null ? goals.bumpsCap : Math.max(2, Math.round(arrivals * 0.05));
   delete goals.bumpsCap;
   goals.minTemp = k.comfort ? Math.max(k.comfort, temp < 12 ? 16 : 0) : (temp < 12 ? 16 : null);
+  if (c.checkAccess) goals.access = true;
   // specialist clients are fussy: they want a properly warm lobby, which needs the new tech
   if (isSpecialist(twists)) goals.minTemp = Math.max(goals.minTemp || 0, 19);
   // a station concourse is open to the air: nobody heats it
@@ -391,9 +405,15 @@ export async function solveContract(contract, unlocks, onProgress) {
   // a contract where even the best design moves a trickle is pointless: treat it as unfair
   const expected = (contract.crowd.in + contract.crowd.out) * TEST_SECONDS;
   if (topThrough < expected * 0.45) contract.relaxed = true;
-  contract.goals.through = Math.max(5, Math.floor(topThrough * (contract.landmark ? 0.9 : (contract.twists || []).includes('surge') ? 0.95 : 0.88)));
+  // a street-change check asks whether the doors still do the job, not whether they match the best layout
+  // there is: doors with room to spare should cope
+  const share = contract.opts && contract.opts.check ? 0.8 : contract.landmark ? 0.9 : (contract.twists || []).includes('surge') ? 0.95 : 0.88;
+  contract.goals.through = Math.max(5, Math.floor(topThrough * share));
+  // ...and on a check, "still does the job" means serving most of the crowd that turns up, whatever the best layout could do
+  if (contract.opts && contract.opts.check) contract.goals.through = Math.min(contract.goals.through, Math.floor(expected * 0.75));
   // on a callback the doors you already have must not be enough: raise the bar above them
-  if (contract.existing && contract.opts && contract.opts.callback) {
+  // (not on a street-change check: there the question is exactly whether the doors already cope)
+  if (contract.existing && contract.opts && contract.opts.callback && !contract.opts.check) {
     const r0 = runHeadless(contract, contract.existing, unlocks);
     const better = ok.filter(x => x.cost > 0).map(x => x.r.through);
     if (meetsSoft(contract, r0) && r0.through >= contract.goals.through) {
@@ -402,6 +422,11 @@ export async function solveContract(contract, unlocks, onProgress) {
     }
     // how the doors you already fitted do against the new brief, for the brief to show
     contract.before = { through: r0.through, bumps: r0.bumps, minTemp: +r0.minTemp.toFixed(1), maxTemp: +r0.maxTemp.toFixed(1), accessFail: r0.accessFail, laps: r0.laps };
+  }
+  // a street-change check tries the client's own doors exactly as they stand: if they still pass, that's the answer
+  if (contract.opts && contract.opts.check && contract.existing) {
+    const r0 = runHeadless(contract, contract.existing, unlocks);
+    if (meetsSoft(contract, r0)) ok = [{ slots: contract.existing, r: r0, cost: 0 }, ...ok];
   }
   let passing = ok.filter(x => x.r.through >= contract.goals.through).sort((a, b) => a.cost - b.cost);
   if (!passing.length) {
@@ -458,7 +483,7 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
     const opts = { ...(c.opts || {}) };
     // a callback the old doors already pass: turn up the client's change before trying anything else.
     // These retries don't count against MAX: severity is capped, so this loop always ends.
-    if (free && !c.relaxed && (opts.callback || c.stage) && severity < 3) {
+    if (free && !c.relaxed && (opts.callback || c.stage) && !opts.check && severity < 3) {
       severity++;
       c = makeContract(c.kind, c.tier, c.month, c.seed, { ...opts, severity }); c.job = job;
       attempt--;
@@ -466,7 +491,7 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
     }
     // still nothing to fix even at its worst: the doors genuinely beat that problem, so the client calls
     // about a different one (a cold snap, an older crowd, a busier street) instead
-    if (free && !c.relaxed && opts.callback && !c.stage && (opts.switched || 0) < 2) {
+    if (free && !c.relaxed && opts.callback && !c.stage && !opts.check && (opts.switched || 0) < 2) {
       const order = ['cold', 'older', 'busier', 'access'].filter(r => r !== opts.callback);
       const next = order[(opts.switched || 0) % order.length];
       severity = 0;
@@ -475,6 +500,7 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
       continue;
     }
     if (attempt === MAX - 1) break;
+    if (opts.check && free) break;   // a street-change check: the old setup copes, and that's the answer
     if (c.stage && !c.relaxed) { if (repeat) { opts.extra = []; c = makeContract(c.kind, c.tier, c.month, c.seed + 53 * (attempt + 1), opts); c.job = job; c.novelty = true; continue; } break; }
     if (c.relaxed) {
       // unfair combination: same building and callback reason, fresh random twists

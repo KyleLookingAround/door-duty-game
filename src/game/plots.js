@@ -5,6 +5,18 @@ import { eventOf } from '../content/events.js';
 import { randomInt } from './state.js';
 import { rep, needsMet, streetOpen, rivalInstall, techOf, tierOf } from './economy.js';
 
+// A street-change check has been surveyed: if the client's setup still passes, it coped (and the client
+// remembers it); if not, they call you back with the job the surveyor drew up. Returns 'coped' or 'call'.
+export function settleCheck(S, p, sc) {
+  if (sc.existing && sc.par.cost === 0) {
+    p.status = 'fitted'; p.contract = null; p.reason = null; p.coped = (p.coped || 0) + 1;
+    p.copedWith = [...(p.copedWith || []), p.change].slice(-6); p.change = null;
+    return 'coped';
+  }
+  p.status = 'callback'; p.tier = (p.tier || 0) + 1; p.contract = sc;
+  return 'call';
+}
+
 // Returns what changed that the player should hear about (e.g. a new street opening).
 export function refreshPlots(S) {
   const notes = [];
@@ -14,14 +26,16 @@ export function refreshPlots(S) {
   for (const p of S.plots) {
     if (p.status === 'locked' && r >= p.rep && needsMet(S, p)) p.status = 'open';
     if (p.status === 'rival' && S.month >= (p.rivalUntil || 0)) { p.status = 'callback'; p.reason = 'botched'; p.install = rivalInstall(p); p.contract = null; p.callStage = null; p.callChain = null; p.callTwist = null; }
-    if ((p.status === 'open' || p.status === 'callback') && !p.contract) {
+    if ((p.status === 'open' || p.status === 'callback' || p.status === 'checking') && !p.contract) {
       const B = BUILDING[p.kind];
       let opts;
-      if (p.status === 'callback') {
+      if (p.status === 'callback' || p.status === 'checking') {
         // a callback about an inside job, a chained level, or the doors (with the paradox's twist, if any)
         const key = p.callChain ? 'chain:' + p.callChain.join('+') : p.callStage;
         const existing = key && p.inside && p.inside[key];
         opts = { callback: p.reason, existing: key ? existing || undefined : p.install, extra: p.callTwist ? [p.callTwist] : [] };
+        // a street change being checked: no escalating it until the old setup fails; the check is honest
+        if (p.status === 'checking') { opts.check = true; opts.plain = true; }
         if (p.callChain) Object.assign(opts, { stage: 'chain', chain: p.callChain });
         else if (p.callStage) opts.stage = p.callStage;
       } else {

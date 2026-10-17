@@ -3,9 +3,11 @@
 import { STAFF } from '../content/company.js';
 import { eventOf } from '../content/events.js';
 import { PARADOX_CALLS } from '../content/paradoxes.js';
+import { CHANGES, CHANGE } from '../content/changes.js';
+import { STREETS } from '../content/town.js';
 import { makeContract, runHeadless } from './contracts.js';
 import { random, randomInt } from './state.js';
-import { monthlyIncome, prem, insurance, wearRate, rivalActive, stepFreeOk, techOf, tierOf } from './economy.js';
+import { monthlyIncome, prem, insurance, wearRate, rivalActive, stepFreeOk, techOf, tierOf, streetOf, streetOpen } from './economy.js';
 
 export const CLAIM_EXCESS = 1200, INSPECTION_FINE = 2500;
 
@@ -16,6 +18,51 @@ export function inspect(S, p) {
   const access = ['library', 'townhall', 'station'].includes(p.kind) ? stepFreeOk(p) : true;
   const safe = r.bumps <= c.goals.bumps && r.stops <= 3;
   return { pass: safe && access, safe, access, bumps: r.bumps, limit: c.goals.bumps };
+}
+
+// Put a street change on the calendar two months ahead, now and then. Where it lands is decided now,
+// so the calendar can say where; who it touches is decided when it lands.
+export function scheduleChange(S) {
+  const at = S.month + 2;
+  if ((S.changes || []).some(x => x.month === at) || random(S) > 0.6) return null;
+  // no hot spells in a new firm's first summer
+  const pool = CHANGES.filter(d => (!d.months || d.months.includes(at % 12)) && !(d.reason === 'hot' && at < 12));
+  const def = pool[randomInt(S, pool.length)];
+  const ch = { key: def.key, month: at };
+  if (def.street) { const open = STREETS.filter(st => streetOpen(S, st.key)); ch.street = open[randomInt(S, open.length)].key; }
+  if (def.near) {
+    const fitted = S.plots.filter(p => p.status === 'fitted' || p.status === 'callback');
+    if (!fitted.length) return null;
+    ch.at = fitted[randomInt(S, fitted.length)].i;
+  }
+  S.changes = [...(S.changes || []), ch];
+  return ch;
+}
+// where a change lands, in words: a street, a client, or the whole town
+export function changeWhere(S, ch) {
+  const def = CHANGE[ch.key];
+  if (def.street) return (STREETS.find(st => st.key === ch.street) || STREETS[0]).name;
+  if (def.near) return S.plots[ch.at] ? S.plots[ch.at].name : 'the High Street';
+  return 'the whole town';
+}
+// A change lands: pick the fitted clients it touches and mark them for a check. Returns them.
+export function landChange(S, ch) {
+  const def = CHANGE[ch.key];
+  let near = S.plots.filter(p => p.status === 'fitted');
+  if (def.street) near = near.filter(p => streetOf(p) === ch.street);
+  if (def.near) { const a = S.plots[ch.at]; near = near.filter(p => streetOf(p) === streetOf(a) && Math.abs(p.i - ch.at) <= 2); }
+  // weather and access are the doors' business; a client with only inside work is checked on crowds
+  near = near.filter(p => p.install || def.reason === 'busier' || def.reason === 'older');
+  const out = [];
+  while (near.length && out.length < def.max) out.push(near.splice(randomInt(S, near.length), 1)[0]);
+  for (const p of out) {
+    p.status = 'checking'; p.reason = def.reason; p.change = ch.key; p.contract = null;
+    p.callStage = null; p.callChain = null; p.callTwist = null;
+    // a client with no doors of yours (Riverside) is checked on an inside setup
+    const inside = Object.keys(p.inside || {});
+    if (!p.install && inside.length) { const k = inside[randomInt(S, inside.length)]; if (k.startsWith('chain:')) p.callChain = k.slice(6).split('+'); else p.callStage = k; }
+  }
+  return out;
 }
 
 export function endMonth(S) {
@@ -57,25 +104,16 @@ export function endMonth(S) {
   if (S.cash < -15000) { walked = wages.map(s => s.name); S.staff = {}; }
   const winter = [10, 11, 0, 1].includes(S.month % 12);
   const calls = [];
-  for (const p of S.plots) {
-    if (p.status !== 'fitted' || p.broken) continue;
-    const chance = (winter ? 0.32 : 0.2) + (p.wear || 0) * 0.15;   // tired doors get more complaints
-    if (random(S) < chance) {
-      const opts = winter ? ['cold', 'cold', 'busier', 'older'] : ['busier', 'older', 'cold'];
-      p.reason = opts[randomInt(S, opts.length)];
-      if (p.reason === 'cold' && (eventOf(S.month) || {}).key === 'heatwave') p.reason = 'hot';
-      // a client with an inside job you did may call about that instead of the doors
-      const inside = Object.keys(p.inside || {});
-      p.callStage = null; p.callChain = null; p.callTwist = null;
-      if (inside.length && (!p.install || random(S) < 0.4)) {
-        const k = inside[randomInt(S, inside.length)];
-        if (k.startsWith('chain:')) p.callChain = k.slice(6).split('+'); else p.callStage = k;
-        if (p.reason === 'cold' || p.reason === 'hot') p.reason = 'busier';   // temperature is the doors' problem
-      }
-      p.status = 'callback'; p.tier++; p.contract = null;
-      calls.push(p);
-    }
+  // street changes: the one due this month lands, and the clients it touches have their doors checked
+  // against it (the surveyor decides in the background: see survey.js). Another may be put on the calendar.
+  const changes = [];
+  for (const ch of (S.changes || []).filter(x => x.month === S.month)) {
+    const checked = landChange(S, ch);
+    changes.push({ ...ch, checked });
+    calls.push(...checked);
   }
+  S.changes = (S.changes || []).filter(x => x.month > S.month);
+  scheduleChange(S);
   // paradox callbacks: finished research reaches the clients it could help. If none is fitted yet,
   // the call waits until one is.
   S.pendingCalls = [...(S.pendingCalls || []), ...done.flatMap(k => (PARADOX_CALLS[k] || []).map((_, j) => [k, j]))];
@@ -105,5 +143,5 @@ export function endMonth(S) {
     if ((p.contract.event || null) !== wantEv || (p.status === 'open' && (done.length || random(S) < 0.35))) p.contract = null;
   }
   const net = inc - rent - wageTotal - ins - claims.length * CLAIM_EXCESS - (insp && !insp.pass ? INSPECTION_FINE : 0);
-  return { inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox };
+  return { inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes };
 }

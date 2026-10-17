@@ -6,7 +6,7 @@
 //
 // usage: node tools/sim.mjs [months=24] [seed=1] [--quiet]
 import { freshState } from '../src/game/state.js';
-import { refreshPlots } from '../src/game/plots.js';
+import { refreshPlots, settleCheck } from '../src/game/plots.js';
 import { generateSolved, runHeadless } from '../src/game/contracts.js';
 import { grade, signOff, startResearch, service, hire, movePremises } from '../src/game/jobs.js';
 import { endMonth } from '../src/game/month.js';
@@ -22,12 +22,13 @@ export async function simulate({ months = 24, seed = 1, log = () => {} } = {}) {
     refreshPlots(S);
     // survey and do every job on the table, using the surveyor's par design
     for (const p of S.plots) {
-      if ((p.status !== 'open' && p.status !== 'callback') || !p.contract) continue;
+      if ((p.status !== 'open' && p.status !== 'callback' && p.status !== 'checking') || !p.contract) continue;
       let c = p.contract;
       if (!c.solved) {
         c = await generateSolved(c, techOf(S), S.recent || []);
         if (!c) { p.contract = null; tally.unsurveyable++; continue; }
-        if (p.status === 'callback' && c.existing && c.par.cost === 0) { p.status = 'fitted'; p.contract = null; p.reason = null; tally.falseAlarms++; continue; }
+        if (p.status === 'checking') { if (settleCheck(S, p, c) === 'coped') { tally.coped = (tally.coped || 0) + 1; continue; } tally.calls = (tally.calls || 0) + 1; }
+        else if (p.status === 'callback' && c.existing && c.par.cost === 0) { p.status = 'fitted'; p.contract = null; p.reason = null; tally.falseAlarms++; continue; }
         if (p.status === 'callback' && p.reason !== 'paradox' && c.opts && c.opts.callback) p.reason = c.opts.callback;
         p.contract = c;
       }
@@ -68,6 +69,6 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
   const t0 = Date.now();
   const { S, tally } = await simulate({ months: nums[0] || 24, seed: nums[1] || 1, log: quiet ? () => {} : console.log });
   console.log(`\ninside jobs: ${JSON.stringify(tally.inside || {})}`);
-  console.log(`\n${tally.jobs} jobs · rep ${rep(S)}★ · cash ${Math.round(S.cash)} · ${tally.falseAlarms} false-alarm callbacks · ${tally.unsurveyable} unsurveyable · ${tally.skipped} skipped · ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+  console.log(`\n${tally.jobs} jobs · rep ${rep(S)}★ · cash ${Math.round(S.cash)} · ${tally.coped || 0} clients coped with street changes · ${tally.calls || 0} called back · ${tally.falseAlarms} false alarms · ${tally.unsurveyable} unsurveyable · ${tally.skipped} skipped · ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   if (tally.parFails.length) { console.log('PAR FAILURES (the surveyor\'s own design did not pass):\n  ' + tally.parFails.join('\n  ')); process.exit(1); }
 }

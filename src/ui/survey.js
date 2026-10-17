@@ -3,7 +3,7 @@
 import { $, toast } from './dom.js';
 import { S, save } from './store.js';
 import { generateSolved, GATE } from '../game/contracts.js';
-import { refreshPlots } from '../game/plots.js';
+import { refreshPlots, settleCheck } from '../game/plots.js';
 import { techOf } from '../game/economy.js';
 import { TWISTS } from '../content/twists.js';
 import { CALLBACKS } from '../content/town.js';
@@ -43,6 +43,14 @@ export function survey(p) {
       return p.contract ? survey(p) : null;
     }
     if (p.contract && p.contract.seed === seed) {
+      // a street change: the surveyor's verdict decides whether this client calls at all
+      if (p.status === 'checking') {
+        const how = settleCheck(S, p, sc);
+        save();
+        toast(how === 'coped' ? `${p.name} coped with the change. They'll remember it.` : `${p.name} is calling you back: ${(CALLBACKS[p.reason] || 'something has changed').toLowerCase()}.`, how !== 'coped');
+        surveyHooks.changed();
+        return how === 'coped' ? null : sc;
+      }
       if (p.status === 'callback' && sc.existing && sc.par.cost === 0) {
         // the doors you fitted already cope: no job, and the maintenance fee resumes
         p.status = 'fitted'; p.contract = null; p.reason = null; save();

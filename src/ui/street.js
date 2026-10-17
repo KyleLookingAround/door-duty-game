@@ -1,6 +1,8 @@
 // The street screen: the header, calendar, street tabs, the painted scene (see scene.js) and the ledger view.
 import { KINDS, PLOTS } from '../content/buildings/index.js';
 import { eventOf } from '../content/events.js';
+import { CHANGE } from '../content/changes.js';
+import { changeWhere } from '../game/month.js';
 import { CALLBACKS, RIVAL, STREETS } from '../content/town.js';
 import { MONTHS } from '../game/contracts.js';
 import { feeOf, monthlyIncome, needsMet, needsText, rep, rivalActive, rivalInstall, streetOf, streetOpen, upkeep } from '../game/economy.js';
@@ -42,8 +44,10 @@ export function renderStreet() {
   const inc = monthlyIncome(S);
   $('incomeLine').textContent = inc ? `${money(inc)} a month in maintenance` : S.plots.some(p => p.status === 'fitted') ? 'No maintenance coming in' : 'No contracts fitted yet';
   $('cal').innerHTML = [0, 1, 2].map(k => {
-    const m = S.month + k, ev = eventOf(m);
-    return `<div class="calm${k === 0 ? ' now' : ''}${ev ? ' ev' : ''}"><span>${k === 0 ? 'Now · ' : ''}${MONTHS[m % 12]}</span><b>${ev ? ev.label : 'Quiet month'}</b></div>`;
+    const m = S.month + k, ev = eventOf(m), ch = (S.changes || []).find(x => x.month === m);
+    // a street change coming: what, and where (the clients there will have their doors checked)
+    const chLine = ch ? `<small class="calch">${CHANGE[ch.key].label} · ${changeWhere(S, ch)}</small>` : '';
+    return `<div class="calm${k === 0 ? ' now' : ''}${ev ? ' ev' : ''}${ch ? ' ch' : ''}"><span>${k === 0 ? 'Now · ' : ''}${MONTHS[m % 12]}</span><b>${ev ? ev.label : ch ? '' : 'Quiet month'}</b>${chLine}</div>`;
   }).join('');
   const tabs = $('streetTabs');
   tabs.hidden = !S.marketOpen;
@@ -64,7 +68,7 @@ export function renderStreet() {
     const act = () => {
       if (coachEl.id === 'tender') coachDone();
       if (p.status === 'open' || p.status === 'callback') return openBrief(p.i);
-      if (p.status === 'fitted') return openClient(p.i);
+      if (p.status === 'fitted' || p.status === 'checking') return openClient(p.i);
       if (p.status === 'rival') return toast(`${RIVAL} fitted ${p.name}. The client will be back.`);
       toast(rep(S) >= p.rep && !needsMet(S, p) ? `${p.name}: research ${needsText(S, p)} first` : `${p.name} wants ${p.rep}★ reputation`);
     };
@@ -84,8 +88,9 @@ export function renderStreet() {
     if (p.status === 'locked' && rep(S) >= p.rep && !needsMet(S, p)) { pill = `<span class="pill lock">Research</span>`; line = `${PLOTS[p.i].why}. Research ${needsText(S, p)} in Company to quote`; }
     else if (p.status === 'locked') { pill = `<span class="pill lock">${p.rep}★ rep</span>`; line = 'Will only talk to firms with a reputation'; }
     else if (p.status === 'open') { pill = `<span class="pill open">Tender</span>`; const tw = [p.contract.event ? (eventOf(S.month) || {}).label : null, ...p.contract.twists.map(twistLabel)].filter(Boolean).join(' · ') || 'Standard job'; line = p.contract.solved ? `${p.contract.specialist ? '<b style="color:var(--brass)">Specialist</b> · ' : ''}Fee <b>${money(feeOf(S, p.contract))}</b> · ${tw}${rivalActive(S) && !p.contract.first && !p.contract.landmark ? ` · <span style="color:var(--warn)">${RIVAL} is bidding</span>` : ''}` : `${tw} · <i>surveying…</i>`; }
+    else if (p.status === 'checking') { pill = `<span class="pill lock">Checking</span>`; line = `${CHANGE[p.change] ? CHANGE[p.change].label : 'A change on the street'}: the surveyor is checking your doors. Still paying <b>${money(upkeep(S, p))}</b>/month`; }
     else if (p.status === 'callback' && p.reason === 'paradox') { pill = `<span class="pill open">New work</span>`; line = `${p.callText} Fee <b>${p.contract && p.contract.solved ? money(feeOf(S, p.contract)) : '…'}</b>`; }
-    else if (p.status === 'callback') { pill = `<span class="pill call">${p.reason === 'botched' ? 'Rescue' : 'Callback'}</span>`; line = `${CALLBACKS[p.reason] || 'Something has changed'}. No maintenance fee until fixed.`; }
+    else if (p.status === 'callback') { pill = `<span class="pill call">${p.reason === 'botched' ? 'Rescue' : 'Callback'}</span>`; line = `${p.change && CHANGE[p.change] ? CHANGE[p.change].label + ': ' + (CALLBACKS[p.reason] || '').charAt(0).toLowerCase() + (CALLBACKS[p.reason] || '').slice(1) : CALLBACKS[p.reason] || 'Something has changed'}. No maintenance fee until fixed.`; }
     else if (p.status === 'rival') { pill = `<span class="pill lock">${RIVAL}</span>`; line = `Fitted by the rival firm · back in ${Math.max(1, (p.rivalUntil || 0) - S.month)} mo`; }
     else { pill = `<span class="pill done">${'★'.repeat(p.stars)}</span>`; line = p.broken ? '<span style="color:var(--warn)">Broken down</span> · tap to service' : `Fitted · <b>${money(upkeep(S, p))}</b>/month${(p.wear || 0) >= 0.5 ? ` · wear ${Math.round(p.wear * 100)}%` : ''}${p.green ? ' · 🌿' : ''}${p.cert ? ' · certified' : ''}`; }
     const where = streetOf(p) === 'market' ? ' · Market Square' : streetOf(p) === 'riverside' ? ' · Riverside' : '';
@@ -94,15 +99,15 @@ export function renderStreet() {
       <span><span class="name">${p.name}</span>${(() => { const bits = [sameWord(p.name, k.label) ? '' : k.label, where ? where.slice(3) : ''].filter(Boolean); return bits.length ? ` <span class="kind">· ${bits.join(' · ')}</span>` : ''; })()}<span class="stline" style="display:block">${line}</span></span>
       ${pill}</button>`;
   };
-  const fitted = S.plots.filter(p => p.status === 'fitted' || p.status === 'rival');
+  const fitted = S.plots.filter(p => p.status === 'fitted' || p.status === 'checking' || p.status === 'rival');
   const later = S.plots.filter(p => p.status === 'locked' && (streetOf(p) === 'high' || streetOpen(S, 'market') || p.rep <= rep(S) + 4));
   $('streetHead').textContent = live.length ? `On the table · ${live.length}` : 'Nothing on the table this month';
   $('street').innerHTML = live.map(row).join('');
   $('ledgerRest').innerHTML = (fitted.length ? `<div class="eyebrow ledhead">Your clients · ${fitted.filter(p => p.status === 'fitted').length}</div>${fitted.map(row).join('')}` : '')
     + (later.length ? `<div class="eyebrow ledhead">Not yet · you have ${rep(S)}★</div>${laterList(later)}` : '');
-  $('ledger').querySelectorAll('.plot').forEach(b => b.addEventListener('click', guarded(() => { const p = S.plots[+b.dataset.i]; if (p.status === 'fitted') openClient(p.i); else if (p.status === 'open' || p.status === 'callback') openBrief(p.i); })));
+  $('ledger').querySelectorAll('.plot').forEach(b => b.addEventListener('click', guarded(() => { const p = S.plots[+b.dataset.i]; if (p.status === 'fitted' || p.status === 'checking') openClient(p.i); else if (p.status === 'open' || p.status === 'callback') openBrief(p.i); })));
   save();
-  for (const p of S.plots) if ((p.status === 'open' || p.status === 'callback') && p.contract && !p.contract.solved) survey(p);
+  for (const p of S.plots) if ((p.status === 'open' || p.status === 'callback' || p.status === 'checking') && p.contract && !p.contract.solved) survey(p);
   // walk-through: first the tender, then (after a job) the month and the company
   if (!W && $('sheetWrap').hidden) {
     if (S.jobs === 0) setTimeout(() => coach('tender', () => (S.view || 'street') === 'street' ? document.querySelector('.sbld.open > g:last-of-type') || document.querySelector('.sbld.open') : document.querySelector('#street .plot')), 350);

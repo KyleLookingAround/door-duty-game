@@ -7,9 +7,10 @@ import { CALLBACKS, RIVAL } from '../content/town.js';
 import { TWISTS } from '../content/twists.js';
 import { STAGES, STAGE_TWISTS, stageName, stageAbout } from '../engine/stages/index.js';
 import { MONTHS, candidates } from '../game/contracts.js';
-import { charge, costMult, feeOf, insurance, monthlyIncome, overheads, prem, rep, serviceCost, techName, techOf, upkeep } from '../game/economy.js';
+import { charge, costMult, feeOf, insurance, monthlyIncome, overheads, prem, rep, serviceCost, techName, techOf, upkeep, loyalty } from '../game/economy.js';
 import { fire, hire, movePremises, service, startResearch } from '../game/jobs.js';
-import { CLAIM_EXCESS, INSPECTION_FINE, endMonth } from '../game/month.js';
+import { CLAIM_EXCESS, INSPECTION_FINE, endMonth, changeWhere } from '../game/month.js';
+import { CHANGE, changeText } from '../content/changes.js';
 import { coach } from './coach.js';
 import { $, TYPE_LABEL, closeSheet, guarded, keepScroll, sheet, toast } from './dom.js';
 import { S, save, wipeSave } from './store.js';
@@ -60,7 +61,7 @@ export async function openBrief(i, fromWorkshop) {
   if (mix.bike) guest.push(`${Math.round(mix.bike * 100)}% cyclists`);
   sheet(`<div class="eyebrow">${p.status === 'callback' ? 'Callback' : 'Tender'} · ${k.label} · tier ${c.tier + 1}</div>
     <h3>${p.name}</h3>
-    ${p.status === 'callback' ? `<p>${CALLBACKS[p.reason]}. Your existing doors stay; you only pay for new hardware.</p>${beforeLine(c)}` : ''}
+    ${p.status === 'callback' ? `<p>${p.change && CHANGE[p.change] ? `<strong style="color:var(--text)">${CHANGE[p.change].label}.</strong> ` : ''}${CALLBACKS[p.reason]}. Your existing doors stay; you only pay for new hardware.</p>${beforeLine(c)}` : ''}
     ${BUILDING[p.kind].brief ? BUILDING[p.kind].brief(c) : ''}
     ${c.opts && c.opts.callback === 'botched' ? '<p class="note"><strong style="color:var(--brass)">Rescue job.</strong> Put right what Brassworks fitted, and the client pays 30% more margin.</p>' : ''}
     ${c.event ? (() => { const ev = Object.values(EVENTS).find(e => e.key === c.event); return `<p><strong style="color:var(--brass)">${ev.label}.</strong> ${ev.text} Seasonal work: 25% more margin.</p>`; })() : ''}
@@ -259,6 +260,7 @@ export function openClient(i) {
       ${Object.keys(p.inside || {}).length ? `<li><span>Inside work you've done</span><span style="font-family:inherit">${Object.keys(p.inside).map(k => k.startsWith('chain:') ? k.slice(6).split('+').map(x => stageName({ tunes: BUILDING[p.kind].tune }, x)).join(' → ') : stageName({ tunes: BUILDING[p.kind].tune }, k)).join(', ')}</span></li>` : ''}
       <li><span>Safety record at sign-off</span><span>${p.bumpRec || 0} bump${p.bumpRec === 1 ? '' : 's'} · ${p.stopRec || 0} stop${p.stopRec === 1 ? '' : 's'}</span></li>
       <li><span>Adds to your insurance</span><span>${money(45 * (p.bumpRec || 0) + 25 * (p.stopRec || 0))}/mo</span></li>
+      <li class="${p.coped ? 'pass' : ''}"><span>Street changes their doors coped with</span><span>${p.coped ? `${p.coped} · +${Math.round((loyalty(p) - 1) * 100)}% fee` : 'none yet'}</span></li>
       <li class="${p.green ? 'pass' : ''}"><span>Green star · lobby kept snug</span><span>${p.green ? '+15% fee' : 'no'}</span></li>
       <li class="${p.cert ? 'pass' : ''}"><span>Inspection certificate</span><span>${p.cert ? '+10% fee' : 'not yet'}</span></li>
     </ul>
@@ -270,7 +272,7 @@ export function openClient(i) {
 export function initSheets() {
   $('rdBtn').onclick = guarded(() => openCompany());
   $('monthBtn').onclick = guarded(() => {
-  const { inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox } = endMonth(S);
+  const { inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes } = endMonth(S);
   save();
   renderStreet();
   sheet(`<div class="eyebrow">${MONTHS[S.month % 12]} ${S.year}</div><h3>${net >= 0 ? 'Up ' + money(net) : 'Down ' + money(-net)} this month</h3>
@@ -290,11 +292,12 @@ export function initSheets() {
       <div class="learn">${done.filter(k => LESSONS[k]).map(k => `<button class="ghost small" type="button" data-lesson="${k}">How to use ${techName(k)}</button>`).join('')}</div>` : ''}
     ${walked.length ? `<p><span class="hot">Your staff walked out</span> over unpaid wages: ${walked.join(', ')}.</p>` : S.cash < 0 ? '<p><span class="hot">You\'re overdrawn.</span> Win jobs or let staff go. Below −£15k your crew will walk out.</p>' : ''}
     ${paradox.length ? `<p><strong style="color:var(--brass)">Your research has clients calling:</strong></p><ul class="list">${paradox.map(p => `<li style="display:block"><span style="font-family:inherit;color:var(--text);font-weight:600">${p.name}</span><br><span style="font-family:inherit;color:var(--mute)">${p.callText} They keep paying while you quote.</span></li>`).join('')}</ul>` : ''}
-    <p>${calls.length ? 'Clients on the phone:' : inc ? 'Every fitted client is happy.' : 'Win a tender to start earning maintenance fees.'}</p>
-    ${calls.length ? `<ul class="list">${calls.map(p => `<li style="display:block"><span style="font-family:inherit;color:var(--text);font-weight:600">${p.name}</span><br><span style="font-family:inherit;color:var(--mute)">${CALLBACKS[p.reason] || p.reason}. No maintenance until you fix it.</span></li>`).join('')}</ul>` : ''}
+    ${changes.map(ch => `<p><strong style="color:var(--text)">${CHANGE[ch.key].label}.</strong> ${changeText(ch, changeWhere(S, ch))} ${ch.checked.length ? `The surveyor is checking how your doors cope at ${ch.checked.map(p => p.name).join(', ')}. Only those that fall short will call.` : 'None of your clients is affected.'}</p>`).join('')}
+    ${calls.length ? '' : `<p>${inc ? 'Every fitted client is happy.' : 'Win a tender to start earning maintenance fees.'}</p>`}
     ${evNow ? `<p><strong style="color:var(--brass)">${evNow.label} this month.</strong> ${evNow.text} Tenders pay 25% more margin.</p>` : ''}
     ${(() => { const nx = eventOf(S.month + 1); return nx ? `<p class="note">Next month: ${nx.label}.</p>` : ''; })()}
-    ${winter ? '<p class="note">Winter: colder tenders and more callbacks.</p>' : ''}
+    ${(() => { const nx = (S.changes || []).find(x => x.month > S.month); return nx ? `<p class="note">Coming up in ${MONTHS[nx.month % 12]}: ${CHANGE[nx.key].label.toLowerCase()}, ${changeWhere(S, nx)}.</p>` : ''; })()}
+    ${winter ? '<p class="note">Winter: colder tenders.</p>' : ''}
     <button class="go" type="button" id="mClose">Back to the street</button>`);
   $('mClose').onclick = closeSheet;
   const monthHTML = $('sheet').innerHTML;
