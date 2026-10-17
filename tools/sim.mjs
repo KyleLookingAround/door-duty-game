@@ -28,6 +28,7 @@ export async function simulate({ months = 24, seed = 1, log = () => {} } = {}) {
         c = await generateSolved(c, techOf(S), S.recent || []);
         if (!c) { p.contract = null; tally.unsurveyable++; continue; }
         if (p.status === 'callback' && c.existing && c.par.cost === 0) { p.status = 'fitted'; p.contract = null; p.reason = null; tally.falseAlarms++; continue; }
+        if (p.status === 'callback' && p.reason !== 'paradox' && c.opts && c.opts.callback) p.reason = c.opts.callback;
         p.contract = c;
       }
       if (feeOf(S, c) - charge(S, c.par.cost) < 0 || S.cash < charge(S, c.par.cost)) { tally.skipped++; continue; }
@@ -36,6 +37,7 @@ export async function simulate({ months = 24, seed = 1, log = () => {} } = {}) {
       if (!g.pass) { tally.parFails.push(`${MONTHS[S.month % 12]} ${S.year} ${p.name}: ${g.hint}`); continue; }
       signOff(S, p, c, c.par.slots, g.stars, r);
       tally.jobs++;
+      if (c.stage) { tally.inside = tally.inside || {}; const k = c.chain ? 'chain:' + c.chain.join('+') : c.stage; tally.inside[k] = (tally.inside[k] || 0) + 1; }
     }
     // run the firm: fix what's broken, research what clients are waiting on, grow when there's money
     for (const p of S.plots) if (p.broken && S.cash > serviceCost(p) + 5000) service(S, p);
@@ -65,6 +67,7 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
   const quiet = process.argv.includes('--quiet');
   const t0 = Date.now();
   const { S, tally } = await simulate({ months: nums[0] || 24, seed: nums[1] || 1, log: quiet ? () => {} : console.log });
+  console.log(`\ninside jobs: ${JSON.stringify(tally.inside || {})}`);
   console.log(`\n${tally.jobs} jobs · rep ${rep(S)}★ · cash ${Math.round(S.cash)} · ${tally.falseAlarms} false-alarm callbacks · ${tally.unsurveyable} unsurveyable · ${tally.skipped} skipped · ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   if (tally.parFails.length) { console.log('PAR FAILURES (the surveyor\'s own design did not pass):\n  ' + tally.parFails.join('\n  ')); process.exit(1); }
 }

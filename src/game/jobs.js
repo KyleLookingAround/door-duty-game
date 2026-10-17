@@ -1,5 +1,7 @@
 // Doing the work: grading a tested design, signing off, and the firm's own decisions (research, staff, premises, servicing).
 import { designCost, designSig, violatesRules } from './contracts.js';
+import { stageRows } from './stagejobs.js';
+import { STAGES, stageName } from '../engine/stages/index.js';
 import { TECH } from '../content/tech.js';
 import { PREMISES, STAFF } from '../content/company.js';
 import { money } from '../util/format.js';
@@ -9,6 +11,7 @@ import { feeOf, charge, prem, rep, serviceCost } from './economy.js';
 export function grade(S, c, design, r) {
   const g = c.goals;
   const cost = designCost(design, c.existing);
+  if (c.stage) return gradeStage(S, c, design, r, cost);
   const rows = [
     ['Through', r.through, `≥ ${g.through}`, r.through >= g.through],
     ['Bumps', r.bumps, `≤ ${g.bumps}`, r.bumps <= g.bumps],
@@ -40,6 +43,25 @@ export function grade(S, c, design, r) {
   const green = pass && isGreen(c, r);
   return { rows, pass, stars, hint, cost, profit: feeOf(S, c) - charge(S, cost), green };
 }
+// an inside job: through, the time target, bumps, cost. On a chained level the hint names the slowest stage.
+function gradeStage(S, c, design, r, cost) {
+  const g = c.goals, st = STAGES[c.stage];
+  const rows = [...stageRows(c, r), ['Cost', money(cost), `≤ ${money(c.budget)}`, cost <= c.budget]];
+  if (!st.bumps) rows.push(['Bumps', r.bumps, '', null]);
+  const pass = rows.every(x => x[3] !== false);
+  let stars = 0;
+  if (pass) { stars = 1; if (cost <= c.par.cost) { stars = 2; if (r.bumps === 0 && !r.stops) stars = 3; } }
+  let hint = '';
+  if (!pass) {
+    if (cost > c.budget) hint = 'Over budget.';
+    else if (r.parts) {
+      const parts = st.partsOf(c), worst = r.parts.map((x, i) => [x.wait + x.bumps * 15, i]).sort((a, b) => b[0] - a[0])[0][1];
+      const ps = parts[worst].st, x = r.parts[worst];
+      hint = `The crush is at stage ${worst + 1}, ${stageName(c, ps.key).toLowerCase()}: ${x.bumps ? `${x.bumps} bumped there, and ` : ''}people spent ${x.wait.toFixed(0)}s getting through it. ${ps.hint ? ps.hint(x, parts[worst].sub) : ''} Fix it and the queue may move on to the next stage.`;
+    } else hint = st.hint ? st.hint(r, c) : 'Not quick enough yet.';
+  }
+  return { rows, pass, stars, hint, cost, profit: feeOf(S, c) - charge(S, cost), green: false };
+}
 // a lobby kept snug against the weather earns a green star
 export const isGreen = (c, r) => (c.goals.minTemp != null && c.outsideTemp < 12 && r.minTemp >= 19.5) || (c.goals.maxTemp != null && r.maxTemp <= 22.5);
 
@@ -48,16 +70,19 @@ export function signOff(S, p, c, design, stars, r) {
   const cost = designCost(design, c.existing), profit = feeOf(S, c) - charge(S, cost);
   const lockedBefore = S.plots.filter(x => x.status === 'locked').length;
   S.cash += profit;
-  p.install = design.map(s => ({ ...s }));
+  if (c.stage) p.inside = { ...(p.inside || {}), [c.chain ? 'chain:' + c.chain.join('+') : c.stage]: JSON.parse(JSON.stringify(design)) };
+  else p.install = design.map(s => ({ ...s }));
   p.stars = Math.max(p.stars, stars);
   p.fee = Math.max(p.fee, c.fee);
   p.status = 'fitted'; p.contract = null; p.reason = null;
-  // a fresh install: new doors, a clean record, and a green star if the lobby stayed snug
-  p.wear = 0; p.broken = false; p.cert = false;
-  p.bumpRec = r.bumps; p.stopRec = r.stops;
-  p.green = isGreen(c, r);
+  // a fresh install: new doors, a clean record, and a green star if the lobby stayed snug.
+  // An inside job at a client whose doors you already fitted leaves the doors' wear and record alone.
+  if (!c.stage || !p.install) { p.wear = 0; p.broken = false; p.cert = false; p.bumpRec = r.bumps; p.stopRec = r.stops || 0; }
+  else { p.bumpRec = Math.max(p.bumpRec || 0, r.bumps); }
+  p.green = c.stage ? p.green : isGreen(c, r);
+  p.callStage = null; p.callTwist = null; p.callChain = null;
   S.jobs++;
-  S.recent = [...(S.recent || []), designSig(p.install)].slice(-4);
+  S.recent = [...(S.recent || []), designSig(design)].slice(-4);
   return { profit, lockedBefore };
 }
 

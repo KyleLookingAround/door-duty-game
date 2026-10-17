@@ -12,7 +12,30 @@ def setc(pg, sel, want):
     el=pg.query_selector(sel)
     if not el or el.is_disabled(): return
     if el.is_checked()!=want: el.click(); pg.wait_for_timeout(30)
+def apply_stage_part(pg, d):
+    # an inside job's settings: segmented choices, steppers, sliders and toggles, found by their data attributes
+    for k, v in d.items():
+        if k == 'stage': continue
+        seg = pg.query_selector(f'[data-opt="{k}"][data-v="{v}"]')
+        if seg:
+            if seg.get_attribute('aria-pressed') != 'true': seg.click(); pg.wait_for_timeout(60)
+            continue
+        if pg.query_selector(f'[data-step="{k}"]'):
+            for _ in range(20):
+                cur = int(pg.evaluate(f"""document.querySelector('[data-step="{k}"]').closest('.row').querySelector('output').textContent"""))
+                if cur == v: break
+                pg.click(f'[data-step="{k}"][data-by="{1 if v > cur else -1}"]'); pg.wait_for_timeout(60)
+            continue
+        if pg.query_selector(f'#st_{k}'): set_range(pg, f'#st_{k}', v); continue
+        if pg.query_selector(f'[data-tog="{k}"]'): setc(pg, f'[data-tog="{k}"]', bool(v)); continue
+        if v not in (False, None, 0): log('  !! no control for', k, v)
 def apply_design(pg, slots):
+    if isinstance(slots, dict):
+        if slots.get('stage') == 'chain':
+            for i, part in enumerate(slots['parts']):
+                pg.click(f'[data-part="{i}"]'); pg.wait_for_timeout(120); apply_stage_part(pg, part)
+        else: apply_stage_part(pg, slots)
+        return
     for i,s in enumerate(slots):
         pg.click(f'.slotbtn[data-i="{i}"]')
         btn=pg.query_selector(f'[data-t="{s["type"]}"]')
@@ -95,7 +118,7 @@ with sync_playwright() as p:
         if not pg.query_selector('#bTake'):
             log(f"  {q['name']} false alarm after {time.time()-t0:.1f}s: {pg.inner_text('#toast')}"); pg.wait_for_timeout(700); continue
         st=state(pg); c=st['plots'][q['i']]['contract']
-        log(f"  {'SPECIALIST ' if c.get('specialist') else ''}{q['name']} {q['status']} twists={c['twists']} temp={c['outsideTemp']} goals={c['goals']} par={c['par']['sig']} £{c['par']['cost']} budget {c['budget']} fee {c['fee']} survey {time.time()-t0:.1f}s novelty={c.get('novelty')}")
+        log(f"  {'SPECIALIST ' if c.get('specialist') else ''}{'INSIDE '+(c.get('stage') or '')+' ' if c.get('stage') else ''}{q['name']} {q['status']} twists={c['twists']} temp={c.get('outsideTemp')} goals={c['goals']} par={c['par']['sig']} £{c['par']['cost']} budget {c['budget']} fee {c['fee']} survey {time.time()-t0:.1f}s novelty={c.get('novelty')}")
         pg.click('#bTake'); pg.wait_for_timeout(250)
         if q['status']=='callback' and not globals().get('shot_cb'):
             pg.screenshot(path='p_callback_ws.png', full_page=True); globals()['shot_cb']=1
@@ -104,7 +127,7 @@ with sync_playwright() as p:
         pg.click('#testBtn')
         # skip straight to the result: the test runs the same steps, just without drawing them
         pg.wait_for_selector('#skipBtn:not([hidden])', timeout=5000); pg.click('#skipBtn')
-        pg.wait_for_selector('#rEdit', timeout=60000)
+        pg.wait_for_selector('#rEdit, #rSign', timeout=60000)
         title=pg.inner_text('#sheet h3'); rows=pg.inner_text('#sheet .list').replace('\n',' | ')
         log(f"  result: {title} cost {cost} :: {rows}")
         if pg.query_selector('#rSign'): pg.click('#rSign'); pg.wait_for_timeout(450)

@@ -29,11 +29,13 @@ function laterList(list) {
     const research = r >= p.rep && !needsMet(S, p);
     const req = research ? `Research ${needsText(S, p)}` : `${p.rep}★`;
     const k = KINDS[p.kind];
-    return `<div><span><b>${p.name}</b>${sameWord(p.name, k.label) ? '' : ` · ${k.label}`}${streetOf(p) === 'market' ? ' · Market Square' : ''}</span><span class="req${research || p === nextAt ? ' next' : ''}${research ? ' wide' : ''}">${req}</span></div>`;
+    return `<div><span><b>${p.name}</b>${sameWord(p.name, k.label) ? '' : ` · ${k.label}`}${streetOf(p) === 'market' ? ' · Market Square' : streetOf(p) === 'riverside' ? ' · Riverside' : ''}</span><span class="req${research || p === nextAt ? ' next' : ''}${research ? ' wide' : ''}">${req}</span></div>`;
   }).join('')}</div>`;
 }
 export function renderStreet() {
-  if (refreshPlots(S).includes('market')) setTimeout(() => toast('Market Square is open: five new clients, and a rival firm'), 600);
+  const notes = refreshPlots(S);
+  if (notes.includes('market')) setTimeout(() => toast('Market Square is open: five new clients, and a rival firm'), 600);
+  if (notes.includes('riverside')) setTimeout(() => toast('Riverside is open: an airport, a shopping centre and an arena, all inside work'), 600);
   $('sCash').textContent = kmoney(S.cash);
   $('sRep').textContent = rep(S) + '★';
   $('sMonth').textContent = `${MONTHS[S.month % 12]} ${String(S.year).slice(2)}`;
@@ -45,6 +47,7 @@ export function renderStreet() {
   }).join('');
   const tabs = $('streetTabs');
   tabs.hidden = !S.marketOpen;
+  tabs.style.gridTemplateColumns = `repeat(${STREETS.length}, 1fr)`;
   tabs.innerHTML = STREETS.map(st => `<button type="button" data-st="${st.key}" aria-pressed="${(S.street || 'high') === st.key}" ${streetOpen(S, st.key) ? '' : 'disabled'}>${st.name}${streetOpen(S, st.key) ? '' : ` · ${st.rep}★`}</button>`).join('');
   tabs.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { if (S.street === b.dataset.st) return; S.street = b.dataset.st; delete $('map').dataset.ready; save(); renderStreet(); });
   $('streetTitle').textContent = (STREETS.find(x => x.key === (S.street || 'high')) || STREETS[0]).name;
@@ -81,13 +84,14 @@ export function renderStreet() {
     if (p.status === 'locked' && rep(S) >= p.rep && !needsMet(S, p)) { pill = `<span class="pill lock">Research</span>`; line = `${PLOTS[p.i].why}. Research ${needsText(S, p)} in Company to quote`; }
     else if (p.status === 'locked') { pill = `<span class="pill lock">${p.rep}★ rep</span>`; line = 'Will only talk to firms with a reputation'; }
     else if (p.status === 'open') { pill = `<span class="pill open">Tender</span>`; const tw = [p.contract.event ? (eventOf(S.month) || {}).label : null, ...p.contract.twists.map(twistLabel)].filter(Boolean).join(' · ') || 'Standard job'; line = p.contract.solved ? `${p.contract.specialist ? '<b style="color:var(--brass)">Specialist</b> · ' : ''}Fee <b>${money(feeOf(S, p.contract))}</b> · ${tw}${rivalActive(S) && !p.contract.first && !p.contract.landmark ? ` · <span style="color:var(--warn)">${RIVAL} is bidding</span>` : ''}` : `${tw} · <i>surveying…</i>`; }
+    else if (p.status === 'callback' && p.reason === 'paradox') { pill = `<span class="pill open">New work</span>`; line = `${p.callText} Fee <b>${p.contract && p.contract.solved ? money(feeOf(S, p.contract)) : '…'}</b>`; }
     else if (p.status === 'callback') { pill = `<span class="pill call">${p.reason === 'botched' ? 'Rescue' : 'Callback'}</span>`; line = `${CALLBACKS[p.reason] || 'Something has changed'}. No maintenance fee until fixed.`; }
     else if (p.status === 'rival') { pill = `<span class="pill lock">${RIVAL}</span>`; line = `Fitted by the rival firm · back in ${Math.max(1, (p.rivalUntil || 0) - S.month)} mo`; }
     else { pill = `<span class="pill done">${'★'.repeat(p.stars)}</span>`; line = p.broken ? '<span style="color:var(--warn)">Broken down</span> · tap to service' : `Fitted · <b>${money(upkeep(S, p))}</b>/month${(p.wear || 0) >= 0.5 ? ` · wear ${Math.round(p.wear * 100)}%` : ''}${p.green ? ' · 🌿' : ''}${p.cert ? ' · certified' : ''}`; }
-    const where = streetOf(p) === 'market' ? ' · Market Square' : '';
+    const where = streetOf(p) === 'market' ? ' · Market Square' : streetOf(p) === 'riverside' ? ' · Riverside' : '';
     return `<button class="plot${p.status === 'locked' || p.status === 'rival' ? ' locked' : ''}" type="button" data-i="${p.i}" ${p.status === 'locked' || p.status === 'rival' ? 'disabled' : ''}>
       ${frontHTML(p.status === 'rival' ? rivalInstall(p) : p.install, p.contract ? p.contract.slots : k.slots)}
-      <span><span class="name">${p.name}</span>${(() => { const bits = [sameWord(p.name, k.label) ? '' : k.label, where ? 'Market Square' : ''].filter(Boolean); return bits.length ? ` <span class="kind">· ${bits.join(' · ')}</span>` : ''; })()}<span class="stline" style="display:block">${line}</span></span>
+      <span><span class="name">${p.name}</span>${(() => { const bits = [sameWord(p.name, k.label) ? '' : k.label, where ? where.slice(3) : ''].filter(Boolean); return bits.length ? ` <span class="kind">· ${bits.join(' · ')}</span>` : ''; })()}<span class="stline" style="display:block">${line}</span></span>
       ${pill}</button>`;
   };
   const fitted = S.plots.filter(p => p.status === 'fitted' || p.status === 'rival');

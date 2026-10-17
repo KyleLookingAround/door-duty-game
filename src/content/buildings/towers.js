@@ -4,6 +4,7 @@ export default {
   plot: { name: 'Office Towers', rep: 24, street: 'market', needs: ['vestibule', 'wide', 'heat2'], why: 'The towers only talk to firms that can beat the stack effect' },
   kind: { label: 'Office towers', slots: 4, in: 3.0, out: 2.6, mix: { case: 0.05 }, towers: true, comfort: 19, hook: { twists: [], temp: 4 } },
   twistPool: ['fragile', 'stepfree', 'rain', 'wind', 'bikes'],
+  inside: { lifts: { count: 6, mode: 'all' } },
   site({ S, HW }) {
     // a tube exit dumps commuters at one end; security desk and the lift bank inside
     S.surge = { every: 7, n: 7, x: -HW + 1.4, spread: 1.0, until: 16 };

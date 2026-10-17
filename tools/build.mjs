@@ -39,8 +39,18 @@ function bundle(entry) {
     }
     const body = out.join('\n');
     // house rule 1: top-level names are unique across the program
-    for (const m of body.matchAll(/^(?:const|let|var|function|async function|class)\s+([\w$]+)/gm)) {
-      const name = m[1];
+    const names = [];
+    for (const m of body.matchAll(/^(?:function|async function|class)\s+([\w$]+)/gm)) names.push(m[1]);
+    // const a = 1, b = 2: every name in the statement, not just the first
+    for (const m of body.matchAll(/^(?:const|let|var)\s+([^;\n]*)/gm)) {
+      let depth = 0, part = '';
+      for (const ch of m[1] + ',') {
+        if ('([{'.includes(ch)) depth++;
+        if (')]}'.includes(ch)) depth--;
+        if (ch === ',' && depth === 0) { const n = part.trim().match(/^([\w$]+)\s*(=|$)/); if (n) names.push(n[1]); part = ''; } else part += ch;
+      }
+    }
+    for (const name of names) {
       if (owners.has(name) && owners.get(name) !== rel(file)) errors.push(`duplicate top-level name "${name}" in ${rel(file)} and ${owners.get(name)}`);
       owners.set(name, rel(file));
     }

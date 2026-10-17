@@ -1,6 +1,7 @@
 // The job screen's canvas: the plan view of the street, the frontage and the lobby, drawn every frame.
 import { BUILDING } from '../content/buildings/index.js';
 import { $ } from './dom.js';
+import { drawStage, stageLayout } from './stageart.js';
 import { eventOf } from '../content/events.js';
 import { GUEST, SLOT_W, TAU, V_SAFE, WORLD_HH, makeRng } from '../engine/world.js';
 import { S } from './store.js';
@@ -12,9 +13,11 @@ export function sizeCanvas() {
   if (!W) return;
   const r = $('stage').getBoundingClientRect();
   dpr = Math.min(2, window.devicePixelRatio || 1);
-  const n = W.contract.slots, ww = n * SLOT_W, wh = WORLD_HH * 2;
   cw = r.width;
-  ch = Math.min(cw * wh / ww, window.innerHeight * 0.5);
+  // an inside job sizes to its own hall; a chained level lays its stages out across a wide screen or down a narrow one
+  if (W.contract.stage) W.layout = stageLayout(W.contract, cw > 720);
+  const n = W.contract.slots, box = W.layout && W.contract.stage ? W.layout : null, ww = box ? box.w : n * SLOT_W, wh = box ? box.h : WORLD_HH * 2;
+  ch = Math.min(cw * wh / ww, window.innerHeight * (W.contract.chain ? 0.8 : 0.5));
   scale = Math.min(cw / ww, ch / wh);
   cv.style.height = ch + 'px';
   cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
@@ -79,6 +82,11 @@ export function draw(t) {
   const c = ctx, w = W.world, HW = w.HW, HH = w.HH;
   c.setTransform(dpr, 0, 0, dpr, 0, 0);
   c.clearRect(0, 0, cw, ch);
+  if (W.contract.stage) {   // an inside job draws its own hall
+    c.fillStyle = '#0e1116'; c.fillRect(0, 0, cw, ch);
+    c.save(); c.translate(cw / 2, ch / 2); c.scale(scale, scale); drawStage(c, W, t, 1 / scale); c.restore();
+    return;
+  }
   c.save(); c.translate(cw / 2, ch / 2); c.scale(scale, scale);
   const lw = 1 / scale;
   // the painted ground: pavement and kerb outside, the building's own floor inside (cached)

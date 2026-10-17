@@ -22,11 +22,16 @@ npm run record-golden  # re-record test/fixtures/surveyor-golden.json after a de
 ```
 src/
   engine/world.js        the crowd and door physics. World steps at SIM_DT = 1/60. No DOM.
+  engine/stages/         inside jobs: one small crowd model per paradox (queue, escalator, lifts, paternoster,
+                         walkway, carousel, braess, bottleneck), common.js (StageSim base), chain.js (stages run
+                         together as one crowd), index.js (STAGES registry)
   content/               data: what the game is made of. Add things here first.
     buildings/*.js       one file per client (see buildings/README.md); index.js fixes the save order
     twists.js tech.js company.js town.js events.js guides.js
+    paradoxes.js         which finished research makes which fitted client call, and about what
   game/                  rules, pure functions over the save S. No DOM.
     contracts.js         makeContract, the surveyor (generateSolved / solveContract), runHeadless, prices
+    stagejobs.js         inside jobs: makeStageContract, solveStage (the surveyor for stages), runStage, result rows
     economy.js           fees, upkeep, wear, insurance, reputation, unlock checks
     jobs.js              grade a result, signOff, and the firm's decisions (research, hire, premises, service)
     month.js             endMonth(S) -> report; inspect
@@ -37,6 +42,7 @@ src/
     store.js             the live save S (only this module replaces it)
     street.js scene.js   the street screen: ledger and the painted SVG street
     workshop.js canvas.js  the job screen: editor, test run, canvas plan view
+    stageart.js          drawing the inside jobs, and laying out a chained level's stages
     sheets.js            bottom sheets: brief, company, client, lessons, the month report
     coach.js survey.js dom.js
   worker.js              the survey worker: runs generateSolved off the main thread
@@ -56,6 +62,26 @@ docs/game-loop.html      the design page: the game loop, systems and roadmap
 6. **Plots are saved by position.** Only append to `BUILDINGS`; bump `SAVE_VERSION` and add a step to `migrate()` when the save's shape changes.
 7. Player-facing text is British English, plain and short.
 
+## Inside jobs (stages) and paradoxes
+
+Door jobs are about the frontage. Inside jobs are about what happens behind it, and each one teaches a paradox where the obvious fix is the wrong one. A stage file in `src/engine/stages/` exports:
+
+| field | what |
+|---|---|
+| `key`, `name`, `paradox`, `about` | ids and player-facing text |
+| `level(c, rng, tier)` | sets `c.params`, `c.crowd` (`rate`, `mix`), `c.arrive` (arrivals window) and `c.run` (test length), from the tier and `c.twists`. Call `StageSim.tune(c, rate, scale)` so clients can adjust it |
+| `twists` | the stage's own level twists: `{ key: { label, text } }` |
+| `options(c, tech)` | editor controls: `stepper`, `seg` (choices may need a tech), `range`, `toggle` (may need a tech) |
+| `defaults()`, `cost(d, existing)`, `sig(d)` | a design is `{ stage, ...settings }`; callbacks only charge for changes |
+| `candidates(c, tech)` | what the surveyor tries |
+| `reference(ok, c)`, `slack`, `metric` | how targets are set: the best of `reference` (e.g. "without a new lift") × `slack`. `metric` is `p90` or `mean` |
+| `bumps(c)`, `waitLabel`, `bumpLabel`, `hint(r, c)`, `explain(d, c)`, `box` | grading text, and the drawing area in metres |
+| `Sim` | a `StageSim` subclass: `admit(p)` takes a person in (from the street or the stage before), `step(dt)`, `finish(p)` when they leave, `over()` |
+
+Rules: a stage must work fed (`sim.fed`, people come from `admit`) as well as on its own, because chained levels (`chain.js`) hand each stage's finished people to the next. Check the paradox numerically before wiring it up: `test/stages.test.js` asserts each one holds on average over several seeds.
+
+Clients get inside jobs three ways: a paradox callback when research finishes (`content/paradoxes.js`, see `endMonth`), a building whose `jobs` list is all inside work (Riverside), or a normal callback about an inside setup they already have (`p.inside`). A building can rename and retune a stage for itself (`tune: { queue: { name: 'Bag check', rate, params } }`) and set what's already there (`inside: { queue: { desks: 3 } }`).
+
 ## Adding a building
 
 1. Copy a similar file in `src/content/buildings/`, change `key`, `plot`, `kind`, `site`, `floor`, `look` and the art hooks.
@@ -64,6 +90,7 @@ docs/game-loop.html      the design page: the game loop, systems and roadmap
 
 ## Known issues / TODO
 
-- **False-alarm callbacks are common**: about 16 in a 48-month bot game, the client calls back and the surveyor finds your existing doors already cope. Callbacks should more often come with a change that the installed doors genuinely fail.
+- Callbacks the installed doors already cope with escalate (up to three times) and then switch complaint, so false alarms should now be rare; if they reappear, check generateSolvedInner in contracts.js.
+- A chained level's survey takes 5 to 20 seconds (it improves the route one change at a time, not every combination).
 - The survey is CPU-heavy (a few seconds per tender); the worker hides it, but a full golden run takes ~8 minutes.
 - `prototype/` was removed in the restructure; the original single-file build is in the first commit if a comparison is needed.
