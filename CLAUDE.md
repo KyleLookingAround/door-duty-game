@@ -36,6 +36,7 @@ src/
     economy.js           fees, upkeep, wear, insurance, reputation, unlock checks
     jobs.js              grade a result, signOff, and the firm's decisions (research, hire, premises, service)
     month.js             endMonth(S) -> report; inspect
+    enquiries.js         clients asking for research you haven't done (with a date), and advice(S) for quiet months
     plots.js             refreshPlots: which clients talk to you, and new tenders
     state.js             freshState, migrate, the seeded random stream (S.rng)
   ui/                    the page. Every module that touches the DOM exposes an init function called from main.js.
@@ -86,6 +87,8 @@ Clients get inside jobs three ways: a paradox callback when research finishes (`
 ## Callbacks
 
 Ordinary callbacks are caused, not random. Each month a **street change** (`content/changes.js`: a bus stop moves, a care home opens, a cold snap) may go on the calendar two months ahead (`scheduleChange`). When it lands (`landChange`), up to a few fitted clients it touches go to status `checking`: they keep paying while the surveyor runs a **check** contract (`opts.check`: the client's normal day plus a moderate version of the change, no random twists, no escalation, and the client's own doors tried exactly as they stand). If they still pass, the client copes (`settleCheck`): `p.coped` goes up and so does their maintenance (`loyalty`, up to +15%). If not, it becomes a normal callback with that job. So doors built with room to spare ride changes out; doors built exactly to par usually don't.
+
+**Enquiries** keep research pulling: now and then (always, in a month with nothing on the table) a fitted client asks for work that needs a tech you could research now (`settleEnquiries`, from `PARADOX_CALLS`). `p.enquiry = { tech, j, by, text, bonus }`. If the tech is in by `by`, they call with that job and `signOff` pays the bonus (30% of the research price); if not, they stop waiting: to the rival once it's active, otherwise a step of loyalty. `advice(S)` suggests the one thing that would bring in work; the month report and the empty ledger show it.
 
 Other callbacks: paradox calls when research finishes (`content/paradoxes.js`), failed inspections, and the rival's botched work coming back. A new firm starts in May; first visits are warm in the warm months and there is no heatwave in the first summer, so temperature arrives in the autumn.
 

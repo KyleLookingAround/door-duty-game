@@ -5,7 +5,8 @@ import { CHANGE } from '../content/changes.js';
 import { changeWhere } from '../game/month.js';
 import { CALLBACKS, RIVAL, STREETS } from '../content/town.js';
 import { MONTHS } from '../game/contracts.js';
-import { feeOf, monthlyIncome, needsMet, needsText, rep, rivalActive, rivalInstall, streetOf, streetOpen, upkeep } from '../game/economy.js';
+import { feeOf, monthlyIncome, needsMet, needsText, rep, rivalActive, rivalInstall, streetOf, streetOpen, techName, upkeep } from '../game/economy.js';
+import { advice } from '../game/enquiries.js';
 import { refreshPlots } from '../game/plots.js';
 import { coach, coachDone, coachEl } from './coach.js';
 import { $, guarded, toast } from './dom.js';
@@ -92,7 +93,7 @@ export function renderStreet() {
     else if (p.status === 'callback' && p.reason === 'paradox') { pill = `<span class="pill open">New work</span>`; line = `${p.callText} Fee <b>${p.contract && p.contract.solved ? money(feeOf(S, p.contract)) : '…'}</b>`; }
     else if (p.status === 'callback') { pill = `<span class="pill call">${p.reason === 'botched' ? 'Rescue' : 'Callback'}</span>`; line = `${p.change && CHANGE[p.change] ? CHANGE[p.change].label + ': ' + (CALLBACKS[p.reason] || '').charAt(0).toLowerCase() + (CALLBACKS[p.reason] || '').slice(1) : CALLBACKS[p.reason] || 'Something has changed'}. No maintenance fee until fixed.`; }
     else if (p.status === 'rival') { pill = `<span class="pill lock">${RIVAL}</span>`; line = `Fitted by the rival firm · back in ${Math.max(1, (p.rivalUntil || 0) - S.month)} mo`; }
-    else { pill = `<span class="pill done">${'★'.repeat(p.stars)}</span>`; line = p.broken ? '<span style="color:var(--warn)">Broken down</span> · tap to service' : `Fitted · <b>${money(upkeep(S, p))}</b>/month${(p.wear || 0) >= 0.5 ? ` · wear ${Math.round(p.wear * 100)}%` : ''}${p.green ? ' · 🌿' : ''}${p.cert ? ' · certified' : ''}`; }
+    else { pill = `<span class="pill done">${'★'.repeat(p.stars)}</span>`; line = p.broken ? '<span style="color:var(--warn)">Broken down</span> · tap to service' : `Fitted · <b>${money(upkeep(S, p))}</b>/month${(p.wear || 0) >= 0.5 ? ` · wear ${Math.round(p.wear * 100)}%` : ''}${p.green ? ' · 🌿' : ''}${p.cert ? ' · certified' : ''}`; if (p.enquiry && !p.enquiry.ready) { pill = `<span class="pill open">Enquiry</span>`; line += ` · <b style="color:var(--brass)">wants ${techName(p.enquiry.tech)} within ${p.enquiry.by - S.month} mo</b>`; } }
     const where = streetOf(p) === 'market' ? ' · Market Square' : streetOf(p) === 'riverside' ? ' · Riverside' : '';
     return `<button class="plot${p.status === 'locked' || p.status === 'rival' ? ' locked' : ''}" type="button" data-i="${p.i}" ${p.status === 'locked' || p.status === 'rival' ? 'disabled' : ''}>
       ${frontHTML(p.status === 'rival' ? rivalInstall(p) : p.install, p.contract ? p.contract.slots : k.slots)}
@@ -102,7 +103,9 @@ export function renderStreet() {
   const fitted = S.plots.filter(p => p.status === 'fitted' || p.status === 'checking' || p.status === 'rival');
   const later = S.plots.filter(p => p.status === 'locked' && (streetOf(p) === 'high' || streetOpen(S, 'market') || p.rep <= rep(S) + 4));
   $('streetHead').textContent = live.length ? `On the table · ${live.length}` : 'Nothing on the table this month';
-  $('street').innerHTML = live.map(row).join('');
+  const tip = live.length ? null : advice(S);
+  $('street').innerHTML = live.map(row).join('') + (tip ? `<p class="note ledtip">${tip.text}${tip.tab ? ` <button class="ghost small" type="button" data-co="${tip.tab}">Open ${tip.tab}</button>` : ''}</p>` : '');
+  $('street').querySelectorAll('[data-co]').forEach(b => b.onclick = guarded(() => openCompany(b.dataset.co)));
   $('ledgerRest').innerHTML = (fitted.length ? `<div class="eyebrow ledhead">Your clients · ${fitted.filter(p => p.status === 'fitted').length}</div>${fitted.map(row).join('')}` : '')
     + (later.length ? `<div class="eyebrow ledhead">Not yet · you have ${rep(S)}★</div>${laterList(later)}` : '');
   $('ledger').querySelectorAll('.plot').forEach(b => b.addEventListener('click', guarded(() => { const p = S.plots[+b.dataset.i]; if (p.status === 'fitted' || p.status === 'checking') openClient(p.i); else if (p.status === 'open' || p.status === 'callback') openBrief(p.i); })));

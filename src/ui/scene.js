@@ -195,6 +195,7 @@ export function streetSVG() {
       : st === 'checking' ? ['CHECKING THE DOORS…', 'rgba(20,23,29,.85)', '#9cc4ec']
       : st === 'rival' ? [`${RIVAL} · back in ${Math.max(1, (p.rivalUntil || 0) - S.month)} mo`, 'rgba(60,60,64,.9)', '#c8c2b6']
       : st === 'fitted' && p.broken ? ['BROKEN DOWN · tap to service', '#ef5b4c', '#1a0a08']
+      : st === 'fitted' && p.enquiry && !p.enquiry.ready ? [`ENQUIRY · ${techName(p.enquiry.tech)} · ${p.enquiry.by - S.month} mo`, 'rgba(20,23,29,.85)', '#d4a94f']
       : st === 'fitted' ? ['★'.repeat(p.stars) + (p.green ? ' 🌿' : '') + (p.cert ? ' ✓' : '') + ' · ' + kmoney(upkeep(S, p)) + '/mo' + ((p.wear || 0) >= 0.7 ? ' ⚠' : ''), 'rgba(20,23,29,.85)', (p.wear || 0) >= 0.7 ? '#ef8a6a' : '#d4a94f']
       : [rep(S) >= p.rep && !needsMet(S, p) ? (missingNeeds(S, p).length > 1 ? `Needs ${missingNeeds(S, p).length} more research` : 'Needs ' + needsText(S, p)) : p.rep + '★ to bid', 'rgba(20,23,29,.75)', '#8d93a0'];
     const tw = lbl[0].length * 6.2 + 18, ly = Math.max(14, a.top - 28);

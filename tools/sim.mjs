@@ -42,7 +42,7 @@ export async function simulate({ months = 24, seed = 1, log = () => {} } = {}) {
     }
     // run the firm: fix what's broken, research what clients are waiting on, grow when there's money
     for (const p of S.plots) if (p.broken && S.cash > serviceCost(p) + 5000) service(S, p);
-    const wanted = S.plots.filter(p => p.status === 'locked').flatMap(p => plotNeeds(p)).filter(k => !S.unlocks[k]);
+    const wanted = [...S.plots.filter(p => p.enquiry && !p.enquiry.ready).map(p => p.enquiry.tech), ...S.plots.filter(p => p.status === 'locked').flatMap(p => plotNeeds(p))].filter(k => !S.unlocks[k]);
     const order = [...TECH].sort((a, b) => (wanted.includes(b.key) - wanted.includes(a.key)) || a.price - b.price);
     for (const t of order) {
       if (S.cash < t.price + 15000 || t.tier > prem(S).tier || (t.req || []).some(k => !S.unlocks[k])) continue;
@@ -56,6 +56,9 @@ export async function simulate({ months = 24, seed = 1, log = () => {} } = {}) {
     }
     const label = `${MONTHS[S.month % 12]} ${S.year}`;
     const rpt = endMonth(S);
+    refreshPlots(S);
+    if (!S.plots.some(p => ['open', 'callback', 'checking'].includes(p.status))) tally.quiet = (tally.quiet || 0) + 1;
+    tally.asked = (tally.asked || 0) + (rpt.enquiry.fresh ? 1 : 0); tally.won = (tally.won || 0) + rpt.enquiry.won.length; tally.lapsed = (tally.lapsed || 0) + rpt.enquiry.lapsed.length;
     const row = { month: label, cash: S.cash, rep: rep(S), jobs: S.jobs, fitted: S.plots.filter(p => p.status === 'fitted').length, net: rpt.net, calls: rpt.calls.length };
     tally.months.push(row);
     log(`${row.month.padEnd(9)} cash ${String(Math.round(row.cash)).padStart(8)}  rep ${String(row.rep).padStart(3)}★  jobs ${String(row.jobs).padStart(3)}  fitted ${String(row.fitted).padStart(2)}  net ${String(row.net).padStart(7)}  callbacks ${row.calls}`);
@@ -69,6 +72,7 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
   const t0 = Date.now();
   const { S, tally } = await simulate({ months: nums[0] || 24, seed: nums[1] || 1, log: quiet ? () => {} : console.log });
   console.log(`\ninside jobs: ${JSON.stringify(tally.inside || {})}`);
+  console.log(`enquiries: ${tally.asked || 0} asked · ${tally.won || 0} ready in time · ${tally.lapsed || 0} lapsed · ${tally.quiet || 0} months with nothing on the table`);
   console.log(`\n${tally.jobs} jobs · rep ${rep(S)}★ · cash ${Math.round(S.cash)} · ${tally.coped || 0} clients coped with street changes · ${tally.calls || 0} called back · ${tally.falseAlarms} false alarms · ${tally.unsurveyable} unsurveyable · ${tally.skipped} skipped · ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   if (tally.parFails.length) { console.log('PAR FAILURES (the surveyor\'s own design did not pass):\n  ' + tally.parFails.join('\n  ')); process.exit(1); }
 }

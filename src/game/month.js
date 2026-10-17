@@ -7,6 +7,7 @@ import { CHANGES, CHANGE } from '../content/changes.js';
 import { STREETS } from '../content/town.js';
 import { makeContract, runHeadless } from './contracts.js';
 import { random, randomInt } from './state.js';
+import { settleEnquiries, hasWork } from './enquiries.js';
 import { monthlyIncome, prem, insurance, wearRate, rivalActive, stepFreeOk, techOf, tierOf, streetOf, streetOpen } from './economy.js';
 
 export const CLAIM_EXCESS = 1200, INSPECTION_FINE = 2500;
@@ -122,7 +123,7 @@ export function endMonth(S) {
   S.pendingCalls = S.pendingCalls.filter(([k, j]) => {
     const def = PARADOX_CALLS[k] && PARADOX_CALLS[k][j];
     if (!def) return false;
-    const pool = S.plots.filter(p => p.status === 'fitted' && !p.broken && def.kinds.includes(p.kind));
+    const pool = S.plots.filter(p => p.status === 'fitted' && !p.broken && !p.enquiry && def.kinds.includes(p.kind));
     if (!pool.length) return true;
     const p = pool[randomInt(S, pool.length)];
     p.status = 'callback'; p.reason = 'paradox'; p.contract = null; p.tier++;
@@ -130,6 +131,9 @@ export function endMonth(S) {
     paradox.push(p);
     return false;
   });
+  // enquiries: a client waiting on research hears it's done (or gives up). With nothing else on, a new one comes in.
+  const enquiry = settleEnquiries(S, !hasWork(S));
+  paradox.push(...enquiry.won);
   // Brassworks bids on tenders you've left sitting
   const lost = [];
   if (rivalActive(S)) for (const p of S.plots) {
@@ -144,5 +148,5 @@ export function endMonth(S) {
     if ((p.contract.event || null) !== wantEv || (p.status === 'open' && (done.length || random(S) < 0.35))) p.contract = null;
   }
   const net = inc - rent - wageTotal - ins - claims.length * CLAIM_EXCESS - (insp && !insp.pass ? INSPECTION_FINE : 0);
-  return { inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes };
+  return { inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry };
 }

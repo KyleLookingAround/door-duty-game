@@ -105,7 +105,7 @@ test('street changes go on the calendar ahead, and land on the clients they touc
   // force a change on the High Street and land it
   const busy = { key: 'busstop', month: S.month, street: 'high' };
   const checked = landChange(S, busy);
-  assert.ok(checked.length > 0 && checked.length <= 3);
+  assert.ok(checked.length > 0 && checked.length <= CHANGES.find(d => d.key === 'busstop').max);
   for (const p of checked) { assert.equal(p.status, 'checking'); assert.equal(p.reason, 'busier'); assert.equal(p.change, 'busstop'); }
   for (const d of CHANGES) assert.ok(d.label && d.text && d.reason && d.max > 0);
 });
@@ -121,4 +121,42 @@ test('a check either copes (the client remembers) or becomes a callback', () => 
   const tier = b.tier;
   assert.equal(settleCheck(S, b, { existing: b.install, par: { cost: 5000 } }), 'call');
   assert.equal(b.status, 'callback'); assert.equal(b.tier, tier + 1);
+});
+
+// ---- enquiries: clients waiting on research ----
+import { settleEnquiries, advice } from '../src/game/enquiries.js';
+import { signOff } from '../src/game/jobs.js';
+
+test('a quiet month brings an enquiry; research in time brings the job and a bonus', () => {
+  const S = firm(31);
+  for (const p of S.plots.slice(0, 4)) p.kind = 'cafe';   // cafés call about air curtains
+  S.cash = 50000;
+  const { fresh } = settleEnquiries(S, true);
+  assert.ok(fresh && fresh.enquiry, 'with nothing on, a client asks');
+  const e = fresh.enquiry;
+  assert.ok(e.by > S.month && e.bonus > 0);
+  assert.match(advice(S).text, /^Start /, 'the advice is to start it');
+  S.unlocks[e.tech] = true; S.month = e.by;
+  const { won } = settleEnquiries(S, false);
+  assert.deepEqual(won.map(p => p.i), [fresh.i]);
+  assert.equal(fresh.status, 'callback'); assert.equal(fresh.reason, 'paradox');
+  const cash = S.cash;
+  const c = { existing: fresh.install, par: { cost: 0 }, margin: 2000, fee: 2000, goals: { minTemp: 16 } };
+  const { bonus } = signOff(S, fresh, c, fresh.install, 2, { bumps: 0, stops: 0, minTemp: 18 });
+  assert.equal(bonus, e.bonus);
+  assert.ok(S.cash >= cash + e.bonus);
+  assert.equal(fresh.enquiry, null);
+});
+
+test('an enquiry left too long lapses', () => {
+  const S = firm(32);
+  for (const p of S.plots.slice(0, 4)) p.kind = 'cafe';
+  S.cash = 50000;
+  const { fresh } = settleEnquiries(S, true);
+  fresh.coped = 2;
+  S.month = fresh.enquiry.by + 1;
+  const { lapsed } = settleEnquiries(S, false);
+  assert.equal(lapsed.length, 1);
+  assert.equal(fresh.enquiry, null);
+  assert.equal(fresh.coped, 1, 'no rival yet: just a little less loyal');
 });

@@ -39,22 +39,22 @@
   },
   "twists": [
    "listed",
-   "cold"
+   "nofire"
   ],
   "goals": {
    "bumps": 4,
-   "minTemp": 16,
+   "minTemp": null,
    "access": false,
    "laps": null,
    "through": 54
   },
-  "par": "r4,si",
+  "par": "r4,s",
   "cost": 6000,
   "fee": 11500,
   "budget": 12000,
   "relaxed": false,
   "slots": 2,
-  "temp": -5
+  "temp": 19
  },
  {
   "case": {
@@ -898,22 +898,22 @@
    "seed": 2110
   },
   "twists": [
-   "narrow",
+   "fragile",
    "tight"
   ],
   "goals": {
-   "bumps": 8,
+   "bumps": 0,
    "minTemp": null,
    "access": false,
    "laps": null,
-   "through": 139
+   "through": 123
   },
   "par": "si,so",
   "cost": 5000,
   "fee": 10500,
   "budget": 11000,
   "relaxed": false,
-  "slots": 3,
+  "slots": 4,
   "temp": 17
  },
  {
@@ -1195,22 +1195,23 @@
    "seed": 2480
   },
   "twists": [
-   "rain"
+   "listed",
+   "surge"
   ],
   "goals": {
    "bumps": 5,
    "minTemp": 18,
    "access": false,
-   "laps": null,
-   "through": 78
+   "laps": 1,
+   "through": 83
   },
-  "par": "s",
-  "cost": 9500,
-  "fee": 15000,
-  "budget": 17500,
+  "par": "r4,s,s",
+  "cost": 19000,
+  "fee": 27500,
+  "budget": 31500,
   "relaxed": false,
   "slots": 3,
-  "temp": 17
+  "temp": 20
  },
  {
   "case": {
@@ -1340,7 +1341,7 @@
   },
   "twists": [
    "tight",
-   "nofire"
+   "rain"
   ],
   "goals": {
    "bumps": 4,
@@ -1349,9 +1350,9 @@
    "laps": null,
    "through": 64
   },
-  "par": "s",
-  "cost": 6000,
-  "fee": 11500,
+  "par": "si,so",
+  "cost": 5000,
+  "fee": 10500,
   "budget": 11000,
   "relaxed": false,
   "slots": 2,
@@ -1487,22 +1488,22 @@
   },
   "twists": [
    "rain",
-   "cold"
+   "nofire"
   ],
   "goals": {
    "bumps": 7,
-   "minTemp": 16,
+   "minTemp": null,
    "access": false,
    "laps": null,
-   "through": 89
+   "through": 112
   },
-  "par": "s",
-  "cost": 9500,
-  "fee": 15000,
-  "budget": 17500,
+  "par": "s,s",
+  "cost": 12000,
+  "fee": 18000,
+  "budget": 21000,
   "relaxed": false,
   "slots": 2,
-  "temp": -3
+  "temp": 17
  },
  {
   "case": {
@@ -1778,8 +1779,8 @@
    "seed": 3220
   },
   "twists": [
-   "stepfree",
-   "fragile"
+   "fragile",
+   "stepfree"
   ],
   "goals": {
    "bumps": 0,

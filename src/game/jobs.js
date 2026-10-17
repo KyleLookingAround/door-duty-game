@@ -69,7 +69,10 @@ export const isGreen = (c, r) => (c.goals.minTemp != null && c.outsideTemp < 12 
 export function signOff(S, p, c, design, stars, r) {
   const cost = designCost(design, c.existing), profit = feeOf(S, c) - charge(S, cost);
   const lockedBefore = S.plots.filter(x => x.status === 'locked').length;
-  S.cash += profit;
+  // a client who asked for this and waited for your research pays a bonus for having it ready
+  const bonus = p.enquiry && p.enquiry.ready && p.status === 'callback' && p.reason === 'paradox' ? p.enquiry.bonus || 0 : 0;
+  if (bonus) p.enquiry = null;
+  S.cash += profit + bonus;
   if (c.stage) p.inside = { ...(p.inside || {}), [c.chain ? 'chain:' + c.chain.join('+') : c.stage]: JSON.parse(JSON.stringify(design)) };
   else p.install = design.map(s => ({ ...s }));
   p.stars = Math.max(p.stars, stars);
@@ -83,7 +86,7 @@ export function signOff(S, p, c, design, stars, r) {
   p.callStage = null; p.callTwist = null; p.callChain = null;
   S.jobs++;
   S.recent = [...(S.recent || []), designSig(design)].slice(-4);
-  return { profit, lockedBefore };
+  return { profit: profit + bonus, bonus, lockedBefore };
 }
 
 // the firm's decisions; each returns false if it isn't allowed right now

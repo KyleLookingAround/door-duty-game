@@ -121,6 +121,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
 .scene .flag { animation: flag 1.4s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: left center; }
 @keyframes flag { to { transform: scaleX(.75) skewY(6deg); } }
 .ledger { display: grid; gap: 10px; }
+.ledtip { margin: 8px 2px 4px; }
+.ledtip button { margin-left: 6px; vertical-align: middle; }
 .ledhead { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--mute); margin-top: 6px; }
 .streethint { font-size: 11px; color: var(--mute); margin-top: -8px; }
 @media (prefers-reduced-motion: reduce) { .scene * { animation: none !important; } }
