@@ -10,8 +10,9 @@ It ships as **one self-contained HTML page** (`dist/index.html`), deployed to Gi
 npm run dev          # serve the repo; open http://localhost:8080/src/shell.html (live modules, no build step)
 npm run build        # bundle to dist/index.html (fails on a name clash, a renamed import or a syntax error)
 npm run watch        # rebuild on change
-npm test             # fast suite (~45 s on 4 cores): content checks, save/month determinism, grading, a spread of golden surveys
-npm run test:full    # every golden survey plus a 6-month headless game (~3 min on 4 cores)
+npm test             # fast suite (~1.5 min on 4 cores): content checks, save/month determinism, grading, a spread of golden surveys,
+                     # one lesson check per research call
+npm run test:full    # every golden survey, every research call's lesson, survey times, a 6-month headless game (~5 min on 4 cores)
 npm run sim -- 24 1  # headless game: 24 months, seed 1, prints the firm's books month by month
 npm run bot -- 9     # browser smoke test (Playwright for Python, pinned in tools/requirements.txt): plays dist/index.html
                      # for 9 rounds (about 3 months); exits 1 on script errors, broken text, a wrong cost or a failed par
@@ -58,7 +59,7 @@ src/
   worker.js              the survey worker: runs generateSolved off the main thread
   shell.html             markup and CSS; the build fills <!--CORE--> and <!--APP-->
 tools/  build.mjs sim.mjs bot.py (requirements.txt) record-golden.mjs balance.mjs
-test/   *.test.js, fixtures/surveyor-golden.json, fixtures/balance-baseline.json (after the last phase), balance-before-phase0.json
+test/   *.test.js (lessons.test.js: research calls teach their research; speed.test.js: survey budgets), fixtures/surveyor-golden.json, fixtures/balance-baseline.json (after the last phase merged: Phase 1), balance-phase0.json, balance-before-phase0.json
 .github/workflows/  pages.yml (test, build, bot, deploy on main), nightly.yml (full tests, balance, a year of bot)
 docs/game-loop.html      the design page: the game loop, systems and roadmap
 docs/PLAN.md             the build plan: verified findings, phases, testing and architecture changes
@@ -94,6 +95,8 @@ Door jobs are about the frontage. Inside jobs are about what happens behind it, 
 
 Rules: a stage must work fed (`sim.fed`, people come from `admit`) as well as on its own, because chained levels (`chain.js`) hand each stage's finished people to the next. Check the paradox numerically before wiring it up: `test/stages.test.js` asserts each one holds on average over several seeds.
 
+Escalators have three levers: the rule, which way each one runs (`down`: how many run down; everyone without an escalator their way takes the stairs) and the speed (`fast` boards slower and makes the unsteady stumble). Stations and shops have a crowd both ways (`params.down`), turned round by the Evening peak and Closing time twists (`turnTwists`); research calls and chained levels are one-way and fixed speed. The Galleria has two layouts (`params.layout`): `shortcut` (close the bridge) and `long` (the bridge is a real shortcut: widen a pinch point). Inside jobs whose setup already passes tighten the target towards a cheap change before a rebuild (`solveStage`).
+
 Clients get inside jobs three ways: a paradox callback when research finishes (`content/paradoxes.js`, see `endMonth`), a building whose `jobs` list is all inside work (Riverside), or a normal callback about an inside setup they already have (`p.inside`). A building can rename and retune a stage for itself (`tune: { queue: { name: 'Bag check', rate, params } }`), reword its twists (`tune: { queue: { twists: { payday: { label, text } } } }`, as the arena does) and set what's already there (`inside: { queue: { desks: 3 } }`).
 
 ## Callbacks
@@ -102,7 +105,9 @@ Ordinary callbacks are caused, not random. Each month a **street change** (`cont
 
 **Enquiries** keep research pulling: now and then (always, in a month with nothing on the table) a fitted client asks for work that needs a tech you could research now (`settleEnquiries`, from `PARADOX_CALLS`). `p.enquiry = { tech, j, by, text, bonus }`. If the tech is in by `by`, they call with that job and `signOff` pays the bonus (30% of the research price); if not, they stop waiting: to the rival once it's active, otherwise a step of loyalty. `advice(S)` suggests the one thing that would bring in work; the month report and the empty ledger show it.
 
-Other callbacks: paradox calls when research finishes (`content/paradoxes.js`), failed inspections, and the rival's botched work coming back. A research call's problem travels as `opts.need` (from `p.callTwist`): `makeContract` puts it in before any random twist, and the surveyor's retries never drop it. A new firm starts in May; first visits are warm in the warm months and there is no heatwave in the first summer, so temperature arrives in the autumn.
+Other callbacks: paradox calls when research finishes (`content/paradoxes.js`), failed inspections, and the rival's botched work coming back. A research call's problem travels as `opts.need` (from `p.callTwist`): `makeContract` puts it in before any random twist, and the surveyor's retries never drop it. If the twist makes the job unfair (a surge no frontage can move), the retry calms the crowd (`opts.calm`, 0.8× a step, up to 3). A new firm starts in May; first visits are warm in the warm months and there is no heatwave in the first summer, so temperature arrives in the autumn.
+
+**Lessons.** A door research call also carries `opts.lesson` (from `p.callTech`), and `LESSON_GOALS` in `content/tech.js` says what the research teaches: which door feature uses it, the measurement it improves, and the door type the client keeps (`forbid`). The surveyor also tries what a firm without the research would fit, then `lessonGoal` sets that measurement's goal between the best design with the feature and the best without; a price lesson (`metric: null`) caps the budget below every design without it. If no fair lesson can be set the job is redrawn, and as a last resort it's an ordinary job (`test/lessons.test.js` allows up to a third of calls in its sample to fall back).
 
 ## Adding a building
 
@@ -115,6 +120,8 @@ Other callbacks: paradox calls when research finishes (`content/paradoxes.js`), 
 The build plan is `docs/PLAN.md`: what's next, the tests each phase must pass, and the decisions already made.
 
 - Real callbacks (inspections, the rival, paradox calls) still escalate if the doors already cope (generateSolvedInner); street-change checks don't, by design.
+- A research call with its lesson can take 15 to 30 seconds to survey (lesson checks and calm retries add runs); the Phase 3 worker pool is the fix.
+- About a third of research calls (in the lesson test's sample) still can't be given a fair lesson on some seeds and fall back to an ordinary job.
 - A chained level's survey takes 5 to 20 seconds (it improves the route one change at a time, not every combination).
 - The survey is CPU-heavy (a few seconds per tender); the worker hides it. Golden surveys run on every core (`surveyAll` in `test/golden-case.js`), so a full golden run is about 2 minutes on 4 cores; a headless game is still one month after another (10-25 s a month).
 - `prototype/` was removed in the restructure; the original single-file build is in the first commit if a comparison is needed.

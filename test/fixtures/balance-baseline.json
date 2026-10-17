@@ -120,7 +120,7 @@
    "i": 3,
    "name": "Aug",
    "jobs": 60,
-   "answers": 8,
+   "answers": 9,
    "top": "Wi+Wo",
    "topShare": 0.37,
    "revolving": 0.25,
@@ -134,12 +134,12 @@
      20
     ],
     [
-     "R+Wi+Wo",
+     "L+L+R",
      5
     ],
     [
-     "L+L+R",
-     5
+     "L+R",
+     3
     ],
     [
      "R+R+R",
@@ -151,30 +151,30 @@
    "i": 4,
    "name": "Sep",
    "jobs": 60,
-   "answers": 5,
-   "top": "L",
-   "topShare": 0.42,
-   "revolving": 0.17,
+   "answers": 8,
+   "top": "Wi+Wo",
+   "topShare": 0.4,
+   "revolving": 0.25,
    "ranked": [
-    [
-     "L",
-     25
-    ],
     [
      "Wi+Wo",
      24
+    ],
+    [
+     "L",
+     20
     ],
     [
      "L+R",
      5
     ],
     [
-     "L+L+R",
-     5
+     "R+R+R",
+     4
     ],
     [
-     "W",
-     1
+     "L+R+R",
+     3
     ]
    ]
   },
@@ -182,29 +182,29 @@
    "i": 5,
    "name": "Oct",
    "jobs": 60,
-   "answers": 6,
+   "answers": 8,
    "top": "L",
-   "topShare": 0.63,
-   "revolving": 0.25,
+   "topShare": 0.32,
+   "revolving": 0.57,
    "ranked": [
     [
      "L",
-     38
-    ],
-    [
-     "Wi+Wo",
-     5
+     19
     ],
     [
      "R+R",
-     5
-    ],
-    [
-     "L+R",
-     5
+     13
     ],
     [
      "L+R+R",
+     7
+    ],
+    [
+     "R",
+     6
+    ],
+    [
+     "Wi+Wo",
      5
     ]
    ]
@@ -213,29 +213,29 @@
    "i": 6,
    "name": "Nov",
    "jobs": 60,
-   "answers": 6,
+   "answers": 8,
    "top": "L",
-   "topShare": 0.6,
-   "revolving": 0.25,
+   "topShare": 0.33,
+   "revolving": 0.57,
    "ranked": [
     [
      "L",
-     36
-    ],
-    [
-     "Wi+Wo",
-     5
+     20
     ],
     [
      "R+R",
-     5
+     13
     ],
     [
      "L+R",
-     5
+     6
     ],
     [
      "L+R+R",
+     6
+    ],
+    [
+     "Wi+Wo",
      5
     ]
    ]
@@ -244,30 +244,30 @@
    "i": 7,
    "name": "Dec",
    "jobs": 60,
-   "answers": 6,
+   "answers": 8,
    "top": "L",
-   "topShare": 0.6,
-   "revolving": 0.25,
+   "topShare": 0.32,
+   "revolving": 0.57,
    "ranked": [
     [
      "L",
-     36
+     19
+    ],
+    [
+     "R+R",
+     16
+    ],
+    [
+     "L+R+R",
+     7
     ],
     [
      "Wi+Wo",
      5
     ],
     [
-     "R+R",
-     5
-    ],
-    [
      "L+R",
-     5
-    ],
-    [
-     "L+R+R",
-     5
+     4
     ]
    ]
   },
@@ -275,29 +275,29 @@
    "i": 8,
    "name": "Jan",
    "jobs": 60,
-   "answers": 7,
+   "answers": 8,
    "top": "L",
-   "topShare": 0.58,
-   "revolving": 0.25,
+   "topShare": 0.32,
+   "revolving": 0.57,
    "ranked": [
     [
      "L",
-     35
+     19
+    ],
+    [
+     "R+R",
+     16
+    ],
+    [
+     "L+R+R",
+     7
     ],
     [
      "Wi+Wo",
      5
     ],
     [
-     "W",
-     5
-    ],
-    [
      "L+R",
-     5
-    ],
-    [
-     "L+R+R",
      5
     ]
    ]
@@ -306,14 +306,22 @@
    "i": 9,
    "name": "Feb",
    "jobs": 60,
-   "answers": 7,
+   "answers": 8,
    "top": "L",
-   "topShare": 0.6,
-   "revolving": 0.25,
+   "topShare": 0.32,
+   "revolving": 0.57,
    "ranked": [
     [
      "L",
-     36
+     19
+    ],
+    [
+     "R+R",
+     16
+    ],
+    [
+     "L+R+R",
+     7
     ],
     [
      "Wi+Wo",
@@ -321,14 +329,6 @@
     ],
     [
      "L+R",
-     5
-    ],
-    [
-     "L+R+R",
-     5
-    ],
-    [
-     "W",
      4
     ]
    ]
@@ -337,30 +337,30 @@
    "i": 10,
    "name": "Mar",
    "jobs": 60,
-   "answers": 7,
+   "answers": 8,
    "top": "L",
-   "topShare": 0.6,
-   "revolving": 0.25,
+   "topShare": 0.33,
+   "revolving": 0.57,
    "ranked": [
     [
      "L",
-     36
+     20
+    ],
+    [
+     "R+R",
+     14
+    ],
+    [
+     "L+R+R",
+     7
     ],
     [
      "Wi+Wo",
      5
     ],
     [
-     "L+R",
+     "R+R+R",
      5
-    ],
-    [
-     "L+R+R",
-     5
-    ],
-    [
-     "W",
-     4
     ]
    ]
   },
@@ -368,30 +368,30 @@
    "i": 11,
    "name": "Apr",
    "jobs": 60,
-   "answers": 7,
+   "answers": 8,
    "top": "L",
-   "topShare": 0.6,
-   "revolving": 0.25,
+   "topShare": 0.3,
+   "revolving": 0.57,
    "ranked": [
     [
      "L",
-     36
+     18
+    ],
+    [
+     "R+R",
+     15
+    ],
+    [
+     "L+R+R",
+     7
     ],
     [
      "Wi+Wo",
      5
     ],
     [
-     "L+R",
+     "R",
      5
-    ],
-    [
-     "L+R+R",
-     5
-    ],
-    [
-     "W",
-     4
     ]
    ]
   }
@@ -400,83 +400,110 @@
   {
    "seed": 1,
    "months": 24,
-   "marketAt": 3,
-   "riversideAt": 4,
-   "rep4": 33,
-   "rep12": 36,
-   "rep24": 45,
-   "cash12": 78590,
-   "cash24": 254555,
-   "jobsPerMonth": 2,
-   "idleBenchMonths": 4,
-   "quiet": 0,
+   "marketAt": 4,
+   "riversideAt": 10,
+   "rep4": 20,
+   "rep12": 35,
+   "rep24": 39,
+   "cash12": 67215,
+   "cash24": 206075,
+   "jobsPerMonth": 1.8,
+   "idleBenchMonths": 10,
+   "quiet": 1,
+   "waiting": 18,
+   "repeatShare": 0.36,
+   "lazyShare": 0.14,
    "parFails": 0,
    "failedSurveys": 0
   },
   {
    "seed": 2,
    "months": 24,
-   "marketAt": 3,
-   "riversideAt": 4,
-   "rep4": 33,
-   "rep12": 36,
-   "rep24": 41,
-   "cash12": 21670,
-   "cash24": 372395,
-   "jobsPerMonth": 1.9,
-   "idleBenchMonths": 7,
-   "quiet": 1,
+   "marketAt": 4,
+   "riversideAt": 10,
+   "rep4": 18,
+   "rep12": 33,
+   "rep24": 40,
+   "cash12": 93650,
+   "cash24": 113030,
+   "jobsPerMonth": 1.7,
+   "idleBenchMonths": 6,
+   "quiet": 2,
+   "waiting": 23,
+   "repeatShare": 0.27,
+   "lazyShare": 0.15,
    "parFails": 0,
    "failedSurveys": 0
   },
   {
    "seed": 3,
    "months": 24,
-   "marketAt": 3,
-   "riversideAt": 4,
-   "rep4": 31,
+   "marketAt": 4,
+   "riversideAt": 10,
+   "rep4": 20,
    "rep12": 36,
-   "rep24": 48,
-   "cash12": 115080,
-   "cash24": 594195,
-   "jobsPerMonth": 2.3,
-   "idleBenchMonths": 6,
-   "quiet": 2,
+   "rep24": 45,
+   "cash12": 223805,
+   "cash24": 559030,
+   "jobsPerMonth": 2.2,
+   "idleBenchMonths": 8,
+   "quiet": 0,
+   "waiting": 27,
+   "repeatShare": 0.15,
+   "lazyShare": 0.21,
    "parFails": 0,
    "failedSurveys": 0
   },
   {
    "seed": 4,
    "months": 24,
-   "marketAt": 3,
-   "riversideAt": 4,
-   "rep4": 35,
-   "rep12": 36,
-   "rep24": 45,
-   "cash12": 145715,
-   "cash24": 543025,
-   "jobsPerMonth": 2.3,
-   "idleBenchMonths": 8,
-   "quiet": 1,
+   "marketAt": 5,
+   "riversideAt": 9,
+   "rep4": 17,
+   "rep12": 32,
+   "rep24": 41,
+   "cash12": 247010,
+   "cash24": 576525,
+   "jobsPerMonth": 2.4,
+   "idleBenchMonths": 6,
+   "quiet": 0,
+   "waiting": 16,
+   "repeatShare": 0.26,
+   "lazyShare": 0.14,
    "parFails": 0,
    "failedSurveys": 0
   },
   {
    "seed": 5,
    "months": 24,
-   "marketAt": 3,
-   "riversideAt": 4,
-   "rep4": 33,
-   "rep12": 36,
-   "rep24": 44,
-   "cash12": 14730,
-   "cash24": 424025,
-   "jobsPerMonth": 2,
-   "idleBenchMonths": 11,
-   "quiet": 2,
+   "marketAt": 4,
+   "riversideAt": 11,
+   "rep4": 20,
+   "rep12": 35,
+   "rep24": 39,
+   "cash12": 74335,
+   "cash24": 299240,
+   "jobsPerMonth": 1.9,
+   "idleBenchMonths": 8,
+   "quiet": 0,
+   "waiting": 31,
+   "repeatShare": 0.33,
+   "lazyShare": 0.11,
    "parFails": 0,
    "failedSurveys": 0
   }
  ],
+ "playedTop": {
+  "summer": {
+   "top": "L",
+   "share": 0.29,
+   "jobs": 83
+  },
+  "winter": {
+   "top": "L",
+   "share": 0.35,
+   "jobs": 127
+  }
+ },
  "failed": []
 }

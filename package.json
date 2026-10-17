@@ -10,7 +10,7 @@
     "watch": "node tools/build.mjs --watch",
     "serve": "python3 -m http.server 8080 -d dist",
     "test": "node --test test/*.test.js",
-    "test:full": "GOLDEN=full node --test test/*.test.js",
+    "test:full": "GOLDEN=full node --test test/*.test.js && SPEED=1 node --test test/speed.test.js",
     "sim": "node tools/sim.mjs",
     "bot": "python3 tools/bot.py",
     "record-golden": "node tools/record-golden.mjs",
