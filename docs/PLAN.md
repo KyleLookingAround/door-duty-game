@@ -60,6 +60,8 @@ How to use this page: work the phases in order. Each phase lists the work, the a
 
 ### Phase 0: fixes (one session)
 
+**Status: done, October 2026.** B1–B5 are fixed, each with a test (`test/designs.test.js`, `test/text.test.js`, `test/calls.test.js`). The tests went from 62 to 76 passing. Every fixed screen was checked in the built page. The bot runs in CI, the PR concurrency bug is fixed, and the baseline is in `test/fixtures/balance-baseline.json`. The golden re-record (item 6) turned out not to be needed: `record-golden --dry` showed none of the 69 cases changed, because the fixture has no research calls or inside jobs. Phase 1 adds them.
+
 **Work**
 1. B1: deep-copy designs. *Architecture:* move the design model into `game/` (`newDesign(c)`, a deep `cloneDesign` using `structuredClone`, `designCost`); the workshop only calls them.
 2. B2: wording for research calls in the door brief; "New work" everywhere for them.
@@ -80,9 +82,10 @@ How to use this page: work the phases in order. Each phase lists the work, the a
 ### Phase 1: every job a real puzzle
 
 **Work**
-1. D2: the anti-repeat rule covers first visits too, so two clients in a row can't share an answer.
+1. D2: the anti-repeat rule covers first visits too, so two clients in a row can't share an answer. Fix `designSig` first: it uses a door type's first letter (`contracts.js:49`), so swing and sliding doors both read `s` and the rule can't tell them apart. `tools/balance.mjs` already uses its own unambiguous shape (`W`, `L`, `R`, `G`).
+   - Add golden cases for research calls and inside jobs (including a chained level). Today's 69 cases have none, so Phase 0's changes to them didn't show in the golden test at all.
 2. D1: summer pressures that defeat the cheap pair some of the time: surges with a go-round limit, crosswinds on corner plots, heat, bikes. Revolving doors appear before October.
-3. D3: every research call grades its lesson: a go-round limit for big cores, an older-guest goal for sensors, a time goal for pillars on fire drills.
+3. D3: every research call grades its lesson: a go-round limit for big cores, an older-guest goal for sensors, a time goal for pillars on fire drills. Watch the other goals too: Halden's big-core call (now with its surge) asks for only 8 people through against a rush of 321 a minute, so its throughput goal means nothing.
 4. D3: the surveyor rejects a par that ignores the lesson, and regenerates the job.
 5. D4: vary the Galleria (more routes, budgets that let widening compete, a wider twist pool), and check every Riverside level varies across seeds.
 6. Grow the Open doors branch (section 4.3) so summer has research to reach for: door closers, automatic swing operators, telescopic sliders. Summer jobs then have more than one good answer, and the branch has more than its current two nodes.
