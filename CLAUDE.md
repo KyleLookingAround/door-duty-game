@@ -52,6 +52,7 @@ src/
 tools/  build.mjs sim.mjs bot.py record-golden.mjs
 test/   *.test.js, fixtures/surveyor-golden.json
 docs/game-loop.html      the design page: the game loop, systems and roadmap
+docs/PLAN.md             the build plan: verified findings, phases, testing and architecture changes
 ```
 
 ## House rules (the bundler enforces 1 and 2)
