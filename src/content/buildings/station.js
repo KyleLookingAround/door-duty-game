@@ -6,6 +6,7 @@ export default {
   // a station only gets the twists that make sense at a gate line
   twistPool: ['fragile', 'stepfree', 'rain', 'surge', 'bikes', 'narrow'],
   doorTypes: ['wall', 'gates'],
+  inside: { escalator: { count: 2, rule: 'walk' } },   // the deep escalators up from the platforms
   site({ S, n, HW, cx, last }) {
     // ticket machines on the street side, the departure board and the escalators down to the platforms
     S.obstacles.push({ kind: 'rect', x0: -HW + 0.15, x1: -HW + 0.75, y0: -1.75, y1: -1.35, tag: 'machines' });

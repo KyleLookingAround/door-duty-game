@@ -2,6 +2,7 @@ export default {
   key: 'store',
   plot: { name: "Halden's", rep: 11 },
   kind: { label: 'Department store', slots: 4, in: 1.8, out: 1.4, mix: { elderly: 0.1, case: 0.1 }, hook: { twists: ['nofire', 'cold'], temp: 2 } },
+  inside: { escalator: { count: 1, rule: 'stand' } },   // they've put up "stand on both sides" signs
   site({ S, n, HW, cx, person }) {
     S.surge = { every: 9, n: 6, x: -HW + 1.3, spread: 0.9 };
     S.decos.push({ kind: 'shelter', x0: -HW + 0.2, x1: -HW + 2.4, y0: -3.45, y1: -3.05 });

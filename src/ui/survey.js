@@ -7,6 +7,7 @@ import { refreshPlots } from '../game/plots.js';
 import { techOf } from '../game/economy.js';
 import { TWISTS } from '../content/twists.js';
 import { CALLBACKS } from '../content/town.js';
+import { STAGE_TWISTS } from '../engine/stages/index.js';
 
 // the street listens here to redraw when a survey lands
 export const surveyHooks = { changed: () => {} };
@@ -50,7 +51,7 @@ export function survey(p) {
         return null;
       }
       // the surveyor may have switched the complaint (the doors coped with the first one)
-      if (p.status === 'callback' && sc.opts && sc.opts.callback && CALLBACKS[sc.opts.callback]) p.reason = sc.opts.callback;
+      if (p.status === 'callback' && p.reason !== 'paradox' && sc.opts && sc.opts.callback && CALLBACKS[sc.opts.callback]) p.reason = sc.opts.callback;
       p.contract = sc; save(); surveyHooks.changed();
     }
     return sc;
@@ -58,4 +59,4 @@ export function survey(p) {
   surveys.set(seed, entry);
   return entry.promise;
 }
-export const twistLabel = t => (TWISTS[t] ? TWISTS[t].label : t);
+export const twistLabel = t => (TWISTS[t] ? TWISTS[t].label : STAGE_TWISTS[t] ? STAGE_TWISTS[t].label : t);

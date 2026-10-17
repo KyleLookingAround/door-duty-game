@@ -2,7 +2,9 @@
 import { BUILDING } from '../content/buildings/index.js';
 import { EVENTS } from '../content/events.js';
 import { REV_R, SLOT_W, TAU, V_SAFE, World } from '../engine/world.js';
-import { PRICE, SIM_DT, TEST_SECONDS, designCost, runSeconds, slotCost, testOver, worldCfg } from '../game/contracts.js';
+import { PRICE, SIM_DT, TEST_SECONDS, designCost, newSim, runSeconds, slotCost, testOver } from '../game/contracts.js';
+import { STAGES, stageName } from '../engine/stages/index.js';
+import { techName } from '../game/economy.js';
 import { charge, feeOf, techOf } from '../game/economy.js';
 import { grade, signOff } from '../game/jobs.js';
 import { cv, cw, scale, sizeCanvas } from './canvas.js';
@@ -13,6 +15,8 @@ import { S, save } from './store.js';
 import { renderStreet } from './street.js';
 import { twistLabel } from './survey.js';
 import { kmoney, money } from '../util/format.js';
+// a door design is a list of bays; an inside job's is one object of settings
+const cloneDesign = d => Array.isArray(d) ? d.map(s => ({ ...s })) : { ...d };
 export let W = null; // { plot, contract, design, sel, world, mode:'design'|'test'|'result', passed, lastResult }
 export function defaultSlot(type) {
   if (type === 'revolve') return { type, wings: 4, mouth: 40, core: 0.15, rpm: 4, padded: false, flow: 'both' };
@@ -24,8 +28,9 @@ export function defaultSlot(type) {
 export function openWorkshop(i) {
   guard();
   const p = S.plots[i], c = p.contract;
-  const design = (c.existing ? c.existing.map(s => ({ ...s })) : Array.from({ length: c.slots }, () => defaultSlot('wall')));
-  W = { plot: p, contract: c, design, start: design.map(s => ({ ...s })), sel: Math.floor((c.slots - 1) / 2), mode: 'design', passed: false };
+  const design = c.stage ? { ...c.existing } : (c.existing ? c.existing.map(s => ({ ...s })) : Array.from({ length: c.slots }, () => defaultSlot('wall')));
+  W = { plot: p, contract: c, design, start: cloneDesign(design), sel: Math.floor((c.slots - 1) / 2), mode: 'design', passed: false };
+  $('slots').hidden = !!c.stage;
   disarmReset();
   showSpeed();
   $('streetView').hidden = true; $('dockStreet').hidden = true;
@@ -39,6 +44,15 @@ export function openWorkshop(i) {
 // the job's twists and rules, always visible above the plan; tap for the full brief
 function renderStrip() {
   const c = W.contract, g = c.goals, mix = c.crowd.mix || {}, chips = [];
+  if (c.stage) {
+    if (c.paradox) chips.push(['Paradox job', 'brass']);
+    if (c.event) chips.push([Object.values(EVENTS).find(e => e.key === c.event).label, 'brass']);
+    chips.push([c.chain ? c.chain.map(k => stageName(c, k)).join(' → ') : stageName(c, c.stage), '']);
+    for (const t of c.twists) chips.push([twistLabel(t), '']);
+    chips.push([`${c.metric === 'mean' ? 'Average' : '9 in 10'} ≤ ${g.wait}s`, 'hot']);
+    $('wsStrip').innerHTML = chips.map(([t, cls]) => `<span class="tag ${cls}">${t}</span>`).join('') + '<span class="tag more">Full brief ›</span>';
+    return;
+  }
   if (c.event) chips.push([Object.values(EVENTS).find(e => e.key === c.event).label, 'brass']);
   if (c.specialist) chips.push(['Specialist', 'brass']);
   for (const t of c.twists) chips.push([twistLabel(t), t === 'cold' || t === 'wind' ? 'cold' : t === 'fragile' ? 'hot' : '']);
@@ -72,7 +86,7 @@ const openWsBrief = () => { if (W && W.mode !== 'test') openBrief(W.plot.i, true
 
 export function resetPreview() {
   const c = W.contract;
-  W.world = new World({ ...worldCfg(c, W.design, techOf(S)), crowd: { in: 0, out: 0, mix: {} }, duration: 0 });
+  W.world = newSim(c, W.design, techOf(S), true);
   W.mode = 'design';
 }
 
@@ -87,7 +101,7 @@ function updateCost() {
   const tb = $('testBtn');
   if (W.mode === 'test') tb.textContent = 'Stop test';
   else if (W.passed) tb.textContent = `Sign off · ${money(feeOf(S, c) - paid)} profit`;
-  else tb.textContent = 'Run rush hour';
+  else tb.textContent = c.stage ? 'Run the crowd' : 'Run rush hour';
   tb.disabled = false;
   return cost;
 }
@@ -102,6 +116,7 @@ function slotLabel(x, i) {
   return old && old.type === x.type ? (cost ? '+' + kmoney(cost) : 'kept') : kmoney(cost);
 }
 export function renderEditor() {
+  if (W.contract.stage) return renderStageEditor();
   const d = W.design, s = d[W.sel], u = S.unlocks, rules = W.contract.rules || {};
   const fixed = !!(rules.fixed && rules.fixed[W.sel]);
   const locked = W.mode === 'test' || fixed;
@@ -175,6 +190,56 @@ export function renderEditor() {
   if ($('wm')) { $('wm').onclick = () => { s.wings--; designDirty(); renderEditor(); }; $('wp').onclick = () => { s.wings++; designDirty(); renderEditor(); }; }
   updateCost();
 }
+// an inside job's HUD: the clock, people through, the time target so far, bumps, and who's waiting
+function stageHud() {
+  const c = W.contract, g = c.goals, w = W.world, r = w.stats, testing = W.mode !== 'design', st = STAGES[c.stage];
+  const chip = (id, label, value, cls) => { $('h' + id).textContent = value; $('c' + id).className = 'chip' + (cls ? ' ' + cls : ''); $('c' + id).querySelector('span').textContent = label; };
+  const left = Math.max(0, Math.ceil(c.arrive - w.t));
+  chip('Clock', testing && w.t >= c.arrive ? 'Clearing' : 'Doors open', testing ? (w.t < c.arrive ? `${left}s` : `+${Math.ceil(w.t - c.arrive)}s`) : `${c.arrive}s`);
+  chip('Thru', 'Through', `${r.through}/${g.through}`, testing && r.through >= g.through ? 'good' : '');
+  chip('Bump', st.bumps ? 'Bumps' : 'Bumps', `${r.bumps}/${g.bumps}`, r.bumps > g.bumps ? 'bad' : '');
+  const sofar = testing && w.waits && w.waits.length ? (c.metric === 'mean' ? w.waitMean() : w.waitP90()) : null;
+  chip('Temp', c.metric === 'mean' ? 'Average' : '9 in 10', sofar == null ? `≤${g.wait}s` : `${sofar.toFixed(0)}s`, sofar != null && sofar > g.wait ? 'bad' : '');
+  chip('Acc', 'Inside', String(testing ? w.people.length : 0), '');
+}
+// an inside job: the stage's own settings, from its options list. A chained level has a tab per stage.
+function renderStageEditor() {
+  const c = W.contract, u = techOf(S), locked = W.mode === 'test', later = [];
+  let st = STAGES[c.stage], sub = c, d = W.design, html = '';
+  if (c.chain) {
+    W.part = Math.min(W.part || 0, c.chain.length - 1);
+    const parts = STAGES.chain.partsOf(c);
+    const res = W.mode === 'result' && W.result && W.result.parts;
+    html += `<div class="seg parttabs" style="grid-template-columns:repeat(${parts.length},1fr)">${parts.map(({ st: ps, i }) => `<button type="button" data-part="${i}" aria-pressed="${i === W.part}">${i + 1}. ${stageName(c, ps.key)}${res ? `<small>${res[i].wait.toFixed(0)}s${res[i].bumps ? ` · ${res[i].bumps} bump${res[i].bumps > 1 ? 's' : ''}` : ''}</small>` : ''}</button>`).join('')}</div>`;
+    st = parts[W.part].st; sub = parts[W.part].sub; d = W.design.parts[W.part];
+  }
+  if (st.intro) html += `<p class="note">${st.intro}</p>`;
+  for (const o of st.options(sub, u)) {
+    if (o.tech && !u[o.tech]) { later.push(o.label.toLowerCase()); continue; }
+    if (o.kind === 'stepper') {
+      html += `<div class="row"><span class="lbl">${o.label}</span><div class="stepper"><button type="button" data-step="${o.key}" data-by="-1" ${locked || d[o.key] <= o.min ? 'disabled' : ''} aria-label="Fewer">−</button><div class="dots">${Array.from({ length: o.max }, (_, i) => `<i class="${i < d[o.key] ? 'on' : ''}"></i>`).join('')}</div><button type="button" data-step="${o.key}" data-by="1" ${locked || d[o.key] >= o.max ? 'disabled' : ''} aria-label="More">+</button></div><output>${d[o.key]}</output></div>`;
+    } else if (o.kind === 'seg') {
+      const ch = o.choices.filter(x => !x[2] || u[x[2]]);
+      for (const x of o.choices) if (x[2] && !u[x[2]]) later.push(`${x[1].toLowerCase()} (${techName(x[2])})`);
+      html += `<div class="row"><span class="lbl">${o.label}</span><div class="seg ${ch.length === 2 ? 'two' : ch.length === 3 ? 'three' : ''}" style="grid-column:2 / span 2">${ch.map(([v, l]) => `<button type="button" data-opt="${o.key}" data-v="${v}" aria-pressed="${String(d[o.key]) === String(v)}" ${locked ? 'disabled' : ''}>${l}</button>`).join('')}</div></div>`;
+    } else if (o.kind === 'range') {
+      html += `<div class="row"><label for="st_${o.key}">${o.label}</label><input id="st_${o.key}" data-range="${o.key}" type="range" min="${o.min}" max="${o.max}" step="${o.step}" value="${d[o.key]}" ${locked ? 'disabled' : ''}><output>${o.fmt ? o.fmt(d[o.key]) : d[o.key]}</output></div>`;
+    } else if (o.kind === 'toggle') {
+      html += `<label class="toggle"><span>${o.label}<small>${o.note || ''}</small></span><input type="checkbox" data-tog="${o.key}" ${d[o.key] ? 'checked' : ''} ${locked ? 'disabled' : ''}></label>`;
+    }
+    if (o.note && o.kind !== 'toggle') html += `<p class="note">${o.note}</p>`;
+  }
+  if (st.explain) html += `<p class="note">${st.explain(d, sub)}</p>`;
+  if (later.length) html += `<p class="note more">More in Company: ${later.join(', ')}.</p>`;
+  const ed = $('editor');
+  ed.innerHTML = html;
+  ed.querySelectorAll('[data-part]').forEach(b => b.onclick = () => { W.part = +b.dataset.part; renderEditor(); });
+  ed.querySelectorAll('[data-step]').forEach(b => b.onclick = () => { const o = st.options(sub, u).find(x => x.key === b.dataset.step); d[o.key] = Math.max(o.min, Math.min(o.max, d[o.key] + +b.dataset.by)); designDirty(); renderEditor(); });
+  ed.querySelectorAll('[data-opt]').forEach(b => b.onclick = () => { const v = b.dataset.v; d[b.dataset.opt] = isNaN(+v) || v === '' ? v : +v; designDirty(); renderEditor(); });
+  ed.querySelectorAll('[data-range]').forEach(el => { el.oninput = () => { d[el.dataset.range] = +el.value; const o = st.options(sub, u).find(x => x.key === el.dataset.range); el.nextElementSibling.textContent = o.fmt ? o.fmt(+el.value) : el.value; designDirty(); }; el.onchange = () => renderEditor(); });
+  ed.querySelectorAll('[data-tog]').forEach(el => el.onchange = () => { d[el.dataset.tog] = el.checked; designDirty(); renderEditor(); });
+  updateCost();
+}
 function refreshEditorLight() {
   // update outputs without rebuilding (keeps the slider being dragged)
   const s = W.design[W.sel];
@@ -192,15 +257,15 @@ const SPEEDS = [1, 3, 8];
 export function showSpeed() { const sp = S.speed || 3; $('ffBtn').textContent = sp + '×'; $('ffBtn').setAttribute('aria-pressed', sp > 1); $('ffBtn').setAttribute('aria-label', `Test speed ${sp} times`); $('skipBtn').hidden = !(W && W.mode === 'test'); }
 
 function startTest() {
-  if (W.design.every(s => s.type === 'wall')) { toast('Add at least one door', true); return; }
-  W.world = new World(worldCfg(W.contract, W.design, techOf(S)));
+  if (Array.isArray(W.design) && W.design.every(s => s.type === 'wall')) { toast('Add at least one door', true); return; }
+  W.world = newSim(W.contract, W.design, techOf(S));
   W.mode = 'test'; W.passed = false; W.fx = []; W.lastEvT = -1; W.steps = 0;
   if (coachEl.id === 'run') coachDone();
   renderEditor(); updateHud(); showSpeed();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 export function evaluateTest() {
-  const c = W.contract, g = c.goals, r = { ...W.world.stats, minTemp: W.world.minTemp, maxTemp: W.world.maxTemp, wait: W.world.waitP90() };
+  const c = W.contract, g = c.goals, r = c.stage ? W.world.result() : { ...W.world.stats, minTemp: W.world.minTemp, maxTemp: W.world.maxTemp, wait: W.world.waitP90() };
   if (c.drill && r.evac == null) r.evac = null;
   const { rows, pass, stars, hint, cost, green } = grade(S, c, W.design, r);
   W.mode = 'result'; W.passed = pass; W.stars = stars; W.cost = cost; W.result = r;
@@ -210,7 +275,7 @@ export function evaluateTest() {
     ${green ? '<p class="note"><strong style="color:var(--ok)">🌿 Green star.</strong> The lobby stayed snug, so the client\'s heating bills drop. They\'ll pay 15% more maintenance.</p>' : ''}
     ${pass && r.bumps ? `<p class="note">${r.bumps} bump${r.bumps > 1 ? 's' : ''} go on your insurance record: +${money(45 * r.bumps)} a month while this install stands.</p>` : ''}
     <ul class="list">${rows.map(([a, v, gl, ok]) => `<li class="${ok === true ? 'pass' : ok === false ? 'fail' : ''}"><span>${a} <span style="color:var(--mute)">${gl}</span></span><span>${v}</span></li>`).join('')}</ul>
-    <div style="display:flex;gap:8px">${pass ? `<button class="ghost" type="button" id="rEdit">Keep tweaking</button><button class="go" type="button" id="rSign">Sign off</button>` : `<button class="ghost" type="button" id="rAgain">Watch again</button><button class="go" type="button" id="rEdit">Change the doors</button>`}</div>`);
+    <div style="display:flex;gap:8px">${pass ? `<button class="ghost" type="button" id="rEdit">Keep tweaking</button><button class="go" type="button" id="rSign">Sign off</button>` : `<button class="ghost" type="button" id="rAgain">Watch again</button><button class="go" type="button" id="rEdit">${c.stage ? 'Change the setup' : 'Change the doors'}</button>`}</div>`);
   $('rEdit').onclick = () => { closeSheet(); renderEditor(); };
   if (pass) $('rSign').onclick = () => { closeSheet(); signOffJob(); };
   else $('rAgain').onclick = () => { closeSheet(); startTest(); };
@@ -242,6 +307,7 @@ export function confetti(i) {
 
 export function updateHud() {
   if (!W) return;
+  if (W.contract.stage) return stageHud();
   const c = W.contract, g = c.goals, w = W.world, st = w.stats, testing = W.mode !== 'design';
   $('hClock').textContent = testing ? (w.alarm ? `${(w.stats.evac ?? (w.t - w.alarmT)).toFixed(0)}/${g.evac}s` : `${Math.max(0, Math.ceil(TEST_SECONDS - w.t))}s`) : '40s';
   $('cClock').querySelector('span').textContent = testing && w.alarm ? 'Evacuating' : 'Clock';
@@ -274,10 +340,10 @@ export function initWorkshop() {
     const b = $('wsResetBtn');
     if (!resetTimer) { b.textContent = 'Confirm?'; b.classList.add('armed'); resetTimer = setTimeout(disarmReset, 3000); return; }
     disarmReset();
-    W.design = W.start.map(s => ({ ...s }));
+    W.design = cloneDesign(W.start);
     W.sel = Math.floor((W.contract.slots - 1) / 2);
     designDirty(); renderEditor();
-    toast(W.contract.existing ? 'Back to the doors already fitted' : 'Back to a bare frontage');
+    toast(W.contract.stage ? 'Back to how it was' : W.contract.existing ? 'Back to the doors already fitted' : 'Back to a bare frontage');
   };
   $('wsBriefBtn').onclick = openWsBrief;
   $('wsStrip').onclick = openWsBrief;

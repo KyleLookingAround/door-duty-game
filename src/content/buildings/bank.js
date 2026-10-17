@@ -2,6 +2,7 @@ export default {
   key: 'bank',
   plot: { name: 'Mercer & Sons Bank', rep: 2, needs: 'mouth', why: 'Their corner is a wind tunnel' },
   kind: { label: 'Bank', slots: 2, in: 0.9, out: 0.8, mix: {}, hook: { twists: ['wind'], temp: 1 } },
+  inside: { queue: { desks: 3, layout: 'lines' } },   // the counter hall behind the doors
   site({ S, n, HW, cx, person }) {
     // the cash machine sits in the wall beside bay 1; its queue snakes along the pavement across bay 1's approach
     const ax = n > 1 ? cx(0) + 1.3 : HW - 0.3;

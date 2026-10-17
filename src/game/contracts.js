@@ -4,6 +4,7 @@ import { World, makeRng, SLOT_W } from '../engine/world.js';
 import { BUILDING, KINDS, buildSite } from '../content/buildings/index.js';
 import { EVENTS, xmasBays } from '../content/events.js';
 import { TWIST_POOL, TWIST_REQ, CONFLICTS, clashes, isSpecialist } from '../content/twists.js';
+import { makeStageContract, newStageSim, runStage, solveStage, stageCost, stageSig } from './stagejobs.js';
 // Each building's first contract is a hand-picked "hook" that breaks the stock answers.
 // Later contracts draw twists from the same pool, and a novelty check stops repeats.
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -21,6 +22,7 @@ export function slotCost(s) {
   return extras + (s.type === 'swing' ? PRICE.swing : PRICE.slider) + (s.curtain ? PRICE.curtain : 0) + (s.vestibule ? PRICE.vestibule : 0) + (s.lanes ? PRICE.lanes : 0);
 }
 export function designCost(slots, existing) {
+  if (!Array.isArray(slots)) return stageCost(slots, existing);   // an inside job's setup
   let c = 0;
   slots.forEach((s, i) => {
     const old = existing && existing[i];
@@ -42,6 +44,7 @@ export function designCost(slots, existing) {
 }
 // a position-free fingerprint of a design, for the novelty check
 export function designSig(slots) {
+  if (!Array.isArray(slots)) return stageSig(slots);
   return slots.filter(s => s.type !== 'wall').map(s => {
     let t = s.type[0];
     if (s.flow && s.flow !== 'both') t += s.flow[0];
@@ -56,6 +59,7 @@ export function designSig(slots) {
   }).sort().join(',');
 }
 export function violatesRules(contract, slots) {
+  if (!Array.isArray(slots)) return false;
   const r = contract.rules || {};
   if (r.forbid && slots.some(s => r.forbid.includes(s.type))) return true;
   if (r.fixed) for (const [i, f] of Object.entries(r.fixed)) if (slots[i].type !== f.type) return true;
@@ -63,6 +67,7 @@ export function violatesRules(contract, slots) {
 }
 
 export function makeContract(kindKey, tier, month, seed, opts = {}) {
+  if (opts.stage) return makeStageContract(kindKey, tier, month, seed, opts);   // an inside job
   const k = KINDS[kindKey], rng = makeRng(seed * 7919 + 13), tech = opts.tech || {};
   const first = !!opts.first;
   const scale = first ? 1 : (1 + 0.1 * Math.min(tier, 6)) * (0.88 + rng() * 0.24);
@@ -212,16 +217,23 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   return c;
 }
 
+// the thing a test runs: a World for doors, or the stage's own sim for an inside job. preview: no crowd, for design mode
+export function newSim(contract, design, tech, preview) {
+  if (contract.stage) return newStageSim(preview ? { ...contract, preview: true } : contract, design, tech);
+  const cfg = worldCfg(contract, design, tech);
+  return new World(preview ? { ...cfg, crowd: { in: 0, out: 0, mix: {} }, duration: 0 } : cfg);
+}
 export function worldCfg(contract, slots, tech) {
   const t = tech || {};
   return { slots, crowd: contract.crowd, outsideTemp: contract.outsideTemp, duration: TEST_SECONDS, seed: contract.seed,
     heater: t.heat2 ? 2.4 : t.heat ? 1.6 : 1, wind: contract.wind || 0, stack: contract.stack || 0, seals: !!t.seals, rain: !!contract.rain, site: contract.site, drill: contract.drill || null };
 }
 // how long a test runs: the 40s rush plus time for the last people to clear, or a fire drill's evacuation window
-export const runSeconds = contract => contract.drill ? contract.drill.at + 35 : RUN_SECONDS;
+export const runSeconds = contract => contract.stage ? contract.run : contract.drill ? contract.drill.at + 35 : RUN_SECONDS;
 // shared by the surveyor and the in-game test, so both stop at exactly the same step
-export const testOver = (contract, w) => !!contract.drill && w.stats.evac != null;
+export const testOver = (contract, w) => contract.stage ? w.over() : !!contract.drill && w.stats.evac != null;
 export function runHeadless(contract, slots, unlocks, dt = SIM_DT) {
+  if (contract.stage) return runStage(contract, slots, unlocks);
   const w = new World(worldCfg(contract, slots, unlocks));
   const n = Math.round(runSeconds(contract) / dt);
   for (let i = 0; i < n && !testOver(contract, w); i++) w.step(dt);
@@ -345,6 +357,7 @@ export async function yieldStep(job) {
   while (GATE.focus != null && GATE.focus !== job && GATE.active.has(GATE.focus)) await new Promise(res => setTimeout(res, 15));
 }
 export async function solveContract(contract, unlocks, onProgress) {
+  if (contract.stage) return solveStage(contract, unlocks, onProgress, yieldStep);
   const cands = candidates(contract, unlocks);
   const results = [];
   for (let i = 0; i < cands.length; i++) {
@@ -445,7 +458,7 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
     const opts = { ...(c.opts || {}) };
     // a callback the old doors already pass: turn up the client's change before trying anything else.
     // These retries don't count against MAX: severity is capped, so this loop always ends.
-    if (free && !c.relaxed && opts.callback && severity < 3) {
+    if (free && !c.relaxed && (opts.callback || c.stage) && severity < 3) {
       severity++;
       c = makeContract(c.kind, c.tier, c.month, c.seed, { ...opts, severity }); c.job = job;
       attempt--;
@@ -453,7 +466,7 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
     }
     // still nothing to fix even at its worst: the doors genuinely beat that problem, so the client calls
     // about a different one (a cold snap, an older crowd, a busier street) instead
-    if (free && !c.relaxed && opts.callback && (opts.switched || 0) < 2) {
+    if (free && !c.relaxed && opts.callback && !c.stage && (opts.switched || 0) < 2) {
       const order = ['cold', 'older', 'busier', 'access'].filter(r => r !== opts.callback);
       const next = order[(opts.switched || 0) % order.length];
       severity = 0;
@@ -462,6 +475,7 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
       continue;
     }
     if (attempt === MAX - 1) break;
+    if (c.stage && !c.relaxed) { if (repeat) { opts.extra = []; c = makeContract(c.kind, c.tier, c.month, c.seed + 53 * (attempt + 1), opts); c.job = job; c.novelty = true; continue; } break; }
     if (c.relaxed) {
       // unfair combination: same building and callback reason, fresh random twists
       c = makeContract(c.kind, c.tier, c.month, c.seed + 101 * (attempt + 1), { ...opts, extra: [] }); c.job = job;

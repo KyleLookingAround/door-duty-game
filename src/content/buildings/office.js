@@ -2,6 +2,7 @@ export default {
   key: 'office',
   plot: { name: 'Atlas House', rep: 4 },
   kind: { label: 'Office block', slots: 3, in: 2.0, out: 0.4, mix: {}, hook: { twists: ['surge'], temp: 6, budgetCap: 32000 } },
+  inside: { lifts: { count: 4, mode: 'all' } },
   site({ S, cx, last }) {
     S.obstacles.push({ kind: 'rect', x0: -1.2, x1: 1.2, y0: 1.5, y1: 2.0, tag: 'desk' });
     S.obstacles.push({ kind: 'rect', x0: cx(last) - 0.5, x1: cx(last) + 0.5, y0: -2.45, y1: -2.05, tag: 'bench' });

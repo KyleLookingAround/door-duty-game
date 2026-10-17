@@ -2,6 +2,7 @@
 // Pure: mutates the save and returns a report for the screen to show.
 import { STAFF } from '../content/company.js';
 import { eventOf } from '../content/events.js';
+import { PARADOX_CALLS } from '../content/paradoxes.js';
 import { makeContract, runHeadless } from './contracts.js';
 import { random, randomInt } from './state.js';
 import { monthlyIncome, prem, insurance, wearRate, rivalActive, stepFreeOk, techOf, tierOf } from './economy.js';
@@ -63,14 +64,37 @@ export function endMonth(S) {
       const opts = winter ? ['cold', 'cold', 'busier', 'older'] : ['busier', 'older', 'cold'];
       p.reason = opts[randomInt(S, opts.length)];
       if (p.reason === 'cold' && (eventOf(S.month) || {}).key === 'heatwave') p.reason = 'hot';
+      // a client with an inside job you did may call about that instead of the doors
+      const inside = Object.keys(p.inside || {});
+      p.callStage = null; p.callChain = null; p.callTwist = null;
+      if (inside.length && (!p.install || random(S) < 0.4)) {
+        const k = inside[randomInt(S, inside.length)];
+        if (k.startsWith('chain:')) p.callChain = k.slice(6).split('+'); else p.callStage = k;
+        if (p.reason === 'cold' || p.reason === 'hot') p.reason = 'busier';   // temperature is the doors' problem
+      }
       p.status = 'callback'; p.tier++; p.contract = null;
       calls.push(p);
     }
   }
+  // paradox callbacks: finished research reaches the clients it could help. If none is fitted yet,
+  // the call waits until one is.
+  S.pendingCalls = [...(S.pendingCalls || []), ...done.flatMap(k => (PARADOX_CALLS[k] || []).map((_, j) => [k, j]))];
+  const paradox = [];
+  S.pendingCalls = S.pendingCalls.filter(([k, j]) => {
+    const def = PARADOX_CALLS[k] && PARADOX_CALLS[k][j];
+    if (!def) return false;
+    const pool = S.plots.filter(p => p.status === 'fitted' && !p.broken && def.kinds.includes(p.kind));
+    if (!pool.length) return true;
+    const p = pool[randomInt(S, pool.length)];
+    p.status = 'callback'; p.reason = 'paradox'; p.contract = null; p.tier++;
+    p.callText = def.text; p.callTech = k; p.callTwist = def.twist || null; p.callStage = def.stage || null; p.callChain = def.chain || null;
+    paradox.push(p);
+    return false;
+  });
   // Brassworks bids on tenders you've left sitting
   const lost = [];
   if (rivalActive(S)) for (const p of S.plots) {
-    if (p.status !== 'open' || !p.contract || p.contract.first || p.contract.landmark || !p.contract.solved) continue;
+    if (p.status !== 'open' || !p.contract || p.contract.first || p.contract.landmark || p.contract.stage || !p.contract.solved) continue;
     if (random(S) < 0.18) { p.status = 'rival'; p.rivalUntil = S.month + 3 + randomInt(S, 3); p.contract = null; lost.push(p); }
   }
   // stale tenders refresh with the season; new tech means new kinds of tender
@@ -81,5 +105,5 @@ export function endMonth(S) {
     if ((p.contract.event || null) !== wantEv || (p.status === 'open' && (done.length || random(S) < 0.35))) p.contract = null;
   }
   const net = inc - rent - wageTotal - ins - claims.length * CLAIM_EXCESS - (insp && !insp.pass ? INSPECTION_FINE : 0);
-  return { inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net };
+  return { inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox };
 }

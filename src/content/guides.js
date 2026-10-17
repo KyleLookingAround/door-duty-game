@@ -7,6 +7,7 @@ export const BASICS = [
   ['firm', 'Running the firm', 'Doors wear every month: worn ones pay less, and broken ones pay nothing until you service them (tap the building). Insurance goes up with every bump on your record. Inspectors re-test old jobs: a pass earns a certificate, a fail a fine and a callback. A lobby kept snug in the cold earns a green star and a better fee.'],
   ['company', 'Research, staff and premises', 'Research unlocks new kit, and new kit unlocks new kinds of job. Staff cost wages but pay their way: fitters cut hardware costs, a sales manager raises margins. Bigger premises give you more benches and higher tiers of research. The Company button on the street has it all; your own building grows as you do.'],
   ['calendar', 'The calendar', 'Each month can bring an event you can see coming: January sales, storms, marathon day, a heatwave where lobbies must stay cool, Black Friday and Christmas windows. Tenders in an event month take it on, and pay 25% more.'],
+  ['inside', 'Inside jobs and paradoxes', 'Some research opens work inside buildings: a bank\'s counter hall, escalators, lift lobbies, a paternoster, an airport, a shopping centre, an arena. Each one hides a paradox where the obvious fix is the wrong one. Finished research brings calls from clients who could use it, and they keep paying while you quote. Some levels chain several stages together as one crowd: fix one bottleneck and the crush moves to the next, so check every stage\'s time on the result.'],
 ];
 
 export const COACH = {

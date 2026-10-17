@@ -3,6 +3,7 @@ export default {
   key: 'townhall',
   plot: { name: 'Town Hall', rep: 14 },
   kind: { label: 'Town hall', slots: 3, in: 1.1, out: 0.9, mix: { elderly: 0.15 }, comfort: 16, hook: { twists: ['stepfree', 'surge'], temp: 9 } },
+  inside: { paternoster: { speed: 0.45, wide: false, attendant: false } },   // found behind a wall, running too fast
   site({ S, n, HW, cx }) {
     // portico columns flank each doorway
     for (let i = 0; i <= n; i++) S.obstacles.push({ kind: 'circle', x: -HW + i * SLOT_W, y: -1.5, r: 0.32, tag: 'column' });
