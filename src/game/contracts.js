@@ -138,6 +138,17 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
     if (ev.key === 'xmas') temp = Math.min(temp, 4);
   }
   if (first && k.hook.budgetCap) c.budgetCap = k.hook.budgetCap;
+  // a callback the installed doors already cope with is no callback at all: the surveyor re-asks at a higher
+  // severity (opts.severity 1-3), and the client's change gets stronger until the old doors genuinely fall short
+  const sev = opts.callback ? Math.min(3, opts.severity || 0) : 0;
+  if (sev) {
+    const why = opts.callback;
+    if (why === 'busier') { crowdIn *= 1 + 0.22 * sev; crowdOut *= 1 + 0.12 * sev; }
+    if (why === 'cold') temp -= 3 * sev;
+    if (why === 'older' || why === 'safety') mix.elderly = Math.min(0.85, Math.max(mix.elderly || 0, 0.5) + 0.12 * sev);
+    if (why === 'access') { mix.wheel = Math.max(mix.wheel || 0, 0.06) + 0.03 * sev; mix.pram = Math.max(mix.pram || 0, 0.05) + 0.02 * sev; }
+    if (why === 'hot') { temp = Math.max(temp, 28 + 2 * sev); c.heat = true; }
+  }
   if (opts.existing) slots = opts.existing.length;   // a callback keeps the frontage you built
   if (k.station) slots = Math.max(slots, twists.includes('narrow') ? 2 : 3);
   c.slots = slots;
@@ -188,6 +199,9 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   if (k.station) { goals.minTemp = null; goals.laps = null; c.heat = false; }
   // in a heatwave the lobby must stay cool instead
   if (c.heat) { goals.minTemp = null; goals.maxTemp = isSpecialist(twists) || k.comfort ? 22 : 23; }
+  // stronger callbacks set a stricter bar: a warmer lobby in the cold, a cooler one in the heat, fewer bumps
+  if (sev && opts.callback === 'cold' && goals.minTemp != null) goals.minTemp += sev;
+  if (sev && opts.callback === 'hot' && goals.maxTemp != null) goals.maxTemp -= Math.min(sev, 2) * 0.5;
   c.goals = goals;
   c.twists = twists;
   c.specialist = isSpecialist(twists);
@@ -373,6 +387,8 @@ export async function solveContract(contract, unlocks, onProgress) {
       const want = r0.through + Math.max(3, Math.round(r0.through * 0.06));
       if (better.length && Math.max(...better) >= want) contract.goals.through = want;
     }
+    // how the doors you already fitted do against the new brief, for the brief to show
+    contract.before = { through: r0.through, bumps: r0.bumps, minTemp: +r0.minTemp.toFixed(1), maxTemp: +r0.maxTemp.toFixed(1), accessFail: r0.accessFail, laps: r0.laps };
   }
   let passing = ok.filter(x => x.r.through >= contract.goals.through).sort((a, b) => a.cost - b.cost);
   if (!passing.length) {
@@ -416,6 +432,7 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
   contract.job = job;
   let c = contract, best = null;
   const MAX = 3;
+  let severity = (contract.opts && contract.opts.severity) || 0;
   for (let attempt = 0; attempt < MAX; attempt++) {
     if (onProgress) onProgress(0, attempt);
     try { await solveContract(c, unlocks, f => onProgress && onProgress(f, attempt)); }
@@ -425,8 +442,16 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
     if (!c.relaxed && (!best || best.relaxed || best.free || best.repeat)) best = c;
     c.free = free; c.repeat = repeat;
     if (!c.relaxed && !free && !repeat) return c;
-    if (attempt === MAX - 1) break;
     const opts = { ...(c.opts || {}) };
+    // a callback the old doors already pass: turn up the client's change before trying anything else.
+    // These retries don't count against MAX: severity is capped, so this loop always ends.
+    if (free && !c.relaxed && opts.callback && severity < 3) {
+      severity++;
+      c = makeContract(c.kind, c.tier, c.month, c.seed, { ...opts, severity }); c.job = job;
+      attempt--;
+      continue;
+    }
+    if (attempt === MAX - 1) break;
     if (c.relaxed) {
       // unfair combination: same building and callback reason, fresh random twists
       c = makeContract(c.kind, c.tier, c.month, c.seed + 101 * (attempt + 1), { ...opts, extra: [] }); c.job = job;

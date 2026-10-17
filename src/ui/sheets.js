@@ -16,6 +16,19 @@ import { renderStreet } from './street.js';
 import { focusSurvey, survey, surveys, twistLabel } from './survey.js';
 import { openWorkshop } from './workshop.js';
 import { kmoney, money } from '../util/format.js';
+// on a callback: where the doors already fitted fall short of the new brief
+function beforeLine(c) {
+  const b = c.before, g = c.goals;
+  if (!b) return '';
+  const miss = [];
+  if (b.through < g.through) miss.push(`${b.through} through, ${g.through} needed`);
+  if (b.bumps > g.bumps) miss.push(`${b.bumps} bumps, ${g.bumps} allowed`);
+  if (g.minTemp != null && b.minTemp < g.minTemp) miss.push(`the lobby drops to ${b.minTemp}°, ${g.minTemp}° needed`);
+  if (g.maxTemp != null && b.maxTemp > g.maxTemp) miss.push(`the lobby reaches ${b.maxTemp}°, ${g.maxTemp}° allowed`);
+  if (g.access && b.accessFail) miss.push(`${b.accessFail} wheelchair${b.accessFail > 1 ? 's' : ''} or pram${b.accessFail > 1 ? 's' : ''} turned away`);
+  if (g.laps != null && b.laps > g.laps) miss.push(`${b.laps} riding round again, ${g.laps} allowed`);
+  return miss.length ? `<p class="note"><strong style="color:var(--warn)">Your doors today:</strong> ${miss.join('; ')}.</p>` : '';
+}
 export async function openBrief(i, fromWorkshop) {
   const p = S.plots[i], k = KINDS[p.kind];
   if (!p.contract.solved) {
@@ -45,7 +58,7 @@ export async function openBrief(i, fromWorkshop) {
   if (mix.bike) guest.push(`${Math.round(mix.bike * 100)}% cyclists`);
   sheet(`<div class="eyebrow">${p.status === 'callback' ? 'Callback' : 'Tender'} · ${k.label} · tier ${c.tier + 1}</div>
     <h3>${p.name}</h3>
-    ${p.status === 'callback' ? `<p>${CALLBACKS[p.reason]}. Your existing doors stay; you only pay for new hardware.</p>` : ''}
+    ${p.status === 'callback' ? `<p>${CALLBACKS[p.reason]}. Your existing doors stay; you only pay for new hardware.</p>${beforeLine(c)}` : ''}
     ${BUILDING[p.kind].brief ? BUILDING[p.kind].brief(c) : ''}
     ${c.opts && c.opts.callback === 'botched' ? '<p class="note"><strong style="color:var(--brass)">Rescue job.</strong> Put right what Brassworks fitted, and the client pays 30% more margin.</p>' : ''}
     ${c.event ? (() => { const ev = Object.values(EVENTS).find(e => e.key === c.event); return `<p><strong style="color:var(--brass)">${ev.label}.</strong> ${ev.text} Seasonal work: 25% more margin.</p>`; })() : ''}
