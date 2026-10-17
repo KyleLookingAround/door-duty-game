@@ -91,8 +91,8 @@ How to use this page: work the phases in order. Each phase lists the work, the a
 ### Phase 2: pacing and economy
 
 **Work**
-1. D5: spread reputation over about 12 months instead of 4. Options: raise the Market Square thresholds, award stars more slowly, or let stars fade while a callback waits.
-2. D6: give money a use. Planned: monthly research costs, refinements and the Research lab (section 4). Still to choose: rushing research, landmark buy-ins or opening-night preparation, advertising that brings tenders in quiet months.
+1. D5: spread the streets over 6–12 months instead of 4: Market Square opens around month 6, Riverside around month 12. Levers: raise the street thresholds, award stars more slowly, let stars fade while a callback waits, and mastery stars (section 4.2) as a steady extra source.
+2. D6: give money a use. Monthly research costs, refinements and the Research lab (section 4), plus **advertising**: on the Company sheet, pay to bring in a tender this month, with the price rising for each one in the same month. The Sales network node makes it cheaper. It's the paid, immediate version of the free one-month market study. (Rushing research and landmark buy-ins were considered and left out.)
 3. **The research rework** (section 4): research never stops, queues, the market study, mastery, refinements, the five-branch layout, paying monthly, and three new nodes (Crowd counters, Sales network, Research lab). Mastery needs `c.lesson` from Phase 1. The other new nodes come in Phases 1, 4 and 5, with what they open.
 
 *Architecture:* move prices, star thresholds, wages, rent and research times into `content/balance.js`; let `simulate()` take overrides so values can be tried without code edits. The research changes are in section 4.
@@ -155,7 +155,7 @@ The tree is 23 techs in four branches (`content/tech.js`), costing £810k and 58
 
 1. **Research never stops.** End the Month needs every bench busy; with one free, the button reads "Choose research" and opens the Research tab. The check lives in `game/` (`benchesFilled(S)`), so the page, the sim and the bot share it.
 2. **A queue per bench.** Line up the next projects; when one finishes the next starts. One decision every few months, not every month.
-3. **Paid monthly** (recommended; see decisions). A project costs its price spread over its months, like wages. Research becomes a running cost, a big project is easier to start early, and a queue never needs a lump of cash. If you're overdrawn, paid projects pause (they keep their progress) and the bench falls back to a market study.
+3. **Paid monthly.** A project costs its price spread over its months, like wages. Research becomes a running cost, a big project is easier to start early, and a queue never needs a lump of cash. If you're overdrawn, paid projects pause (they keep their progress) and the bench falls back to a market study.
 4. **The market study is always available.** Free, one month, any bench: it brings in a tender or an enquiry. The rule can never lock you in, even when you're overdrawn, broke or at the end of the tree, and it fills quiet months with work.
 5. **Owned, then mastered.** A finished tech is *owned*: it's in the workshop. It becomes *mastered* when you sign off a job that grades its lesson (the `c.lesson` from Phase 1). That's usually the research call that follows, or a job that needs it.
    - **Landmarks and deeper nodes need mastery,** not just ownership, as the design page always said.
@@ -236,7 +236,7 @@ To stop the one-client techs paying off only once, each also gets a second home.
 | **Market study** (new) | – | – | Always available, free, 1 month: a tender or an enquiry | 2 |
 | Door staff training | 2 | – | Doorman crew | as now, moved |
 | **Design office** (new) | 2 | – | The blueprint book | 4 |
-| **Sales network** (new) | 2 | Market study done 3 times | More tenders a month, and enquiries wait a month longer | 2 |
+| **Sales network** (new) | 2 | Market study done 3 times | More tenders a month, enquiries wait a month longer, and advertising costs less | 2 |
 | **Research lab** (new) | 3 | HQ premises | A third bench: a big one-off use for money | 2 |
 
 Refinements: **Supplier contract** levels (hardware discount, capped), **Crew training** levels (fitting discount), **Service plans** levels (maintenance).
@@ -297,14 +297,14 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 - Each research call: par uses the tech; the client's design before the call fails the lesson goal; a design without the tech can't pass.
 - Each Riverside level varies across seeds.
 
-**4. Pacing bands** (in `test:full`): the sim on 4 seeds for 18 months, asserting ranges set once Phase 2 settles. For example: under 25★ at month 4, Market Square open by month 6–9, cash under a cap at month 12, no more than 2 quiet months in a row, every bench busy at every month end. The sim's policy has to obey the research rule too (`tools/sim.mjs` fills benches only when it has spare cash today). Print a short table so balance changes show as a diff in review.
+**4. Pacing bands** (in `test:full`): the sim on 4 seeds for 18 months, asserting ranges set once Phase 2 settles. For example: under 25★ at month 4, Market Square open around month 6, Riverside around month 12, cash under a cap at month 12, no more than 2 quiet months in a row, every bench busy at every month end. The sim's policy has to obey the research rule too (`tools/sim.mjs` fills benches only when it has spare cash today). Print a short table so balance changes show as a diff in review.
 
 **5. Browser checks** (extend `tools/bot.py`)
 - Text sweep: fail on "undefined", "NaN", "[object" or "£-" on any screen the bot visits.
 - Layout at 390×844 and 1280×800: no sideways scrolling, title and calendar cards not cut off, every bay inside the canvas, the coach bubble not overlapping its target.
 - Cost check: after changing any setting on an inside or chained job, the cost readout changes.
 - Lazy player: before applying par, try the cheapest common answers (two swing doors, one slider, close the bridge) and log how often they pass.
-- CI: a Python step in `pages.yml` with Playwright pinned in `requirements.txt`; the bot for 3 months on `dist/` at phone size before deploy; 12 months nightly. (Alternative: rewrite the bot on Node's Playwright for one language. It adds a dev-only dependency, against the README's "no dependencies".)
+- CI: the bot stays in Python. Add a Python step in `pages.yml` with Playwright pinned in `tools/requirements.txt` (matched to the Chromium the runner installs); run the bot for 3 months on `dist/` at phone size before deploy, and 12 months nightly.
 
 **6. Speed** (in `test:full`): time `generateSolved` for a door job, a research call and the Arena chain; fail over budget (for example 5s in Node). The bot logs in-browser survey times.
 
@@ -341,15 +341,17 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 
 ---
 
-## 7. Decisions for the owner
+## 7. Decisions made
 
-1. **Pacing target.** How long should reaching every street take: about 12 months of play, or longer? (The research tree is planned to finish around months 30–36.)
-2. **Money sinks.** Refinements and the research lab are planned (section 4). Which others: rushing research, landmark buy-ins, advertising?
-3. **Research payment.** Monthly while a project runs (recommended), or up front as now?
-4. **Mastery.** Should mastery gate landmarks and deeper nodes (recommended), or only add a bonus?
-5. **Mastery stars.** Should mastering a tech add a star to the firm's reputation?
-6. **Bot language.** Keep Python with a pinned version, or move to Node's Playwright as a dev-only dependency?
-7. **Summer.** Keep the warm start, but with pressures and new Open doors research that beat the cheap pair (as planned), or start the firm in autumn?
+Decided by the owner, October 2026:
+
+1. **Pacing:** reach every street in 6–12 months of play. Market Square around month 6, Riverside around month 12. The research tree runs on to about months 30–36.
+2. **Money:** monthly research costs, refinements, the Research lab and advertising. No rushing research and no landmark buy-ins.
+3. **Research payment:** monthly while a project runs.
+4. **Mastery:** gates landmarks and deeper nodes.
+5. **Mastery stars:** each mastery adds a star to the firm's reputation.
+6. **Bot:** stays in Python, with Playwright pinned.
+7. **Summer:** keep the May start, and make summer harder with new pressures and the new Open doors research.
 
 ---
 
