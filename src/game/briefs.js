@@ -45,3 +45,10 @@ export function bookedText(S) {
   if (t) ways.push(`research ${t.name}`);
   return `Your crews are booked up: ${cap} of ${cap} jobs this month. End the month to take this one${ways.length ? `, or ${ways.join(' or ')} to take more each month` : ''}.`;
 }
+
+// A move in progress, for the company sheet and the month report.
+export function movingText(S) {
+  if (!S.moving) return '';
+  const to = PREMISES[S.moving.to].name.toLowerCase(), n = S.moving.left;
+  return `Moving to the ${to}: ${n} month${n === 1 ? '' : 's'} to go. You work from your old premises until then, and research waits until you're in.`;
+}

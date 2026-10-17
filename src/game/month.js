@@ -100,8 +100,11 @@ export function endMonth(S) {
   S.monthJobs = 0;   // a new month: the crews are free again
   // research
   const done = [];
-  for (const r of S.research) { r.left--; if (r.left <= 0) { S.unlocks[r.key] = true; done.push(r.key); } }
+  if (!S.moving) for (const r of S.research) { r.left--; if (r.left <= 0) { S.unlocks[r.key] = true; done.push(r.key); } }   // mid-move, research waits
   S.research = S.research.filter(r => r.left > 0);
+  // a move in progress: one month nearer; at the end of the last one, the firm is in
+  let moved = null;
+  if (S.moving && --S.moving.left <= 0) { S.premises = S.moving.to; moved = prem(S).name; S.moving = null; }
   // deep in the red: the crew walks
   let walked = [];
   if (S.cash < -15000) { walked = wages.map(s => s.name); S.staff = {}; }
@@ -149,5 +152,5 @@ export function endMonth(S) {
     if ((p.contract.event || null) !== wantEv || (p.status === 'open' && (done.length || random(S) < 0.35))) p.contract = null;
   }
   const net = inc - rent - wageTotal - ins - claims.length * CLAIM_EXCESS - (insp && !insp.pass ? INSPECTION_FINE : 0);
-  return { inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry };
+  return { moved, moving: S.moving ? { ...S.moving } : null, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry };
 }

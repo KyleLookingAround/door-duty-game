@@ -9,7 +9,7 @@ import { STAGES, stageName, stageAbout } from '../engine/stages/index.js';
 import { MONTHS, candidates } from '../game/contracts.js';
 import { charge, costMult, feeOf, insurance, jobsLeft, jobsPerMonth, monthlyIncome, overheads, prem, rep, rivalActive, serviceCost, techName, techOf, upkeep, loyalty } from '../game/economy.js';
 import { advice, hasWork } from '../game/enquiries.js';
-import { bookedText, callText, isResearchCall, jobLabel, stageTwist } from '../game/briefs.js';
+import { bookedText, callText, isResearchCall, jobLabel, movingText, stageTwist } from '../game/briefs.js';
 import { fire, hire, movePremises, service, startResearch } from '../game/jobs.js';
 import { CLAIM_EXCESS, INSPECTION_FINE, endMonth, changeWhere } from '../game/month.js';
 import { CHANGE, changeText } from '../content/changes.js';
@@ -178,7 +178,7 @@ export function openCompany(tab) {
   let body = '';
   if (coTab === 'research') {
     const busy = S.research.length, free = P.labs - busy;
-    body = `<p>${busy ? `Researching ${S.research.map(r => `<b style="color:var(--text)">${techName(r.key)}</b> (${r.left} month${r.left > 1 ? 's' : ''} left)`).join(', ')}. ` : ''}${free > 0 ? `${free} bench${free > 1 ? 'es' : ''} free.` : 'All benches busy.'} Projects finish at the end of the month, and each one opens the next in its branch.</p>` +
+    body = `${S.moving ? `<p class="note"><span class="hot">${movingText(S)}</span></p>` : ''}<p>${busy ? `Researching ${S.research.map(r => `<b style="color:var(--text)">${techName(r.key)}</b> (${r.left} month${r.left > 1 ? 's' : ''} left)`).join(', ')}. ` : ''}${free > 0 ? `${free} bench${free > 1 ? 'es' : ''} free.` : 'All benches busy.'} Projects finish at the end of the month, and each one opens the next in its branch.</p>` +
       BRANCHES.map(([b, label]) => { const nodes = TECH.filter(t => t.branch === b).map(t => {
         const owned = S.unlocks[t.key], doing = S.research.find(r => r.key === t.key);
         const missing = (t.req || []).filter(r => !S.unlocks[r]);
@@ -190,7 +190,7 @@ export function openCompany(tab) {
         else if (missing.length) state = `<span class="pill lock">Locked</span>`;
         else {
           // say why a project can't start rather than just greying the button
-          const block = broke ? 'Overdrawn' : free <= 0 ? 'Benches busy' : S.cash < t.price ? `Need ${kmoney(t.price - S.cash)} more` : '';
+          const block = broke ? 'Overdrawn' : S.moving ? 'Moving' : free <= 0 ? 'Benches busy' : S.cash < t.price ? `Need ${kmoney(t.price - S.cash)} more` : '';
           action = `<div style="display:grid;gap:4px;justify-items:end"><button class="go" type="button" data-k="${t.key}" ${block ? 'disabled' : ''}>${kmoney(t.price)} · ${t.months} mo</button>${block ? `<span class="why">${block}</span>` : ''}</div>`;
         }
         const why = !owned && !doing ? (!tierOk ? `Needs ${PREMISES[t.tier - 1].name.toLowerCase()} premises. ` : missing.length ? `Needs ${missing.map(techName).join(', ')}. ` : '') : '';
@@ -218,12 +218,13 @@ export function openCompany(tab) {
         return `<div class="node ${on ? 'owned' : needs ? 'locked' : 'avail'}"><div><b>${s.name} · ${money(s.wage)}/mo</b><p>${needs ? `Needs ${techName(s.req)}. ` : ''}${s.text}</p></div>${btn}</div>`;
       }).join('');
   } else {
-    body = `<p>Rent is due every month. Bigger premises unlock higher research tiers, room for more staff and more jobs a month. Right now your crews can take ${jobsPerMonth(S)} jobs a month.</p>` +
+    body = `${S.moving ? `<p class="note"><span class="hot">${movingText(S)}</span></p>` : ''}<p>Rent is due every month. A move takes ${PREMISES.filter(p => p.moveMonths).map(p => `${p.moveMonths} month${p.moveMonths > 1 ? 's' : ''} to the ${p.name.toLowerCase()}`).join(', ')}, and research waits until you're in. Bigger premises unlock higher research tiers, room for more staff and more jobs a month. Right now your crews can take ${jobsPerMonth(S)} jobs a month.</p>` +
       PREMISES.map((p, i) => {
         const cur = i === (S.premises || 0), past = i < (S.premises || 0), next = i === (S.premises || 0) + 1;
         const repOk = rep(S) >= (p.rep || 0);
         const btn = cur ? '<span class="pill done">Current</span>' : past ? '<span class="pill lock">Outgrown</span>'
-          : next ? (repOk ? `<div style="display:grid;gap:4px;justify-items:end"><button class="go" type="button" data-move="${i}" ${broke || S.cash < p.price ? 'disabled' : ''}>Move · ${kmoney(p.price)}</button>${S.cash < p.price ? `<span class="why">Need ${kmoney(p.price - S.cash)} more</span>` : ''}</div>` : `<span class="pill lock">${p.rep}★ rep</span>`)
+          : S.moving && S.moving.to === i ? `<span class="pill open">Moving · ${S.moving.left} mo</span>`
+          : next ? (repOk ? `<div style="display:grid;gap:4px;justify-items:end"><button class="go" type="button" data-move="${i}" ${broke || S.moving || S.cash < p.price ? 'disabled' : ''}>Move · ${kmoney(p.price)} · ${p.moveMonths} mo</button>${S.cash < p.price ? `<span class="why">Need ${kmoney(p.price - S.cash)} more</span>` : ''}</div>` : `<span class="pill lock">${p.rep}★ rep</span>`)
           : '<span class="pill lock">Later</span>';
         return `<div class="node ${cur ? 'owned' : next && repOk ? 'avail' : 'locked'}"><div><b>${p.name} · ${money(p.rent)}/mo rent</b><p>${p.text} Research tier ${p.tier}, ${p.labs} bench${p.labs > 1 ? 'es' : ''}, ${p.staff} staff, ${p.jobs} jobs a month.</p></div>${btn}</div>`;
       }).join('');
@@ -245,7 +246,7 @@ export function openCompany(tab) {
   sh.querySelectorAll('[data-move]').forEach(b => b.onclick = () => {
     const i = +b.dataset.move, p = PREMISES[i];
     if (!movePremises(S, i)) return;
-    save(); renderStreet(); keepScroll(() => openCompany()); toast(`Moved into the ${p.name.toLowerCase()}`);
+    save(); renderStreet(); keepScroll(() => openCompany()); toast(`Moving to the ${p.name.toLowerCase()}: ${p.moveMonths} month${p.moveMonths > 1 ? 's' : ''}`);
   });
   $('coClose').onclick = closeSheet;
   sh.querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => openLesson(b.dataset.lesson, () => openCompany()));
@@ -286,7 +287,7 @@ export function openClient(i) {
 export function initSheets() {
   $('rdBtn').onclick = guarded(() => openCompany());
   $('monthBtn').onclick = guarded(() => {
-  const { inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry } = endMonth(S);
+  const { moved, moving, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry } = endMonth(S);
   save();
   renderStreet();
   sheet(`<div class="eyebrow">${MONTHS[S.month % 12]} ${S.year}</div><h3>${net >= 0 ? 'Up ' + money(net) : 'Down ' + money(-net)} this month</h3>
@@ -302,6 +303,7 @@ export function initSheets() {
     ${insp ? `<p><strong style="color:${insp.pass ? 'var(--ok)' : 'var(--warn)'}">Inspection at ${insp.p.name}:</strong> ${insp.pass ? 'passed. They get a certificate of compliance, and pay you 10% more maintenance.' : !insp.access ? 'failed. There is no step-free way in. You have a callback to fix it.' : `failed on safety: ${insp.bumps} people clipped, the limit is ${insp.limit}. You have a callback to fix it.`}</p>` : ''}
     ${lost.length ? `<p><span class="hot">${RIVAL} won ${lost.map(p => p.name).join(' and ')}.</span> Tenders you leave sitting are fair game. Their work rarely lasts: expect the client back.</p>` : ''}
     ${broke.length ? `<p><span class="hot">Broken down:</span> ${broke.map(p => p.name).join(', ')}. No maintenance fee until you send someone. Tap the building on the street to service it.</p>` : ''}
+    ${moved ? `<p><strong style="color:var(--brass)">You've moved into the ${moved.toLowerCase()}.</strong> Research picks up again this month.</p>` : moving ? `<p><span class="hot">${movingText(S)}</span></p>` : ''}
     ${done.length ? `<p><strong style="color:var(--brass)">Research complete:</strong> ${done.map(techName).join(', ')}.${done.some(k => TECH.find(t => t.key === k).opens) ? ' New specialist tenders may appear.' : ''}</p>
       <div class="learn">${done.filter(k => LESSONS[k]).map(k => `<button class="ghost small" type="button" data-lesson="${k}">How to use ${techName(k)}</button>`).join('')}</div>` : ''}
     ${walked.length ? `<p><span class="hot">Your staff walked out</span> over unpaid wages: ${walked.join(', ')}.</p>` : S.cash < 0 ? '<p><span class="hot">You\'re overdrawn.</span> Win jobs or let staff go. Below −£15k your crew will walk out.</p>' : ''}

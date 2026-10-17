@@ -41,6 +41,7 @@ src/
     briefs.js            brief wording that depends on the job: job labels, why a client called, stage twists
     stagejobs.js         inside jobs: makeStageContract, solveStage (the surveyor for stages), runStage, result rows
     economy.js           fees, upkeep, wear, insurance, reputation, unlock checks, jobs a month (jobsPerMonth: premises + research)
+                         (a premises move takes PREMISES[i].moveMonths; S.moving pauses research, see endMonth)
     jobs.js              grade a result, signOff, and the firm's decisions (research, hire, premises, service)
     month.js             endMonth(S) -> report; inspect
     enquiries.js         clients asking for research you haven't done (with a date), and advice(S) for quiet months

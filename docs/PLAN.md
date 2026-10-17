@@ -87,7 +87,7 @@ They differ in one important way. With research calls and enquiries now true of 
 
 **Work**
 1. D2: the anti-repeat rule covers first visits too, so two clients in a row can't share an answer. Fix `designSig` first: it uses a door type's first letter (`contracts.js:49`), so swing and sliding doors both read `s` and the rule can't tell them apart. `tools/balance.mjs` already uses its own unambiguous shape (`W`, `L`, `R`, `G`).
-   - Add golden cases for research calls and inside jobs (including a chained level). Today's 69 cases have none, so Phase 0's changes to them didn't show in the golden test at all.
+   - Add golden cases for research calls and inside jobs (including a chained level): done, see item 9.
 2. D1: summer pressures that defeat the cheap pair some of the time: surges with a go-round limit, crosswinds on corner plots, heat, bikes. Revolving doors appear before October. Winter needs the same treatment: since Phase 0, a slider with an air curtain answers about 60% of first visits from September (see the Phase 0 status).
 3. D3: every research call grades its lesson: a go-round limit for big cores, an older-guest goal for sensors, a time goal for pillars on fire drills. Watch the other goals too: Halden's big-core call (now with its surge) asks for only 8 people through against a rush of 321 a minute, so its throughput goal means nothing.
 4. D3: the surveyor rejects a par that ignores the lesson, and regenerates the job.
@@ -100,6 +100,9 @@ They differ in one important way. With research calls and enquiries now true of 
    - **When the crews are booked up,** "Take the job" is disabled and the brief says why and what would help (`bookedText`). The street shows the jobs left this month. What's left waits: tenders can go to the rival, and callbacks pay nothing until fixed.
    - **Done (October 2026).** `jobsPerMonth` and `jobsLeft` in `economy.js`; `S.monthJobs` counted in `signOff`, reset in `endMonth`; save version 4. The sim takes checks, then callbacks, then research calls, then tenders, and never overbooks. The bot handles booked-up months. Tests in `test/capacity.test.js`.
    - **Balance** (quick run, 2 seeds, against the 5-seed baseline): reputation at month 4 drops from 31–35 to 21–24, and Riverside opens at month 9 instead of 4. Market Square still opens at month 3: 2 jobs a month at 3★ still reaches 18★ by then. 18–22 jobs over the first year waited for a free crew. Variety didn't change. Capacity is also a Phase 2 pacing lever (6–12 months a street).
+
+8. **Moving takes time (owner's request).** A move takes 1 month to the workshop and 2 to headquarters. You pay up front and keep working from the old premises (its rent, benches, staff room and jobs a month) until the move finishes at a month end. While moving, research in progress waits (it keeps its progress) and nothing new can start; enquiries don't ask for research mid-move. **Done (October 2026):** `S.moving = { to, left }`, save version 5, `movingText` for the company sheet and the month report; tests in `test/premises.test.js`.
+9. **Golden cases for research calls and inside jobs. Done:** 12 cases added (81 in all).
 
 *Architecture:* split `makeContract` (`contracts.js`, 534 lines) into explicit steps: required twists (call or lesson), then random twists that can't evict them, then goals, then the lesson goal. Give each job a lesson record, `c.lesson = { tech, goal, mustUse }`. Move brief, result and hint text into a pure `game/briefs.js` that returns data from `(S, p, c)`; `ui/sheets.js` only renders it.
 

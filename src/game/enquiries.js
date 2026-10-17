@@ -13,7 +13,7 @@ export const MAX_ENQUIRIES = 2;
 export const ENQUIRY_SLACK = 3;   // months to spare beyond the research itself
 export const enquiryBonus = key => { const t = TECH.find(x => x.key === key); return t ? Math.round(t.price * 0.3 / 500) * 500 : 0; };
 // research you could start now (given the benches and the cash)
-export const canResearch = (S, t) => !S.unlocks[t.key] && !S.research.some(r => r.key === t.key) && (t.req || []).every(k => S.unlocks[k]) && t.tier <= prem(S).tier;
+export const canResearch = (S, t) => !S.moving && !S.unlocks[t.key] && !S.research.some(r => r.key === t.key) && (t.req || []).every(k => S.unlocks[k]) && t.tier <= prem(S).tier;
 export const hasWork = S => S.plots.some(p => p.status === 'open' || p.status === 'callback' || p.status === 'checking');
 
 // Settle this month's enquiries and maybe take a new one (always, when the firm has nothing on).
@@ -80,7 +80,7 @@ export function advice(S) {
     if (calls.length) { const { t, who } = calls[0]; return { tab: 'research', text: `Research ${t.name} (${kmoney(t.price)}): clients like ${who.name} would call with work for it${short(t)}.` }; }
   }
   const next = PREMISES[(S.premises || 0) + 1];
-  const bigger = next && (free <= 0 || TECH.some(t => !S.unlocks[t.key] && t.tier > P.tier));
+  const bigger = next && !S.moving && (free <= 0 || TECH.some(t => !S.unlocks[t.key] && t.tier > P.tier));
   if (bigger && r >= (next.rep || 0)) return { tab: 'premises', text: `${S.cash >= next.price ? 'Move' : `Save ${kmoney(next.price - S.cash)} more and move`} to the ${next.name.toLowerCase()}: ${free <= 0 ? 'more research benches' : `tier ${next.tier} research`} brings in new kinds of work.` };
   if (free <= 0 && S.research.length) { const x = S.research[0], t = TECH.find(y => y.key === x.key); return { tab: 'research', text: `${t.name} finishes in ${x.left} month${x.left > 1 ? 's' : ''}. New research brings clients calling.` }; }
   const nextPlot = S.plots.filter(p => p.status === 'locked' && p.rep > r).sort((a, b) => a.rep - b.rep)[0];

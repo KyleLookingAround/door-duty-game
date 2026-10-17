@@ -57,5 +57,4 @@ test('an old save gets a count of this month\'s jobs', () => {
   migrate(S);
   assert.equal(S.monthJobs, 0);
   assert.equal(S.version, SAVE_VERSION);
-  assert.equal(SAVE_VERSION, 4);
 });

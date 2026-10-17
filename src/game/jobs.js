@@ -119,15 +119,17 @@ export function signOff(S, p, c, design, stars, r) {
 // the firm's decisions; each returns false if it isn't allowed right now
 export function startResearch(S, key) {
   const t = TECH.find(x => x.key === key);
-  if (!t || S.cash < t.price || S.research.length >= prem(S).labs || S.unlocks[key] || S.research.some(r => r.key === key)) return false;
+  if (!t || S.moving || S.cash < t.price || S.research.length >= prem(S).labs || S.unlocks[key] || S.research.some(r => r.key === key)) return false;
   S.cash -= t.price; S.research.push({ key: t.key, left: t.months }); return true;
 }
 export function hire(S, key) { S.staff[key] = true; return true; }
 export function fire(S, key) { S.staff[key] = false; return true; }
 export function movePremises(S, i) {
   const p = PREMISES[i];
-  if (!p || S.cash < p.price || rep(S) < (p.rep || 0)) return false;
-  S.cash -= p.price; S.premises = i; return true;
+  if (!p || S.moving || i !== (S.premises || 0) + 1 || S.cash < p.price || rep(S) < (p.rep || 0)) return false;
+  // a move takes months: you pay now and work from the old premises until it's done (endMonth), and the
+  // research benches are packed up, so research waits
+  S.cash -= p.price; S.moving = { to: i, left: p.moveMonths || 1 }; return true;
 }
 export function service(S, p) {
   const cost = serviceCost(p);
