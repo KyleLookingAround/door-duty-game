@@ -12,6 +12,8 @@ const EDGES = {
   BT: { path: [N.B, [6.2, 2.4], N.T], busy: true },            // the stairs out to the tram stop
   AB: { path: [N.A, [0, -2.4], [0, 2.4], N.B], busy: false },  // the footbridge
 };
+// widening a pinch point: a second escalator costs more than wider stairs
+const WIDEN = { esc: 14000, stairs: 9000 };
 const along = (path, f) => {
   const seg = []; let tot = 0;
   for (let i = 1; i < path.length; i++) { const d = Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]); seg.push(d); tot += d; }
@@ -31,7 +33,7 @@ class BraessSim extends StageSim {
     if (e === 'AT' || e === 'SB') return P.mall * (1.3 / p.walk);
     if (e === 'AB') return P.bridge * (1.3 / p.walk);
     const wide = e === 'SA' ? this.d.wideEsc : this.d.wideStairs;
-    return P.a + P.b * (wide ? 0.5 : 1) * this.flow[e];
+    return P.a + P.b * ((e === 'BT' ? P.stairs : P.esc) || 1) * (wide ? 0.5 : 1) * this.flow[e];
   }
   // a shopper counts towards a pinch point's crowd as soon as they choose a route through it,
   // the way everyone can see where the crowd is heading
@@ -74,36 +76,48 @@ export default {
   box: { w: 16, h: 7 },
   metric: 'p90',
   slack: 1.03,
-  // targets come from what the client can do without rebuilding anything
-  reference(ok) { return ok.filter(x => !x.slots.wideEsc && !x.slots.wideStairs); },
+  // targets come from what the client can do without rebuilding anything; where the malls are long, the bridge
+  // really is a shortcut, so the target is what one widened pinch point can do
+  reference(ok, c) { return c.params.layout === 'long' ? ok.filter(x => !(x.slots.wideEsc && x.slots.wideStairs)) : ok.filter(x => !x.slots.wideEsc && !x.slots.wideStairs); },
   level(c, rng, tier) {
     const scale = 1 + 0.06 * Math.min(tier, 6);
     let rate = 1.0 * scale * (0.95 + rng() * 0.1);
     if (c.twists.includes('sale')) rate *= 1.2;
-    // the malls are just long enough that the bridge always looks like a shortcut, even when it's packed
+    if (c.twists.includes('late')) rate *= 0.8;
+    // Most levels: the malls are just long enough that the bridge always looks like a shortcut, even when it's
+    // packed, so closing it is the answer. Some levels have long malls: there the bridge is a real shortcut,
+    // closing it makes things worse, and the answer is to widen a pinch point. A research call is always the paradox.
     const a = 6, b = 30, bridge = 3;
-    c.params = { a, b, bridge, mall: Math.round(bridge + a + b * rate + 5), window: 12 };
+    // Pushchairs walk the malls slowly and set the slowest times whichever way the crowd goes, so closing the
+    // bridge can't help them: a level with pushchairs has long malls, and a research call has none.
+    const paradox = c.opts.callback === 'paradox';
+    if (paradox) c.twists = c.twists.filter(t => t !== 'pushchairs');
+    const layout = !paradox && (rng() < 0.4 || c.twists.includes('pushchairs')) ? 'long' : 'shortcut';
+    c.params = { a, b, bridge, layout, mall: Math.round(layout === 'long' ? bridge + a + 2 * b * rate + 10 : bridge + a + b * rate + 5), window: 12, stairs: c.twists.includes('roadworks') ? 1.4 : 1, esc: c.twists.includes('repairs') ? 1.5 : 1 };
     const mix = {};
     if (c.twists.includes('pushchairs')) mix.pram = 0.12;
     rate = StageSim.tune(c, rate, scale);
     c.crowd = { rate: +rate.toFixed(3), mix };
-    c.arrive = 150; c.run = 300;
+    c.arrive = c.twists.includes('late') ? 190 : 150; c.run = 300;
   },
   twists: {
     sale: { label: 'Closing-down sale', text: 'A fifth more shoppers heading home at once.' },
     pushchairs: { label: 'Pushchairs', text: 'Lots of pushchairs, who walk the long malls more slowly.' },
+    roadworks: { label: 'Roadworks', text: 'Roadworks by the tram stop narrow the stairs out.' },
+    repairs: { label: 'Escalator repairs', text: 'One escalator is out for repairs, so the way up is slower.' },
+    late: { label: 'Late opening', text: 'Late-night opening: fewer shoppers, leaving over a longer stretch.' },
   },
   options() {
     return [
       { key: 'bridge', label: 'Footbridge', kind: 'seg', choices: [['open', 'Open'], ['closed', 'Closed', 'permits']] },
-      { key: 'wideEsc', label: 'Widen the escalators', kind: 'toggle', note: '+£35,000 · twice the capacity' },
-      { key: 'wideStairs', label: 'Widen the stairs', kind: 'toggle', note: '+£35,000 · twice the capacity' },
+      { key: 'wideEsc', label: 'Widen the escalators', kind: 'toggle', note: `+£${WIDEN.esc.toLocaleString('en-GB')} · twice the capacity` },
+      { key: 'wideStairs', label: 'Widen the stairs', kind: 'toggle', note: `+£${WIDEN.stairs.toLocaleString('en-GB')} · twice the capacity` },
     ];
   },
-  explain(d, c) { return `Each mall takes about ${c.params.mall}s to walk. The escalators and the stairs take ${c.params.a}s when empty, and slow down the more people use them. The bridge takes ${c.params.bridge}s.`; },
-  hint() { return 'Watch which way people go. If almost everyone squeezes through both the escalators and the stairs, the "shortcut" is costing them.'; },
+  explain(d, c) { return `Each mall takes about ${c.params.mall}s to walk. The escalators and the stairs take ${c.params.a}s when empty, and slow down the more people use them${c.params.stairs > 1 ? ' (the stairs more than usual)' : c.params.esc > 1 ? ' (the escalators more than usual)' : ''}. The bridge takes ${c.params.bridge}s.`; },
+  hint(r, c) { return c.params.layout === 'long' ? 'Watch which way people go. Here the malls are long, so the bridge saves a real walk: it\'s the escalators and the stairs that hold everyone up.' : 'Watch which way people go. If almost everyone squeezes through both the escalators and the stairs, the "shortcut" is costing them.'; },
   defaults() { return { stage: 'braess', bridge: 'open', wideEsc: false, wideStairs: false }; },
-  cost(d, ex) { return (d.bridge === 'closed' && !(ex && ex.bridge === 'closed') ? 1500 : 0) + (d.wideEsc && !(ex && ex.wideEsc) ? 35000 : 0) + (d.wideStairs && !(ex && ex.wideStairs) ? 35000 : 0); },
+  cost(d, ex) { return (d.bridge === 'closed' && !(ex && ex.bridge === 'closed') ? 1500 : 0) + (d.wideEsc && !(ex && ex.wideEsc) ? WIDEN.esc : 0) + (d.wideStairs && !(ex && ex.wideStairs) ? WIDEN.stairs : 0); },
   sig(d) { return `b${d.bridge === 'open' ? 'O' : 'C'}${d.wideEsc ? 'E' : ''}${d.wideStairs ? 'S' : ''}`; },
   candidates(c, tech) {
     const out = [];

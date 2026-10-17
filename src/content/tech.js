@@ -24,6 +24,10 @@ export const TECH = [
   { key: 'travelator', branch: 'crowd', tier: 3, price: 45000, months: 3, req: ['escalators'], name: 'Travelators', text: 'Moving walkways: fitting them, and knowing where they help.', opens: 'Skyport Terminal on Riverside' },
   { key: 'permits', branch: 'bld', tier: 3, price: 40000, months: 2, req: ['zoning'], name: 'Route closures', text: 'Permits to close a walkway or bridge in a public building, and the modelling to justify it.', opens: 'The Galleria on Riverside' },
   { key: 'stewarding', branch: 'crowd', tier: 3, price: 50000, months: 3, req: ['pillars'], name: 'Event stewarding', text: 'Trained stewards who meter a crowd: holding people back so the space ahead never packs solid.', opens: 'Apollo Arena on Riverside, with escalator know-how' },
+  // more for open doors: options on swing and sliding doors
+  { key: 'closer', branch: 'open', tier: 1, price: 8000, months: 1, name: 'Door closers', text: 'A closer snaps a swing door shut the moment the doorway is clear: much less heat lost, though people push a little harder. +£600 per door.' },
+  { key: 'autoswing', branch: 'open', tier: 1, price: 12000, months: 2, req: ['closer'], name: 'Automatic swing operators', text: 'A motor opens the swing door for anyone heading to it, so wheelchairs and prams can use it and nobody pushes. It stays open longer, and it still swings into people coming the other way. +£2k per door.', opens: 'Step-free jobs with swing doors' },
+  { key: 'telescopic', branch: 'open', tier: 2, price: 30000, months: 2, req: ['autoswing'], name: 'Telescopic sliders', text: 'Extra panels that open a sliding door to 2.4 m instead of 1.7: more people through, more heat lost. +£3.5k per door.' },
   // jobs: how many more jobs a month the firm can sign off once it has this
   { key: 'sitemgmt', branch: 'bld', tier: 1, price: 12000, months: 1, jobs: 1, name: 'Site management', text: 'A site foreman, proper plans and a van rota: your crews can take one more job a month.' },
   { key: 'prefab', branch: 'bld', tier: 2, price: 30000, months: 2, req: ['sitemgmt'], jobs: 1, name: 'Prefabricated door sets', text: 'Doors built and tested in your workshop, then fitted on site in a day: one more job a month.' },
@@ -56,4 +60,30 @@ export const LESSONS = {
   stewarding: ['Event stewarding', 'Holding a crowd back can get it in faster. A packed space moves slowly and jams its exits; stewards who only let more in when there\'s room keep it flowing.', 'Concourse › Stewards metering the crowd. On a chained level, check every stage: fix one and the crush moves to the next.', 'Faster at the front can mean a crush further in.'],
   sitemgmt: ['Site management', 'Your crews can sign off one more job every month.', 'Automatic: the street shows how many jobs you can still take this month.', 'Worth it when good jobs wait because your crews are booked up.'],
   prefab: ['Prefabricated door sets', 'Doors arrive ready to hang, so your crews can sign off one more job every month.', 'Automatic: the street shows how many jobs you can still take this month.', 'With headquarters and both of these, a firm can take six jobs a month.'],
+  closer: ['Door closers', 'A closer snaps a swing door shut as soon as the doorway is clear, so it lets far less heat out between people. It pushes back a little, so people are slightly slower through it.', 'Workshop › swing door › Door closer.', 'A cheap way to keep a swing door warm in mild cold: try it before a sliding door with an air curtain.'],
+  autoswing: ['Automatic swing operators', 'A motor swings the door open for anyone heading to it: wheelchairs and prams can use it and nobody has to push. It holds the door longer, so it leaks more heat, and a two-way door still swings into people.', 'Workshop › swing door › Automatic opener.', 'Step-free for less than a sliding door: make it one-way, or split it with lane barriers.'],
+  telescopic: ['Telescopic sliders', 'Extra panels let a sliding door open to 2.4 m instead of 1.7, so two streams of people pass at once. A wider opening lets more weather in.', 'Workshop › sliding door › Telescopic panels.', 'For a big two-way crowd through one bay, when a revolving door won\'t do.'],
+};
+
+// What each research teaches on a door job, for research calls (c.lesson): which door feature uses it, and
+// the measurement it improves. The surveyor sets that goal so designs with the feature pass and designs
+// without it don't (see solveContract). metric null: a price lesson (the cheapest pass uses it).
+// Lower is better for laps, bumps and evac; higher for through and minTemp.
+// forbid: the client keeps the kind of door they called about (their revolving door, their swing doors), so
+// the lesson can't be dodged by fitting a different kind of door.
+const KEEP_REVOLVING = ['swing', 'slider'], KEEP_OPEN = ['revolve'], KEEP_SWING = ['revolve', 'slider'], KEEP_SLIDING = ['revolve', 'swing'];
+export const LESSON_GOALS = {
+  core: { uses: s => s.type === 'revolve' && s.core >= 0.3, metric: 'laps', forbid: KEEP_REVOLVING },
+  mouth: { uses: s => s.type === 'revolve' && s.mouth <= 32, metric: 'minTemp', forbid: KEEP_REVOLVING },
+  padded: { uses: s => !!s.padded, metric: 'through', forbid: KEEP_REVOLVING },
+  sensor: { uses: s => !!s.sensor, metric: 'through', forbid: KEEP_REVOLVING },
+  curtain: { uses: s => !!s.curtain, metric: 'minTemp', forbid: KEEP_OPEN },
+  vestibule: { uses: s => !!s.vestibule, metric: 'minTemp', forbid: KEEP_OPEN },
+  wide: { uses: s => s.type === 'revolve' && !!s.wide, metric: 'minTemp', forbid: KEEP_REVOLVING },
+  barriers: { uses: s => !!s.lanes, metric: null, forbid: KEEP_SWING },
+  pillars: { uses: s => !!s.pillar, metric: 'evac' },
+  doorman: { uses: s => !!s.doorman, metric: null, forbid: KEEP_REVOLVING },
+  closer: { uses: s => !!s.closer, metric: null, forbid: KEEP_SWING },
+  autoswing: { uses: s => !!s.auto, metric: null, forbid: KEEP_SWING },
+  telescopic: { uses: s => !!s.tele, metric: 'through', forbid: KEEP_SLIDING },
 };

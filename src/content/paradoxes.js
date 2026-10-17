@@ -11,6 +11,8 @@ const fitted = (p, f) => (p.install || []).some(f);
 const hasRevolving = p => fitted(p, s => s.type === 'revolve');
 const hasOpenDoors = p => fitted(p, s => s.type === 'swing' || s.type === 'slider');
 const hasTwoWaySwing = p => fitted(p, s => s.type === 'swing' && (s.flow || 'both') === 'both' && !s.lanes);
+const hasSwing = p => fitted(p, s => s.type === 'swing');
+const hasSlider = p => fitted(p, s => s.type === 'slider');
 
 export const PARADOX_CALLS = {
   mouth: [{ kinds: WINDY, fits: hasRevolving, twist: 'wind', text: 'The wind has started whipping round their corner and straight through the revolving door. Now you can adjust the mouth, they want it sorted.' }],
@@ -23,9 +25,12 @@ export const PARADOX_CALLS = {
   wide: [{ kinds: ['library', 'townhall', 'museum', 'clinic', 'hotel'], fits: hasRevolving, twist: 'stepfree', text: 'An access audit is coming. They want everyone through the revolving door, wheelchairs included.' }],
   barriers: [
     { kinds: ['bank'], stage: 'queue', text: 'Mercer & Sons have seen your queue barriers and want their counter hall sorted: some lines crawl while others fly.' },
-    { kinds: ['cafe', 'pharmacy', 'gym'], fits: hasTwoWaySwing, twist: 'fragile', text: 'People keep getting clipped by the swing door. Could lanes split the in and the out?' },
+    { kinds: ['cafe', 'pharmacy', 'gym'], fits: hasTwoWaySwing, text: 'People keep getting clipped by the swing door. Could lanes split the in and the out?' },
   ],
   pillars: [{ kinds: ['cinema', 'store', 'museum', 'office', 'gym'], twist: 'drill', text: 'The fire officer wants a full evacuation drill, and the doorway jammed last time.' }],
+  closer: [{ kinds: DOOR_CLIENTS, fits: hasSwing, twist: 'cold', text: 'Their swing doors hang open after every customer and the heat pours out. Door closers would snap them shut.' }],
+  autoswing: [{ kinds: ['library', 'clinic', 'pharmacy', 'townhall', 'museum'], fits: hasSwing, twist: 'stepfree', text: 'An access audit is coming, and they\'d like to keep their swing doors. Automatic openers would let wheelchairs and prams through.' }],
+  telescopic: [{ kinds: ['store', 'cinema', 'museum', 'gym', 'office'], fits: hasSlider, twist: 'surge', text: 'Their sliding doors can\'t swallow the crowd at opening time. They\'ve heard wider telescopic panels would.' }],
   doorman: [{ kinds: ['hotel', 'office', 'store'], fits: hasRevolving, twist: 'surge', text: 'Busier than ever at the door. A doorman would get people out of the drum on time.' }],
   escalators: [
     { kinds: ['store'], stage: 'escalator', text: 'Halden\'s are putting in "stand on both sides" signs on the escalator up to the sales floor. They want to know if it actually helps.' },

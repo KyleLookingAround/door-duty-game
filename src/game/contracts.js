@@ -5,6 +5,7 @@ import { BUILDING, KINDS, buildSite } from '../content/buildings/index.js';
 import { EVENTS, xmasBays } from '../content/events.js';
 import { TWIST_POOL, TWIST_REQ, CONFLICTS, clashes, isSpecialist } from '../content/twists.js';
 import { makeStageContract, newStageSim, runStage, solveStage, stageCost, stageSig } from './stagejobs.js';
+import { LESSON_GOALS } from '../content/tech.js';
 // Each building's first contract is a hand-picked "hook" that breaks the stock answers.
 // Later contracts draw twists from the same pool, and a novelty check stops repeats.
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -12,14 +13,15 @@ export const SEASON_T = [3, 4, 7, 10, 14, 17, 19, 18, 15, 11, 7, 4];
 export const TEST_SECONDS = 40;
 export const SIM_DT = 1 / 60;                  // shared by the surveyor and the in-game test
 export const RUN_SECONDS = TEST_SECONDS + 6;   // arrivals stop at 40s; the last people get 6s to clear the door
-export const PRICE = { revolve: 12000, wingExtra: 1500, bigCore: 2000, padded: 1500, sensor: 2000, wide: 8000, swing: 2500, slider: 6000, curtain: 3500, vestibule: 5000, pillar: 1500, lanes: 800, gates: 7000, gatesWide: 9000, tidal: 2500 };
+export const PRICE = { revolve: 12000, wingExtra: 1500, bigCore: 2000, padded: 1500, sensor: 2000, wide: 8000, swing: 2500, slider: 6000, curtain: 3500, vestibule: 5000, pillar: 1500, lanes: 800, gates: 7000, gatesWide: 9000, tidal: 2500, closer: 600, autoSwing: 2000, tele: 3500 };
 
 export function slotCost(s) {
   if (!s || s.type === 'wall') return 0;
   const extras = (s.pillar ? PRICE.pillar : 0);
   if (s.type === 'gates') return (s.wide ? PRICE.gatesWide : PRICE.gates) + (s.flow === 'auto' ? PRICE.tidal : 0);
   if (s.type === 'revolve') return extras + PRICE.revolve + (s.wide ? PRICE.wide : 0) + Math.max(0, s.wings - 3) * PRICE.wingExtra + (s.core >= 0.3 ? PRICE.bigCore : 0) + (s.padded ? PRICE.padded : 0) + (s.sensor ? PRICE.sensor : 0);
-  return extras + (s.type === 'swing' ? PRICE.swing : PRICE.slider) + (s.curtain ? PRICE.curtain : 0) + (s.vestibule ? PRICE.vestibule : 0) + (s.lanes ? PRICE.lanes : 0);
+  return extras + (s.type === 'swing' ? PRICE.swing : PRICE.slider) + (s.curtain ? PRICE.curtain : 0) + (s.vestibule ? PRICE.vestibule : 0) + (s.lanes ? PRICE.lanes : 0)
+    + (s.closer ? PRICE.closer : 0) + (s.auto ? PRICE.autoSwing : 0) + (s.tele ? PRICE.tele : 0);
 }
 export function designCost(slots, existing) {
   if (!Array.isArray(slots)) return stageCost(slots, existing);   // an inside job's setup
@@ -38,6 +40,9 @@ export function designCost(slots, existing) {
       if (s.curtain && !old.curtain) c += PRICE.curtain;
       if (s.vestibule && !old.vestibule) c += PRICE.vestibule;
       if (s.lanes && !old.lanes) c += PRICE.lanes;
+      if (s.closer && !old.closer) c += PRICE.closer;
+      if (s.auto && !old.auto) c += PRICE.autoSwing;
+      if (s.tele && !old.tele) c += PRICE.tele;
     }
   });
   return c;
@@ -53,6 +58,9 @@ export function designSig(slots) {
     if (s.type === 'gates') t += s.wide ? 'W' : '';
     if (s.type === 'revolve') t += (s.wide ? 'W' : '') + s.wings + (s.core >= 0.3 ? 'C' : '') + (s.mouth <= 32 ? 'N' : '') + (s.rpm <= 3.5 ? 'S' : '') + (s.sensor ? 'P' : '');
     if (s.button) t += 'B';
+    if (s.closer) t += 'K';
+    if (s.auto) t += 'A';
+    if (s.tele) t += 'T';
     if (s.vestibule) t += 'V';
     if (s.doorman) t += 'D';
     if (s.pillar) t += 'X';
@@ -79,10 +87,15 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   let temp = first && k.hook.temp != null ? (warm ? Math.max(k.hook.temp, SEASON_T[month % 12]) : k.hook.temp) : SEASON_T[month % 12] + Math.round(rng() * 5 - 3);
   let slots = k.slots;
   const mix = { ...k.mix };
-  let crowdIn = k.in * scale, crowdOut = k.out * scale;
+  // a research call's twist too strong for any door (a surge no frontage can move): the retry calms the crowd
+  const calm = Math.pow(0.8, opts.calm || 0);
+  let crowdIn = k.in * scale * calm, crowdOut = k.out * scale * calm;
   const c = { kind: kindKey, tier, month, seed, first, rules: {}, wind: 0, budgetCap: null, solved: false };
   const goals = { bumps: 0, minTemp: null, access: false, laps: null };
   const need = opts.first ? [] : opts.need || [];
+  // a research call teaches its research (see lessonGoal), on the kind of door the client already has
+  const lesson = !first && opts.lesson && LESSON_GOALS[opts.lesson] ? opts.lesson : null;
+  const kept = ['revolve', 'swing', 'slider'].filter(t => !(lesson && (LESSON_GOALS[lesson].forbid || []).includes(t)));
 
   // pick twists: the hook for a first visit, otherwise the callback reason plus random draws
   let twists = [];
@@ -119,6 +132,9 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   if (k.comfort >= 18 && !tech.vestibule) twists = twists.filter(t => t !== 'bikes');
   // last-resort plain job: just the callback reason and what a research call is about, nothing extra
   if (opts.plain) twists = [...new Set([...(opts.callback && !opts.check ? twists.slice(0, 1) : []), ...need])];
+  // twists that can't be met with the door the client keeps: tight and listed rule revolving doors out or in,
+  // no-fire rules out swing doors, and cyclists can't ride a revolving door
+  if (lesson) twists = twists.filter(t => need.includes(t) || !((t === 'tight' && !kept.some(x => x !== 'revolve')) || (t === 'listed' && !kept.includes('revolve')) || (t === 'nofire' && !kept.some(x => x !== 'swing')) || (t === 'bikes' && !kept.some(x => x !== 'revolve')) || (t === 'stepfree' && !kept.includes('slider') && !(tech.wide && kept.includes('revolve')) && !(tech.autoswing && kept.includes('swing')))));
   // narrow + listed or narrow + stepfree is impossible on one bay
   if (twists.includes('narrow') && (twists.includes('listed') || twists.includes('stepfree')) ) twists = twists.filter(t => t !== 'narrow');
 
@@ -141,7 +157,9 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
     if (t === 'rain') c.rain = true;
     if (t === 'drill') c.drill = { at: TEST_SECONDS, n: 42 + Math.min(tier, 6) * 3 };
     if (t === 'nofire') c.rules.forbid = [...(c.rules.forbid || []), 'swing'];
-    if (t === 'cold') temp = Math.min(temp, -3 - Math.round(rng() * 4));
+    // a cold snap; on a door-closer or air-curtain call it's a raw day rather than a hard frost (they're the cheap
+    // fixes for a chill, and a frost pushes through a curtain)
+    if (t === 'cold') { const frost = -3 - Math.round(rng() * 4); temp = Math.min(temp, lesson === 'closer' || lesson === 'curtain' ? 5 : frost); }
   }
   // the month's event: first visits keep their hand-picked hook
   const ev = !first && opts.event ? Object.values(EVENTS).find(e => e.key === opts.event) : null;
@@ -235,6 +253,9 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   c.specialist = isSpecialist(twists);
   c.opts = opts;
   if (opts.callback === 'botched') c.rescue = true;   // putting right the rival's work pays a premium
+  // a research call teaches its research: the surveyor sets a goal only designs that use it can meet
+  c.lesson = lesson;
+  if (lesson && LESSON_GOALS[lesson].forbid) c.rules.forbid = [...new Set([...(c.rules.forbid || []), ...LESSON_GOALS[lesson].forbid])];
   if (opts.existing) c.existing = opts.existing;
   else if (c.rules.fixed) c.existing = Array.from({ length: slots }, (_, i) => c.rules.fixed[i] ? { ...c.rules.fixed[i] } : { type: 'wall' });
   return c;
@@ -286,12 +307,14 @@ export function candidates(contract, unlocks) {
   if (tw.includes('fragile')) P.push(rev({ rpm: 3 }), rev({ rpm: 3.5, mouth: 45, core: 0.3 }));
   if (tw.includes('surge')) P.push(rev({ rpm: 6, core: 0.35 }), rev({ rpm: 6, core: 0.35, mouth: 45 }), rev({ rpm: 6 }));
   if (unlocks.padded) P.push(rev({ mouth: 45, core: 0.3, rpm: 6.5, padded: true }));
-  if (unlocks.sensor && tw.includes('fragile')) P.push(rev({ rpm: 5, sensor: true }), rev({ rpm: 5.5, core: 0.3, sensor: true }));
-  if (unlocks.doorman && (tw.includes('surge') || contract.goals.laps != null)) P.push(rev({ rpm: 6, doorman: true }));
+  if (unlocks.padded && tw.includes('fragile')) P.push(rev({ rpm: 4, padded: true }), rev({ rpm: 4.5, mouth: 45, padded: true }), rev({ rpm: 5, core: 0.3, padded: true }));
+  if (unlocks.sensor && tw.includes('fragile')) P.push(rev({ rpm: 5, sensor: true }), rev({ rpm: 5.5, core: 0.3, sensor: true }), rev({ rpm: 6, mouth: 45, sensor: true }));
+  if (unlocks.doorman && (tw.includes('surge') || contract.goals.laps != null)) P.push(rev({ rpm: 6, doorman: true }), rev({ rpm: 5, doorman: true }), rev({ rpm: 6.5, mouth: 45, doorman: true }));
   if (unlocks.seals && windy) P.push(rev({ mouth: 45, rpm: 5 }));
   { const seen = new Set(); for (let i = P.length - 1; i >= 0; i--) { const k = JSON.stringify(P[i]); if (seen.has(k)) P.splice(i, 1); else seen.add(k); } }
   const wideP = unlocks.wide ? [rev({ wide: true, wings: 3, mouth: 32, rpm: 3.5 }), rev({ wide: true, wings: 3, mouth: 30, rpm: 4 })] : [];
-  const gap = (t, o = {}) => ({ type: t, curtain: !!(cold && unlocks.curtain), flow: 'both', ...o });
+  // open doors get an air curtain (and swing doors a closer) whenever the lobby's temperature matters
+  const gap = (t, o = {}) => ({ type: t, curtain: !!(cold && unlocks.curtain), ...(t === 'swing' && cold && unlocks.closer ? { closer: true } : {}), flow: 'both', ...o });
   const place = (items) => {
     const s = Array.from({ length: n }, () => ({ ...wall }));
     if (items.length > n) return null;
@@ -352,6 +375,25 @@ export function candidates(contract, unlocks) {
       out.push(s);
     }
   }
+  // door closers: swing doors kept warm by a closer alone, or by an air curtain alone, to compare
+  if (unlocks.closer && cold) {
+    const sw = o => ({ type: 'swing', flow: 'both', ...o });
+    out.push(place([sw({ closer: true })]));
+    if (n >= 2) out.push(place([sw({ closer: true, flow: 'in' }), sw({ closer: true, flow: 'out' })]));
+    if (unlocks.curtain && n >= 2) out.push(place([sw({ curtain: true, flow: 'in' }), sw({ curtain: true, flow: 'out' })]));
+  }
+  // automatic swing doors: step-free swing doors, one-way in pairs or split by lane barriers
+  if (unlocks.autoswing) {
+    const auto = o => gap('swing', { auto: true, ...o });
+    if (n >= 2) out.push(place([auto({ flow: 'in' }), auto({ flow: 'out' })]));
+    if (unlocks.barriers) { out.push(place([auto({ lanes: true })])); if (n >= 2) out.push(place([auto({ lanes: true }), auto({ lanes: true })])); }
+    if (access) for (const p of P.slice(0, 2)) if (n >= 2) out.push(place([p, auto(unlocks.barriers ? { lanes: true } : {})]));
+  }
+  // telescopic sliders: one wide opening, or a wide pair
+  if (unlocks.telescopic) {
+    out.push(place([gap('slider', { tele: true })]));
+    if (n >= 2) { out.push(place([gap('slider', { tele: true }), gap('slider', { tele: true })])); out.push(place([gap('slider', { tele: true, flow: 'in' }), gap('slider', { tele: true, flow: 'out' })])); }
+  }
   // one swing door with lane barriers: cheap two-way without the clipping
   if (unlocks.barriers) {
     out.push(place([gap('swing', { lanes: true })]));
@@ -373,6 +415,39 @@ export function candidates(contract, unlocks) {
   });
 }
 
+// A research job teaches its research. Of the passing designs (cheapest first), those that use it (F) and
+// those that don't (O): the lesson's goal is set between the best of each, so every F design can meet it and
+// no O design can. If they can't be told apart, or nothing uses the research, the job is flagged unfair and
+// redrawn. A price lesson (no metric): the cheapest pass uses the research, and the budget is set below every
+// design that doesn't.
+export function lessonGoal(contract, passing) {
+  const L = LESSON_GOALS[contract.lesson], uses = x => x.slots.some(L.uses);
+  const F = passing.filter(uses), O = passing.filter(x => !uses(x));
+  if (!F.length) { contract.relaxed = true; return passing; }
+  if (!O.length) return passing;
+  const m = L.metric, g = contract.goals;
+  if (!m) {
+    // a price lesson: the research is the cheap way through, and the budget stops short of every other way
+    const cap = Math.floor((Math.min(...O.map(x => x.cost)) - 1) / 100) * 100;
+    if (!uses(passing[0]) || cap < passing[0].cost) { contract.relaxed = true; return passing; }
+    contract.lessonCap = cap;
+    return F;
+  }
+  const low = m === 'laps' || m === 'bumps' || m === 'evac';
+  const v = x => (x.r[m] == null ? (low ? Infinity : -Infinity) : x.r[m]);
+  const bestF = low ? Math.min(...F.map(v)) : Math.max(...F.map(v)), bestO = low ? Math.min(...O.map(v)) : Math.max(...O.map(v));
+  if (low ? !(bestF < bestO) : !(bestF > bestO)) { contract.relaxed = true; return passing; }
+  let goal;
+  if (m === 'laps' || m === 'bumps') goal = bestO - 1;                     // whole people: one fewer than the best without
+  else if (m === 'through') goal = bestO + 1;                              // one more through than the best without
+  else goal = +((bestF + bestO) / 2).toFixed(1);                           // halfway (seconds, degrees)
+  if (m === 'laps') g.laps = goal; else if (m === 'bumps') g.bumps = goal; else if (m === 'evac') g.evac = goal; else if (m === 'through') g.through = goal; else g.minTemp = goal;
+  const meets = x => low ? v(x) <= goal : v(x) >= goal;
+  const kept = F.filter(meets);
+  if (!kept.length) { contract.relaxed = true; return passing; }
+  return kept;
+}
+
 // several surveys can run at once; the one the player is waiting on goes first
 export const GATE = { focus: null, active: new Set() };
 export async function yieldStep(job) {
@@ -381,7 +456,13 @@ export async function yieldStep(job) {
 }
 export async function solveContract(contract, unlocks, onProgress) {
   if (contract.stage) return solveStage(contract, unlocks, onProgress, yieldStep);
-  const cands = candidates(contract, unlocks);
+  let cands = candidates(contract, unlocks);
+  // a lesson job also tries what a firm without the research would fit, so the lesson's goal is set above all of it
+  if (contract.lesson) {
+    const without = { ...unlocks }; delete without[contract.lesson];
+    const seen = new Set(cands.map(s => JSON.stringify(s)));
+    cands = [...cands, ...candidates(contract, without).filter(s => !seen.has(JSON.stringify(s)))];
+  }
   const results = [];
   for (let i = 0; i < cands.length; i++) {
     const r = runHeadless(contract, cands[i], unlocks);
@@ -456,13 +537,14 @@ export async function solveContract(contract, unlocks, onProgress) {
     contract.goals.wait = Math.ceil(best * 1.4 * 2) / 2;
     passing = passing.filter(x => x.r.wait <= contract.goals.wait);
   }
+  if (contract.lesson) passing = lessonGoal(contract, passing);
   const par = passing[0];
   contract.par = { cost: par.cost, slots: par.slots, through: par.r.through, sig: designSig(par.slots) };
   // how many genuinely different designs pass: a measure of how open the puzzle is
   contract.distinct = new Set(passing.map(x => designSig(x.slots))).size;
   const parCost = Math.max(par.cost, 2500);
   // fee = the par hardware cost + your margin. Bonuses (specialist, sales, HQ) only ever scale the margin.
-  contract.budget = contract.budgetCap != null ? contract.budgetCap : Math.ceil(parCost * 1.5 / 500) * 500 + 3000;
+  contract.budget = Math.min(contract.budgetCap != null ? contract.budgetCap : Math.ceil(parCost * 1.5 / 500) * 500 + 3000, contract.lessonCap ?? Infinity);
   contract.margin = Math.ceil((Math.max(3000, par.cost * 0.3) + Math.min(contract.tier, 6) * 800) * (contract.specialist ? 1.6 : 1) * (contract.event ? 1.25 : 1) * (contract.landmark ? 1.5 : 1) * (contract.rescue ? 1.3 : 1) / 500) * 500;
   contract.fee = par.cost + contract.margin;
   contract.solved = true;
@@ -529,6 +611,13 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
     if (attempt === MAX - 1) break;
     if (opts.check && free) break;   // a street-change check: the old setup copes, and that's the answer
     if (c.stage && !c.relaxed) { if (repeat) { opts.extra = []; c = makeContract(c.kind, c.tier, c.month, c.seed + 53 * (attempt + 1), opts); c.job = job; c.novelty = true; continue; } break; }
+    // a research call whose own twist makes it unfair (a surge no frontage can move): calm the crowd and
+    // try again, rather than settle for a goal of a handful of people. Doesn't count against MAX.
+    if (c.relaxed && (opts.need || []).length && (opts.calm || 0) < 3) {
+      c = makeContract(c.kind, c.tier, c.month, c.seed, { ...opts, calm: (opts.calm || 0) + 1 }); c.job = job;
+      attempt--;
+      continue;
+    }
     if (c.relaxed) {
       // unfair combination: same building and callback reason, fresh random twists
       c = makeContract(c.kind, c.tier, c.month, c.seed + 101 * (attempt + 1), { ...opts, extra: [] }); c.job = job;

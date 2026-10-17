@@ -67,6 +67,8 @@ def apply_design(pg, slots):
         if s['type']=='swing': setc(pg, '#eDm', bool(s.get('doorman')))
         if s['type']=='gates': setc(pg, '#eGW', bool(s.get('wide'))); setc(pg, '#eDm', bool(s.get('doorman')))
         if s['type'] in ('swing','slider'): setc(pg, '#eLane', bool(s.get('lanes'))); setc(pg, '#ePil', bool(s.get('pillar')))
+        if s['type']=='swing': setc(pg, '#eClo', bool(s.get('closer'))); setc(pg, '#eAuto', bool(s.get('auto')))
+        if s['type']=='slider': setc(pg, '#eTele', bool(s.get('tele')))
         f=s.get('flow','both')
         b=pg.query_selector(f'[data-flow="{f}"]')
         if b and not b.is_disabled(): b.click()

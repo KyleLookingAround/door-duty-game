@@ -245,17 +245,16 @@
    "seed": 1296
   },
   "twists": [
-   "drill",
+   "cold",
    "tight",
-   "cold"
+   "nofire"
   ],
   "goals": {
    "bumps": 3,
    "minTemp": 19,
    "access": false,
    "laps": null,
-   "evac": 19,
-   "through": 44
+   "through": 41
   },
   "par": "lV",
   "cost": 14500,
@@ -263,7 +262,7 @@
   "budget": 17000,
   "relaxed": false,
   "slots": 2,
-  "temp": -7
+  "temp": -4
  },
  {
   "case": {
@@ -491,7 +490,7 @@
    "minTemp": 19,
    "access": true,
    "laps": null,
-   "through": 97
+   "through": 87
   },
   "par": "lV",
   "cost": 14500,
@@ -638,12 +637,12 @@
    "minTemp": 19,
    "access": true,
    "laps": null,
-   "through": 76
+   "through": 55
   },
-  "par": "lV,lV",
-  "cost": 29000,
-  "fee": 51500,
-  "budget": 46500,
+  "par": "lV",
+  "cost": 14500,
+  "fee": 28000,
+  "budget": 25000,
   "relaxed": false,
   "slots": 3,
   "temp": 3
@@ -668,12 +667,12 @@
    "minTemp": 19,
    "access": true,
    "laps": null,
-   "through": 94
+   "through": 78
   },
-  "par": "lV,lV",
-  "cost": 29000,
-  "fee": 51500,
-  "budget": 46500,
+  "par": "r4,rW3NS,rW3NS",
+  "cost": 53500,
+  "fee": 90500,
+  "budget": 83500,
   "relaxed": false,
   "slots": 3,
   "temp": -4
@@ -809,24 +808,24 @@
    "seed": 1999
   },
   "twists": [
-   "cold",
-   "bikes"
+   "fragile",
+   "tight",
+   "cold"
   ],
   "goals": {
-   "bumps": 4,
+   "bumps": 0,
    "minTemp": 19,
    "access": false,
    "laps": null,
-   "bikes": true,
-   "through": 68
+   "through": 74
   },
   "par": "lV",
   "cost": 14500,
   "fee": 28000,
-  "budget": 25000,
+  "budget": 17000,
   "relaxed": false,
   "slots": 3,
-  "temp": -5
+  "temp": -4
  },
  {
   "case": {
@@ -1232,12 +1231,12 @@
    "minTemp": 18,
    "access": false,
    "laps": null,
-   "through": 76
+   "through": 75
   },
-  "par": "l",
-  "cost": 9500,
-  "fee": 16500,
-  "budget": 17500,
+  "par": "lV",
+  "cost": 14500,
+  "fee": 23000,
+  "budget": 25000,
   "relaxed": false,
   "slots": 3,
   "temp": -5
@@ -1254,21 +1253,19 @@
   },
   "twists": [
    "cold",
-   "drill",
-   "tight"
+   "stepfree"
   ],
   "goals": {
    "bumps": 5,
    "minTemp": 19,
-   "access": false,
+   "access": true,
    "laps": null,
-   "evac": 25,
-   "through": 66
+   "through": 63
   },
-  "par": "lVX",
-  "cost": 16000,
-  "fee": 30500,
-  "budget": 17000,
+  "par": "rW3N,rW3N",
+  "cost": 40000,
+  "fee": 69000,
+  "budget": 63000,
   "relaxed": false,
   "slots": 3,
   "temp": -5
@@ -1401,21 +1398,20 @@
   },
   "twists": [
    "cold",
-   "tight",
-   "drill"
+   "stepfree",
+   "wind"
   ],
   "goals": {
-   "bumps": 5,
+   "bumps": 4,
    "minTemp": 19,
-   "access": false,
+   "access": true,
    "laps": null,
-   "evac": 17,
-   "through": 63
+   "through": 58
   },
-  "par": "lV",
-  "cost": 14500,
-  "fee": 28000,
-  "budget": 17000,
+  "par": "r4,rW3N",
+  "cost": 33500,
+  "fee": 58500,
+  "budget": 53500,
   "relaxed": false,
   "slots": 2,
   "temp": -6
@@ -1554,12 +1550,12 @@
    "minTemp": 19,
    "access": true,
    "laps": 1,
-   "through": 114
+   "through": 84
   },
-  "par": "lV,lV",
-  "cost": 29000,
-  "fee": 51500,
-  "budget": 46500,
+  "par": "lV",
+  "cost": 14500,
+  "fee": 28000,
+  "budget": 25000,
   "relaxed": false,
   "slots": 2,
   "temp": -4
@@ -1694,23 +1690,22 @@
   },
   "twists": [
    "cold",
-   "bikes"
+   "stepfree"
   ],
   "goals": {
-   "bumps": 3,
+   "bumps": 4,
    "minTemp": 19,
-   "access": false,
+   "access": true,
    "laps": null,
-   "bikes": true,
-   "through": 58
+   "through": 44
   },
-  "par": "lV",
-  "cost": 14500,
-  "fee": 28000,
-  "budget": 25000,
+  "par": "r4,rW3NS",
+  "cost": 33500,
+  "fee": 58500,
+  "budget": 53500,
   "relaxed": false,
   "slots": 2,
-  "temp": -6
+  "temp": -5
  },
  {
   "case": {
@@ -1841,26 +1836,23 @@
    "seed": 3294
   },
   "twists": [
-   "cold",
-   "fragile",
-   "bikes"
+   "cold"
   ],
   "goals": {
-   "bumps": 0,
+   "bumps": 7,
    "minTemp": 19,
    "access": false,
    "laps": null,
-   "bikes": true,
-   "through": 98,
-   "wait": 18.5
+   "through": 111,
+   "wait": 19
   },
-  "par": "lV",
-  "cost": 14500,
-  "fee": 35000,
-  "budget": 25000,
+  "par": "r4,rW3N,rW3N",
+  "cost": 53500,
+  "fee": 88500,
+  "budget": 83500,
   "relaxed": false,
   "slots": 4,
-  "temp": -7
+  "temp": -3
  },
  {
   "case": {
@@ -1991,25 +1983,22 @@
    "seed": 3479
   },
   "twists": [
-   "cold",
-   "wind",
-   "bikes"
+   "nofire"
   ],
   "goals": {
    "bumps": 5,
-   "minTemp": 19,
+   "minTemp": 16,
    "access": false,
    "laps": null,
-   "bikes": true,
-   "through": 85
+   "through": 93
   },
   "par": "lV",
   "cost": 14500,
-  "fee": 28000,
+  "fee": 23000,
   "budget": 25000,
   "relaxed": false,
   "slots": 3,
-  "temp": -6
+  "temp": 4
  },
  {
   "case": {
@@ -2049,6 +2038,7 @@
    "ev": "sales",
    "cb": "paradox",
    "need": "surge",
+   "lesson": "core",
    "existing": [
     {
      "type": "revolve",
@@ -2077,20 +2067,19 @@
   },
   "twists": [
    "surge",
-   "nofire",
-   "stepfree"
+   "nofire"
   ],
   "goals": {
-   "bumps": 11,
+   "bumps": 6,
    "minTemp": 16,
-   "access": true,
+   "access": false,
    "laps": 1,
-   "through": 104
+   "through": 107
   },
-  "par": "l",
-  "cost": 9500,
-  "fee": 16500,
-  "budget": 17500,
+  "par": "r4C,r4C,r4C",
+  "cost": 24000,
+  "fee": 36000,
+  "budget": 39000,
   "relaxed": false,
   "slots": 4,
   "temp": 1
@@ -2103,6 +2092,7 @@
    "ev": null,
    "cb": "paradox",
    "need": "wind",
+   "lesson": "mouth",
    "existing": [
     {
      "type": "revolve",
@@ -2126,11 +2116,11 @@
    "cold"
   ],
   "goals": {
-   "bumps": 5,
+   "bumps": 2,
    "minTemp": 16,
    "access": false,
    "laps": null,
-   "through": 55
+   "through": 37
   },
   "par": "r4N,r4N",
   "cost": 13500,
@@ -2148,6 +2138,7 @@
    "ev": null,
    "cb": "paradox",
    "need": "fragile",
+   "lesson": "padded",
    "existing": [
     {
      "type": "revolve",
@@ -2165,22 +2156,22 @@
   },
   "twists": [
    "fragile",
-   "rain"
+   "nofire"
   ],
   "goals": {
    "bumps": 0,
    "minTemp": 16,
    "access": false,
    "laps": null,
-   "through": 49
+   "through": 25
   },
-  "par": "l",
-  "cost": 9500,
-  "fee": 15000,
-  "budget": 17500,
+  "par": "r4,r4",
+  "cost": 16500,
+  "fee": 24000,
+  "budget": 28000,
   "relaxed": false,
   "slots": 2,
-  "temp": 7
+  "temp": 4
  },
  {
   "case": {
@@ -2190,6 +2181,7 @@
    "ev": "xmas",
    "cb": "paradox",
    "need": "cold",
+   "lesson": "curtain",
    "existing": [
     {
      "type": "swing",
@@ -2209,23 +2201,23 @@
   },
   "twists": [
    "cold",
-   "nofire",
-   "wind"
+   "fragile",
+   "nofire"
   ],
   "goals": {
-   "bumps": 4,
+   "bumps": 0,
    "minTemp": 16,
    "access": false,
    "laps": null,
-   "through": 51
+   "through": 36
   },
-  "par": "r4N,r4N,r4N",
-  "cost": 40500,
-  "fee": 59000,
-  "budget": 64000,
+  "par": "l",
+  "cost": 9500,
+  "fee": 16500,
+  "budget": 17500,
   "relaxed": false,
   "slots": 3,
-  "temp": -5
+  "temp": 3
  },
  {
   "case": {
@@ -2235,6 +2227,7 @@
    "ev": null,
    "cb": "paradox",
    "need": "drill",
+   "lesson": "pillars",
    "existing": [
     {
      "type": "revolve",
@@ -2272,13 +2265,13 @@
    "minTemp": 19,
    "access": false,
    "laps": 1,
-   "evac": 12,
+   "evac": 10.4,
    "through": 76
   },
-  "par": "l,l",
-  "cost": 19000,
-  "fee": 32000,
-  "budget": 31500,
+  "par": "lX,lX",
+  "cost": 22000,
+  "fee": 36500,
+  "budget": 36000,
   "relaxed": false,
   "slots": 3,
   "temp": 15
@@ -2413,17 +2406,17 @@
   ],
   "goals": {
    "through": 198,
-   "wait": 97,
+   "wait": 87,
    "bumps": 0,
    "minTemp": null,
    "maxTemp": null,
    "access": false,
    "laps": null
   },
-  "par": "bC",
-  "cost": 1500,
-  "fee": 8000,
-  "budget": 7000,
+  "par": "bOS",
+  "cost": 9000,
+  "fee": 15500,
+  "budget": 16500,
   "relaxed": false,
   "slots": 0,
   "temp": 18

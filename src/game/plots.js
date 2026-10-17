@@ -34,6 +34,7 @@ export function refreshPlots(S) {
         const key = p.callChain ? 'chain:' + p.callChain.join('+') : p.callStage;
         const existing = key && p.inside && p.inside[key];
         opts = { callback: p.reason, existing: key ? existing || undefined : p.install, need: p.callTwist ? [p.callTwist] : [] };
+        if (p.reason === 'paradox' && !key && p.callTech) opts.lesson = p.callTech;   // a research call teaches its research
         // a street change being checked: no escalating it until the old setup fails; the check is honest
         if (p.status === 'checking') { opts.check = true; opts.plain = true; }
         if (p.callChain) Object.assign(opts, { stage: 'chain', chain: p.callChain });

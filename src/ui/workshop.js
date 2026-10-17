@@ -156,6 +156,9 @@ export function renderEditor() {
       ${s.type === 'slider' ? `<label class="toggle"><span>Push-button only<small>Opens just for wheelchair users. Everyone else uses another door.</small></span><input type="checkbox" id="eBtn" ${s.button ? 'checked' : ''} ${locked ? 'disabled' : ''}></label>` : ''}
       ${opt('eCur', 'curtain', 'Air curtain', PRICE.curtain, 'cuts heat loss by 70%')}
       ${opt('eVes', 'vestibule', 'Draught lobby', PRICE.vestibule, 'second set of doors; cuts heat loss by ~90%')}
+      ${s.type === 'swing' ? opt('eClo', 'closer', 'Door closer', PRICE.closer, 'shuts the door fast: much less heat lost, a little harder to push', 'closer') : ''}
+      ${s.type === 'swing' ? opt('eAuto', 'auto', 'Automatic opener', PRICE.autoSwing, 'opens by itself: wheelchairs and prams can use it; still swings into people both ways', 'autoswing') : ''}
+      ${s.type === 'slider' ? opt('eTele', 'tele', 'Telescopic panels', PRICE.tele, 'opens to 2.4 m: more people through, more heat lost', 'telescopic') : ''}
       ${s.type === 'swing' ? staffOpt() : ''}
       ${opt('eLane', 'lanes', 'Lane barriers', PRICE.lanes, 'in on one side, out on the other; half-width lanes', 'barriers')}
       ${opt('ePil', 'pillar', 'Pillar inside the exit', PRICE.pillar, 'takes the crowd\'s push in a fire drill', 'pillars')}
@@ -181,6 +184,7 @@ export function renderEditor() {
   bind('ePad', 'padded', false); bind('eCur', 'curtain', false); bind('eBtn', 'button', false);
   bind('eSen', 'sensor', false); bind('eWide', 'wide', false); bind('eVes', 'vestibule', false); bind('eDm', 'doorman', false);
   bind('ePil', 'pillar', false); bind('eLane', 'lanes', false); bind('eGW', 'wide', false);
+  bind('eClo', 'closer', false); bind('eAuto', 'auto', false); bind('eTele', 'tele', false);
   if ($('wm')) { $('wm').onclick = () => { s.wings--; designDirty(); renderEditor(); }; $('wp').onclick = () => { s.wings++; designDirty(); renderEditor(); }; }
   updateCost();
 }

@@ -45,9 +45,9 @@ test('a chained level hands everyone on and finishes', () => {
 });
 
 // the paradoxes: averaged over several jobs so one lucky seed can't decide it
-const compare = (stage, a, b, { tier = 2, seeds = 6, kind } = {}) => {
+const compare = (stage, a, b, { tier = 2, seeds = 6, kind, keep = () => true } = {}) => {
   const wa = [], wb = [];
-  for (let s = 0; s < seeds; s++) { const c = job(stage, 100 + s, tier, kind); wa.push(runStage(c, { stage, ...a }, ALL)); wb.push(runStage(c, { stage, ...b }, ALL)); }
+  for (let s = 0, n = 0; n < seeds && s < 200; s++) { const c = job(stage, 100 + s, tier, kind); if (!keep(c)) continue; n++; wa.push(runStage(c, { stage, ...a }, ALL)); wb.push(runStage(c, { stage, ...b }, ALL)); }
   return [wa, wb];
 };
 test('paradox: one snaking queue beats a line per desk', () => {
@@ -77,9 +77,17 @@ test('paradox: a stand-back line beats crowding the belt', () => {
   const [line, crowd] = compare('carousel', { belts: 1, line: true }, { belts: 1, line: false }, { seeds: 3 });
   assert.ok(mean(line.map(r => r.wait)) < mean(crowd.map(r => r.wait)));
 });
-test("paradox: closing the footbridge speeds everyone up (Braess)", () => {
-  const [closed, open] = compare('braess', { bridge: 'closed', wideEsc: false, wideStairs: false }, { bridge: 'open', wideEsc: false, wideStairs: false });
+test("paradox: closing the footbridge speeds everyone up (Braess), except where the malls are long", () => {
+  const plain = { bridge: 'open', wideEsc: false, wideStairs: false };
+  const [closed, open] = compare('braess', { ...plain, bridge: 'closed' }, plain, { keep: c => c.params.layout === 'shortcut' });
   assert.ok(mean(closed.map(r => r.wait)) < mean(open.map(r => r.wait)));
+  // long malls: the bridge is a real shortcut, so closing it is slower, and widening a pinch point is what helps
+  const [closedL, openL] = compare('braess', { ...plain, bridge: 'closed' }, plain, { keep: c => c.params.layout === 'long' });
+  const [stairsL] = compare('braess', { ...plain, wideStairs: true }, plain, { keep: c => c.params.layout === 'long' });
+  assert.ok(mean(closedL.map(r => r.wait)) > mean(openL.map(r => r.wait)));
+  assert.ok(mean(stairsL.map(r => r.wait)) < mean(openL.map(r => r.wait)));
+  // a research call is always about the paradox
+  for (let seed = 1; seed <= 10; seed++) assert.equal(makeContract('galleria', 4, 3, seed, { stage: 'braess', tech: ALL, callback: 'paradox' }).params.layout, 'shortcut');
 });
 test('paradox: metering the crowd beats letting everyone into the concourse', () => {
   const [meter, none] = compare('bottleneck', { openings: 4, metering: true }, { openings: 4, metering: false }, { tier: 4, seeds: 4 });

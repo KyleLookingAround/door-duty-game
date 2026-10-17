@@ -22,6 +22,17 @@ export function shape(slots) {
   return slots.filter(s => s.type !== 'wall').map(s => code[s.type] + (s.flow && s.flow !== 'both' && s.flow !== 'auto' ? s.flow[0] : '')).sort().join('+') || 'none';
 }
 
+// The answers a lazy player tries first, without reading the brief: one sliding door, a pair of one-way swing
+// doors, or on the Galleria, closing the bridge. A job one of these passes isn't much of a puzzle.
+export function lazyDesigns(c) {
+  if (c.stage) return c.stage === 'braess' ? [{ ...c.existing, bridge: 'closed' }] : [];
+  const walls = () => Array.from({ length: c.slots }, () => ({ type: 'wall' }));
+  const one = walls(); one[0] = { type: 'slider', flow: 'both' };
+  const out = [one];
+  if (c.slots >= 2) { const two = walls(); two[0] = { type: 'swing', flow: 'in' }; two[c.slots - 1] = { type: 'swing', flow: 'out' }; out.push(two); }
+  return out;
+}
+
 export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth = () => {} } = {}) {
   const S = freshState(seed);
   const tally = { jobs: 0, parFails: [], falseAlarms: 0, unsurveyable: 0, skipped: 0, months: [] };
@@ -51,6 +62,7 @@ export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth 
       const r = runHeadless(c, c.par.slots, techOf(S));
       const g = grade(S, c, c.par.slots, r);
       if (!g.pass) { tally.parFails.push(`${MONTHS[S.month % 12]} ${S.year} ${p.name}: ${g.hint}`); continue; }
+      if (lazyDesigns(c).some(d => grade(S, c, d, runHeadless(c, d, techOf(S))).pass)) tally.lazy = (tally.lazy || 0) + 1;   // a lazy answer would have done
       if ((S.recent || []).includes(designSig(c.par.slots))) tally.repeats = (tally.repeats || 0) + 1;   // the same answer as a recent job
       if (Array.isArray(c.par.slots)) (tally.played = tally.played || []).push({ m: S.month, shape: shape(c.par.slots) });
       signOff(S, p, c, c.par.slots, g.stars, r);
@@ -91,7 +103,7 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
   const t0 = Date.now();
   const { S, tally } = await simulate({ months: nums[0] || 24, seed: nums[1] || 1, log: quiet ? () => {} : console.log });
   console.log(`\ninside jobs: ${JSON.stringify(tally.inside || {})}`);
-  console.log(`jobs that waited for the crews: ${tally.waiting || 0} · jobs that repeated a recent answer: ${tally.repeats || 0} of ${tally.jobs}`);
+  console.log(`jobs that waited for the crews: ${tally.waiting || 0} · jobs that repeated a recent answer: ${tally.repeats || 0} of ${tally.jobs} · a lazy answer passed ${tally.lazy || 0}`);
   console.log(`enquiries: ${tally.asked || 0} asked · ${tally.won || 0} ready in time · ${tally.lapsed || 0} lapsed · ${tally.quiet || 0} months with nothing on the table`);
   for (const f of tally.failed || []) console.log(`SURVEY FAILED: ${f.name} (${f.kind}) tier ${f.tier} month ${f.month} seed ${f.seed}: ${f.error} ${JSON.stringify(f.opts)}`);
   console.log(`\n${tally.jobs} jobs · rep ${rep(S)}★ · cash ${Math.round(S.cash)} · ${tally.coped || 0} clients coped with street changes · ${tally.calls || 0} called back · ${tally.falseAlarms} false alarms · ${tally.unsurveyable} unsurveyable · ${tally.skipped} skipped · ${((Date.now() - t0) / 1000).toFixed(0)}s`);

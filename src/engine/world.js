@@ -72,7 +72,7 @@ export class World {
       const d = { ...s, cx, i, leak: 0 };
       if (s.type === 'revolve') Object.assign(d, { R: s.wide ? WIDE_R : REV_R, phi: this.rng() * TAU, stopTimer: 0, rampTimer: 0, omegaEff: 0 });
       if (s.type === 'swing') Object.assign(d, { w: 1.2, swing: 0, lastDir: 0, lastT: -9 });
-      if (s.type === 'slider') Object.assign(d, { w: 1.7, open: 0, hold: 0 });
+      if (s.type === 'slider') Object.assign(d, { w: s.tele ? 2.4 : 1.7, open: 0, hold: 0 });   // telescopic panels open wider
       if (s.type === 'gates') {
         // standard: three narrow lanes; wide aisles: two lanes wheelchairs, prams and bikes fit through
         const xs = s.wide ? [-0.75, 0.75] : [-1, 0, 1], hw = s.wide ? 0.46 : 0.34;
@@ -130,7 +130,7 @@ export class World {
     if ((d.flow === 'in' && p.dir < 0) || (d.flow === 'out' && p.dir > 0)) return false;
     if (g.stepfree) {
       if (this.site.rampBays && !this.site.rampBays.includes(d.i)) return false;   // steps everywhere but the ramp
-      return d.type === 'slider' || (d.type === 'revolve' && d.wide && d.wings <= 3);
+      return d.type === 'slider' || (d.type === 'swing' && d.auto) || (d.type === 'revolve' && d.wide && d.wings <= 3);   // an automatic swing door opens itself
     }
     if (g.noRevolve && d.type === 'revolve') return false;
     if (d.type === 'slider' && d.button) return false;   // push-button door: step-free guests only
@@ -223,6 +223,8 @@ export class World {
     if (c.drill && !this.alarm && this.t >= c.drill.at) this.startAlarm();
     // doors
     let leakSum = 0;
+    // an air curtain cuts an open door's heat loss by 70% in mild weather, but a hard frost or a wind pushes through it
+    const curtainK = Math.min(0.8, 0.3 + 0.03 * Math.max(0, 4 - (c.outsideTemp ?? 18)) + 0.08 * (c.wind || 0));
     for (const d of this.doors) {
       if (this.alarm) {
         // fire alarm: revolving doors book-fold flat, swing doors are held, sliders fail open
@@ -290,13 +292,18 @@ export class World {
         }
         if (want) d.hold = c.radar ? 0.35 : 1.4; else d.hold -= dt;
         d.open = Math.max(0, Math.min(1, d.open + (d.hold > 0 ? (c.express ? 3.5 : 1.4) : (c.express ? -2.2 : -0.9)) * dt));
-        d.leak = d.open * 0.07 * (d.curtain ? 0.3 : 1) * (d.vestibule ? 0.12 : 1) * (1 + (c.wind || 0) + (c.stack || 0) * 2);
+        d.leak = d.open * 0.07 * (d.w / 1.7) * (d.curtain ? curtainK : 1) * (d.vestibule ? 0.12 : 1) * (1 + (c.wind || 0) + (c.stack || 0) * 2);
       } else if (d.type === 'swing') {
+        // an automatic opener swings the door for anyone heading to it, and holds it a moment longer;
+        // a closer snaps it shut the moment the doorway is clear
         let busy = false;
-        for (const p of this.people) if (Math.abs(p.x - d.cx) < 0.9 && Math.abs(p.y) < 0.7) { busy = true; break; }
-        d.swing = Math.max(0, Math.min(1, d.swing + (busy ? 4 : -1.5) * dt));
+        for (const p of this.people) {
+          if (Math.abs(p.x - d.cx) < 0.9 && Math.abs(p.y) < 0.7) { busy = true; break; }
+          if (d.auto && p.door === d.i && p.state === 'approach' && Math.abs(p.x - d.cx) < 1.4 && Math.abs(p.y) < 1.5) { busy = true; break; }
+        }
+        d.swing = Math.max(0, Math.min(1, d.swing + (busy ? 4 : d.closer ? -5 : d.auto ? -1 : -1.5) * dt));
         if (c.stack && !d.vestibule) d.swing = Math.max(d.swing, 0.3 * c.stack);   // the draught holds it ajar
-        d.leak = d.swing * 0.08 * (d.curtain ? 0.3 : 1) * (d.vestibule ? 0.12 : 1) * (1 + (c.wind || 0) + (c.stack || 0) * 2);
+        d.leak = d.swing * 0.08 * (d.curtain ? curtainK : 1) * (d.vestibule ? 0.12 : 1) * (1 + (c.wind || 0) + (c.stack || 0) * 2);
       } else if (d.type === 'gates') {
         // tidal flow: auto lanes turn to face whichever way the queue is heavier
         const autos = d.gl.filter(l => l.auto);
@@ -467,7 +474,7 @@ export class World {
             tx = dd.cx + Math.max(-0.25, Math.min(0.25, lx * 0.4)); sp *= 1.1;
             if (dd.passT > 0 && Math.abs(p.y) < 0.45) sp *= 0.12;   // the doorway is full: wait your turn
           }
-          else if (dd.type === 'swing' && Math.abs(p.y) < 0.6) sp *= dd.doorman ? 0.9 : 0.55;     // pushing the door (or held open)
+          else if (dd.type === 'swing' && Math.abs(p.y) < 0.6) sp *= dd.doorman || dd.auto ? 0.9 : dd.closer ? 0.5 : 0.55;     // pushing the door (held or opened for you; a closer pushes back)
           if (dd.vestibule && Math.abs(p.y) < 1.0) sp *= 0.75;               // two sets of doors
           if (dd.type === 'slider' && dd.open < 0.6 && Math.abs(p.y) < 0.9) sp *= 0.2; // waiting for it to open
         }
