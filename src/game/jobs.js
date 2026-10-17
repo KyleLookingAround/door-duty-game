@@ -6,6 +6,7 @@ import { TECH } from '../content/tech.js';
 import { PREMISES, STAFF } from '../content/company.js';
 import { money } from '../util/format.js';
 import { feeOf, charge, prem, rep, serviceCost } from './economy.js';
+import { masterFrom } from './research.js';
 
 // "a, b or c"
 const orList = a => a.length > 1 ? `${a.slice(0, -1).join(', ')} or ${a[a.length - 1]}` : a[0] || '';
@@ -98,6 +99,7 @@ export function signOff(S, p, c, design, stars, r) {
   const lockedBefore = S.plots.filter(x => x.status === 'locked').length;
   // a client who asked for this and waited for your research pays a bonus for having it ready
   const bonus = p.enquiry && p.enquiry.ready && p.status === 'callback' && p.reason === 'paradox' ? p.enquiry.bonus || 0 : 0;
+  const mastered = masterFrom(S, p, c);   // the job that teaches a tech masters it
   if (bonus) p.enquiry = null;
   S.cash += profit + bonus;
   if (c.stage) p.inside = { ...(p.inside || {}), [c.chain ? 'chain:' + c.chain.join('+') : c.stage]: JSON.parse(JSON.stringify(design)) };
@@ -110,18 +112,13 @@ export function signOff(S, p, c, design, stars, r) {
   if (!c.stage || !p.install) { p.wear = 0; p.broken = false; p.cert = false; p.bumpRec = r.bumps; p.stopRec = r.stops || 0; }
   else { p.bumpRec = Math.max(p.bumpRec || 0, r.bumps); }
   p.green = c.stage ? p.green : isGreen(c, r);
-  p.callStage = null; p.callTwist = null; p.callChain = null;
+  p.callStage = null; p.callTwist = null; p.callChain = null; p.callTech = null; p.lessonTender = false;
   S.jobs++; S.monthJobs = (S.monthJobs || 0) + 1;
   S.recent = [...(S.recent || []), designSig(design)].slice(-4);
-  return { profit: profit + bonus, bonus, lockedBefore };
+  return { profit: profit + bonus, bonus, lockedBefore, mastered };
 }
 
-// the firm's decisions; each returns false if it isn't allowed right now
-export function startResearch(S, key) {
-  const t = TECH.find(x => x.key === key);
-  if (!t || S.moving || S.cash < t.price || S.research.length >= prem(S).labs || S.unlocks[key] || S.research.some(r => r.key === key)) return false;
-  S.cash -= t.price; S.research.push({ key: t.key, left: t.months }); return true;
-}
+// the firm's decisions; each returns false if it isn't allowed right now (research: see research.js)
 export function hire(S, key) { S.staff[key] = true; return true; }
 export function fire(S, key) { S.staff[key] = false; return true; }
 export function movePremises(S, i) {

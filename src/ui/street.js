@@ -4,6 +4,7 @@ import { eventOf } from '../content/events.js';
 import { CHANGE } from '../content/changes.js';
 import { changeWhere } from '../game/month.js';
 import { CALLBACKS, RIVAL, STREETS } from '../content/town.js';
+import { benchesFilled } from '../game/research.js';
 import { MONTHS } from '../game/contracts.js';
 import { feeOf, monthlyIncome, needsMet, needsText, rep, rivalActive, rivalInstall, streetOf, streetOpen, techName, upkeep } from '../game/economy.js';
 import { advice } from '../game/enquiries.js';
@@ -106,6 +107,8 @@ export function renderStreet() {
   };
   const fitted = S.plots.filter(p => p.status === 'fitted' || p.status === 'checking' || p.status === 'rival');
   const later = S.plots.filter(p => p.status === 'locked' && (streetOf(p) === 'high' || streetOpen(S, 'market') || p.rep <= rep(S) + 4));
+  // research never stops: with a bench free, the month button asks for research first
+  $('monthBtn').textContent = benchesFilled(S) ? 'End the month' : 'Choose research';
   $('streetHead').textContent = live.length ? `On the table · ${live.length} · ${jobsLine(S)}` : 'Nothing on the table this month';
   const tip = live.length ? null : advice(S);
   $('street').innerHTML = live.map(row).join('') + (tip ? `<p class="note ledtip">${tip.text}${tip.tab ? ` <button class="ghost small" type="button" data-co="${tip.tab}">Open ${tip.tab}</button>` : ''}</p>` : '');

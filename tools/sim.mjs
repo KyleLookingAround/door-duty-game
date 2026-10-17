@@ -8,7 +8,8 @@
 import { freshState } from '../src/game/state.js';
 import { refreshPlots, settleCheck } from '../src/game/plots.js';
 import { generateSolved, runHeadless, designSig } from '../src/game/contracts.js';
-import { grade, signOff, startResearch, service, hire, movePremises } from '../src/game/jobs.js';
+import { grade, signOff, service, hire, movePremises } from '../src/game/jobs.js';
+import { startResearch, canResearch, benchesFilled, instalment } from '../src/game/research.js';
 import { endMonth } from '../src/game/month.js';
 import { rep, prem, techOf, feeOf, charge, serviceCost, plotNeeds, jobsLeft, jobsPerMonth } from '../src/game/economy.js';
 import { TECH } from '../src/content/tech.js';
@@ -72,9 +73,11 @@ export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth 
     // run the firm: fix what's broken, research what clients are waiting on, grow when there's money
     for (const p of S.plots) if (p.broken && S.cash > serviceCost(p) + 5000) service(S, p);
     const wanted = [...S.plots.filter(p => p.enquiry && !p.enquiry.ready).map(p => p.enquiry.tech), ...S.plots.filter(p => p.status === 'locked').flatMap(p => plotNeeds(p))].filter(k => !S.unlocks[k]);
+    // research never stops: keep every bench busy and one project queued, wanted research first, then the
+    // cheapest; pay-as-you-go, so only take on what the month's instalments allow (otherwise a market study)
     const order = [...TECH].sort((a, b) => (wanted.includes(b.key) - wanted.includes(a.key)) || a.price - b.price);
     for (const t of order) {
-      if (S.cash < t.price + 15000 || t.tier > prem(S).tier || (t.req || []).some(k => !S.unlocks[k])) continue;
+      if (!canResearch(S, t) || S.cash < instalment(t) * 2 + 10000 || (S.queue || []).length >= 1) continue;
       startResearch(S, t.key);
     }
     const next = PREMISES[(S.premises || 0) + 1];
@@ -84,11 +87,13 @@ export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth 
       if (!S.staff[s.key] && hired < prem(S).staff && (!s.req || S.unlocks[s.req]) && S.cash > s.wage * 12 + 20000) hire(S, s.key);
     }
     const label = `${MONTHS[S.month % 12]} ${S.year}`;
+    if (!benchesFilled(S)) tally.idleBench = (tally.idleBench || 0) + 1;   // a market study fills it at the month end
     if ((S.monthJobs || 0) > jobsPerMonth(S)) tally.overbooked = (tally.overbooked || 0) + 1;   // never: the crews' limit holds
     const rpt = endMonth(S);
     refreshPlots(S);
     if (!S.plots.some(p => ['open', 'callback', 'checking'].includes(p.status))) tally.quiet = (tally.quiet || 0) + 1;
     tally.asked = (tally.asked || 0) + (rpt.enquiry.fresh ? 1 : 0); tally.won = (tally.won || 0) + rpt.enquiry.won.length; tally.lapsed = (tally.lapsed || 0) + rpt.enquiry.lapsed.length;
+    tally.studies = (tally.studies || 0) + rpt.research.studies.length; tally.mastered = Object.keys(S.mastered || {}).length;
     const row = { month: label, cash: S.cash, rep: rep(S), jobs: S.jobs, fitted: S.plots.filter(p => p.status === 'fitted').length, net: rpt.net, calls: rpt.calls.length };
     tally.months.push(row);
     onMonth(S, row);
@@ -104,6 +109,7 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
   const { S, tally } = await simulate({ months: nums[0] || 24, seed: nums[1] || 1, log: quiet ? () => {} : console.log });
   console.log(`\ninside jobs: ${JSON.stringify(tally.inside || {})}`);
   console.log(`jobs that waited for the crews: ${tally.waiting || 0} · jobs that repeated a recent answer: ${tally.repeats || 0} of ${tally.jobs} · a lazy answer passed ${tally.lazy || 0}`);
+  console.log(`research: ${Object.keys(S.unlocks).length} owned, ${tally.mastered || 0} mastered, ${tally.studies || 0} market studies`);
   console.log(`enquiries: ${tally.asked || 0} asked · ${tally.won || 0} ready in time · ${tally.lapsed || 0} lapsed · ${tally.quiet || 0} months with nothing on the table`);
   for (const f of tally.failed || []) console.log(`SURVEY FAILED: ${f.name} (${f.kind}) tier ${f.tier} month ${f.month} seed ${f.seed}: ${f.error} ${JSON.stringify(f.opts)}`);
   console.log(`\n${tally.jobs} jobs · rep ${rep(S)}★ · cash ${Math.round(S.cash)} · ${tally.coped || 0} clients coped with street changes · ${tally.calls || 0} called back · ${tally.falseAlarms} false alarms · ${tally.unsurveyable} unsurveyable · ${tally.skipped} skipped · ${((Date.now() - t0) / 1000).toFixed(0)}s`);

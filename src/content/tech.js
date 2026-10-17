@@ -33,6 +33,11 @@ export const TECH = [
   { key: 'prefab', branch: 'bld', tier: 2, price: 30000, months: 2, req: ['sitemgmt'], jobs: 1, name: 'Prefabricated door sets', text: 'Doors built and tested in your workshop, then fitted on site in a day: one more job a month.' },
 ];
 
+// The market study: always available, free and one month long, on any bench. It brings in work: a client
+// asking for something new, or one of your clients wanting more. Research never stops, and this is what
+// a bench does when there's nothing else to research (or no money to pay for it).
+export const STUDY = { key: 'study', name: 'Market study', months: 1, price: 0, text: 'A month of calling round and walking the streets. Free. It brings in work: an enquiry, or a client wanting more.' };
+
 // How-to lessons, shown when research finishes and in the Company › Guide tab: [title, what it does, where it appears, tip]
 export const LESSONS = {
   core: ['Big-core drums', 'In a revolving door the floor near the centre barely moves (v = ω·r), so people standing there drift and miss their exit, riding round again. A bigger core keeps them out at the fast edge.', 'Workshop › revolving door › the new Core slider. 30% or more costs extra.', 'Try a bigger core when go-rounds are the problem, especially with a fast door or a 9am surge.'],

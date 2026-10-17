@@ -286,11 +286,11 @@ export function evaluateTest() {
 function signOffJob() {
   const p = W.plot;
   if (!jobsLeft(S)) { toast(bookedText(S)); return; }   // the brief stops this; a guard in case
-  const { profit, lockedBefore } = signOff(S, p, W.contract, W.design, W.stars, W.result);
+  const { profit, lockedBefore, mastered } = signOff(S, p, W.contract, W.design, W.stars, W.result);
   save();
   closeWorkshop();
   const after = S.plots.filter(x => x.status === 'locked').length;
-  toast(`${p.name} signed · ${money(profit)}${lockedBefore > after ? ' · new client on the street' : ''}`);
+  toast(`${p.name} signed · ${money(profit)}${mastered ? ` · ${techName(mastered)} mastered: +1★` : ''}${lockedBefore > after ? ' · new client on the street' : ''}`);
   confetti(p.i);
 }
 // a burst of confetti over the street, and the building you just fitted lights up

@@ -4,9 +4,10 @@ import assert from 'node:assert/strict';
 import { PREMISES } from '../src/content/company.js';
 import { freshState, migrate } from '../src/game/state.js';
 import { jobsPerMonth, prem } from '../src/game/economy.js';
-import { movePremises, startResearch } from '../src/game/jobs.js';
+import { movePremises } from '../src/game/jobs.js';
+import { startResearch } from '../src/game/research.js';
+import { settleEnquiries } from '../src/game/enquiries.js';
 import { endMonth } from '../src/game/month.js';
-import { canResearch } from '../src/game/enquiries.js';
 import { movingText } from '../src/game/briefs.js';
 import { TECH } from '../src/content/tech.js';
 
@@ -28,12 +29,13 @@ test('a move takes months, and the firm works from the old premises until it is 
   endMonth(S); assert.equal(prem(S).name, 'Headquarters');
 });
 
-test('research waits during a move: nothing advances and nothing new starts', () => {
+test('research waits during a move: nothing advances, and new research only queues', () => {
   const S = rich(2);
-  assert.ok(startResearch(S, 'mouth'));
+  assert.equal(startResearch(S, 'mouth'), 'started');
   assert.ok(movePremises(S, 1));
-  assert.ok(!startResearch(S, 'curtain'), 'no new research mid-move');
-  assert.ok(!TECH.some(t => canResearch(S, t)), 'and enquiries don\'t ask for any');
+  assert.equal(startResearch(S, 'curtain'), 'queued', 'no new research starts mid-move; it waits in the queue');
+  const enq = settleEnquiries(S, true);
+  assert.ok(!enq.fresh, 'and enquiries don\'t ask for any');
   endMonth(S);   // the move month: mouth (1 month) doesn't finish
   assert.ok(!S.unlocks.mouth); assert.equal(S.research[0].left, 1, 'progress kept');
   endMonth(S);   // in the workshop: research picks up

@@ -8,7 +8,8 @@ import { STREETS } from '../content/town.js';
 import { makeContract, runHeadless } from './contracts.js';
 import { random, randomInt } from './state.js';
 import { settleEnquiries, hasWork } from './enquiries.js';
-import { monthlyIncome, prem, insurance, wearRate, rivalActive, stepFreeOk, techOf, tierOf, streetOf, streetOpen } from './economy.js';
+import { researchMonth } from './research.js';
+import { monthlyIncome, needsMastery, prem, insurance, wearRate, rivalActive, stepFreeOk, techOf, tierOf, streetOf, streetOpen } from './economy.js';
 
 export const CLAIM_EXCESS = 1200, INSPECTION_FINE = 2500;
 
@@ -98,10 +99,8 @@ export function endMonth(S) {
   }
   S.month++; if (S.month % 12 === 0) S.year++;
   S.monthJobs = 0;   // a new month: the crews are free again
-  // research
-  const done = [];
-  if (!S.moving) for (const r of S.research) { r.left--; if (r.left <= 0) { S.unlocks[r.key] = true; done.push(r.key); } }   // mid-move, research waits
-  S.research = S.research.filter(r => r.left > 0);
+  // research: paid as it goes, never idle (see research.js)
+  const research = researchMonth(S), done = research.done;
   // a move in progress: one month nearer; at the end of the last one, the firm is in
   let moved = null;
   if (S.moving && --S.moving.left <= 0) { S.premises = S.moving.to; moved = prem(S).name; S.moving = null; }
@@ -122,13 +121,23 @@ export function endMonth(S) {
   scheduleChange(S);
   // paradox callbacks: finished research reaches the clients it could help. If none is fitted yet,
   // the call waits until one is.
-  S.pendingCalls = [...(S.pendingCalls || []), ...done.flatMap(k => (PARADOX_CALLS[k] || []).map((_, j) => [k, j]))];
-  const paradox = [];
-  S.pendingCalls = S.pendingCalls.filter(([k, j]) => {
+  // Mastery needs a lesson job, so one is guaranteed: a call that has waited two months for a fitted client
+  // becomes a tender at a client who'd talk to you now, carrying the lesson (the rival never bids on it).
+  S.pendingCalls = [...(S.pendingCalls || []), ...done.flatMap(k => (PARADOX_CALLS[k] || []).map((_, j) => [k, j, S.month]))];
+  const paradox = [], lessonTenders = [];
+  S.pendingCalls = S.pendingCalls.filter(([k, j, since]) => {
     const def = PARADOX_CALLS[k] && PARADOX_CALLS[k][j];
     if (!def) return false;
     const pool = S.plots.filter(p => p.status === 'fitted' && !p.broken && !p.enquiry && callFits(def, p));
-    if (!pool.length) return true;
+    if (!pool.length) {
+      if (S.month - (since ?? S.month) < 2 || !needsMastery(k) || (S.mastered || {})[k]) return true;
+      const open = S.plots.filter(p => p.status === 'open' && !p.callTech && def.kinds.includes(p.kind));
+      if (!open.length) return true;
+      const p = open[randomInt(S, open.length)];
+      p.callTech = k; p.callText = def.text; p.callTwist = def.twist || null; p.callStage = def.stage || null; p.callChain = def.chain || null; p.lessonTender = true; p.contract = null;
+      lessonTenders.push(p);
+      return false;
+    }
     const p = pool[randomInt(S, pool.length)];
     p.status = 'callback'; p.reason = 'paradox'; p.contract = null; p.tier++;
     p.callText = def.text; p.callTech = k; p.callTwist = def.twist || null; p.callStage = def.stage || null; p.callChain = def.chain || null;
@@ -141,7 +150,7 @@ export function endMonth(S) {
   // Brassworks bids on tenders you've left sitting
   const lost = [];
   if (rivalActive(S)) for (const p of S.plots) {
-    if (p.status !== 'open' || !p.contract || p.contract.first || p.contract.landmark || p.contract.stage || !p.contract.solved) continue;
+    if (p.status !== 'open' || !p.contract || p.lessonTender || p.contract.first || p.contract.landmark || p.contract.stage || !p.contract.solved) continue;
     if (random(S) < 0.18) { p.status = 'rival'; p.rivalUntil = S.month + 3 + randomInt(S, 3); p.contract = null; lost.push(p); }
   }
   // stale tenders refresh with the season; new tech means new kinds of tender
@@ -151,6 +160,6 @@ export function endMonth(S) {
     const wantEv = p.contract.first ? null : evKey;   // a new month's event replaces last month's tenders
     if ((p.contract.event || null) !== wantEv || (p.status === 'open' && (done.length || random(S) < 0.35))) p.contract = null;
   }
-  const net = inc - rent - wageTotal - ins - claims.length * CLAIM_EXCESS - (insp && !insp.pass ? INSPECTION_FINE : 0);
-  return { moved, moving: S.moving ? { ...S.moving } : null, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry };
+  const net = inc - rent - wageTotal - ins - research.cost - claims.length * CLAIM_EXCESS - (insp && !insp.pass ? INSPECTION_FINE : 0);
+  return { research, lessonTenders, moved, moving: S.moving ? { ...S.moving } : null, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry };
 }

@@ -7,13 +7,12 @@ import { PREMISES } from '../content/company.js';
 import { PARADOX_CALLS, callFits } from '../content/paradoxes.js';
 import { prem, rep, rivalActive, missingNeeds } from './economy.js';
 import { random, randomInt } from './state.js';
+import { canResearch, researchingOrQueued } from './research.js';
 import { kmoney } from '../util/format.js';
 
 export const MAX_ENQUIRIES = 2;
 export const ENQUIRY_SLACK = 3;   // months to spare beyond the research itself
 export const enquiryBonus = key => { const t = TECH.find(x => x.key === key); return t ? Math.round(t.price * 0.3 / 500) * 500 : 0; };
-// research you could start now (given the benches and the cash)
-export const canResearch = (S, t) => !S.moving && !S.unlocks[t.key] && !S.research.some(r => r.key === t.key) && (t.req || []).every(k => S.unlocks[k]) && t.tier <= prem(S).tier;
 export const hasWork = S => S.plots.some(p => p.status === 'open' || p.status === 'callback' || p.status === 'checking');
 
 // Settle this month's enquiries and maybe take a new one (always, when the firm has nothing on).
@@ -44,7 +43,7 @@ export function settleEnquiries(S, quiet) {
   if (open < MAX_ENQUIRIES && (quiet || random(S) < 0.3)) {
     const opts = [];
     for (const t of TECH) {
-      if (!canResearch(S, t) || S.plots.some(p => p.enquiry && p.enquiry.tech === t.key) || t.price > S.cash + 40000) continue;
+      if (S.moving || !canResearch(S, t) || S.plots.some(p => p.enquiry && p.enquiry.tech === t.key) || t.price > S.cash + 40000) continue;
       (PARADOX_CALLS[t.key] || []).forEach((def, j) => {
         for (const p of S.plots) if (p.status === 'fitted' && !p.broken && !p.enquiry && (p.askAfter || 0) <= S.month && callFits(def, p)) opts.push({ t, j, p, def });
       });
@@ -63,7 +62,7 @@ export function advice(S) {
   const P = prem(S), free = P.labs - S.research.length, r = rep(S);
   const short = t => S.cash < t.price ? `, and you need ${kmoney(t.price - S.cash)} more for it` : '';
   // an enquiry waiting on research you haven't started
-  const asked = S.plots.find(p => p.enquiry && !p.enquiry.ready && !S.research.some(x => x.key === p.enquiry.tech));
+  const asked = S.plots.find(p => p.enquiry && !p.enquiry.ready && !researchingOrQueued(S, p.enquiry.tech));
   if (asked && free > 0) {
     const t = TECH.find(x => x.key === asked.enquiry.tech);
     return { tab: 'research', text: `Start ${t.name}: ${asked.name} wants it within ${asked.enquiry.by - S.month} months (${t.months} to research)${short(t)}.` };

@@ -82,9 +82,13 @@ def company(pg):
     pg.click('[data-tab="research"]'); pg.wait_for_timeout(150)
     sweep(pg, 'research tab')
     acted=[]
-    # research: cheapest affordable available node
-    btns=pg.query_selector_all('#sheet button[data-k]:not([disabled])')
-    if btns: k=btns[0].get_attribute('data-k'); btns[0].click(); pg.wait_for_timeout(250); acted.append('research '+k)
+    # research never stops: while a bench is free, start the first project on offer (or a market study when
+    # money is short); the month can't end until every bench is busy
+    for _ in range(3):
+        if not pg.query_selector('#sheet button[data-k="study"]'): break
+        techs=[b for b in pg.query_selector_all('#sheet button[data-k]:not([disabled])') if b.get_attribute('data-k')!='study']
+        b=techs[0] if techs and state(pg)['cash']>20000 else pg.query_selector('#sheet button[data-k="study"]')
+        k=b.get_attribute('data-k'); b.click(); pg.wait_for_timeout(300); acted.append('research '+k)
     pg.click('[data-tab="premises"]'); pg.wait_for_timeout(150)
     sweep(pg, 'premises tab')
     mv=pg.query_selector('#sheet button[data-move]:not([disabled])')
@@ -98,6 +102,7 @@ def company(pg):
     if acted: log('  company:', ', '.join(acted))
 def end_month(pg):
     company(pg)
+    if pg.inner_text('#monthBtn').strip().lower()!='end the month': fail('a bench is still free after the company visit:', pg.inner_text('#monthBtn'))
     pg.click('#monthBtn'); pg.wait_for_selector('#mClose')
     sweep(pg, 'month report')
     st=state(pg); log(f"  [{st['year']}-{st['month']%12+1:02d}] cash {st['cash']} prem {st['premises']} staff {[k for k,v in st['staff'].items() if v]} tech {len(st['unlocks'])} research {[r['key'] for r in st['research']]}")

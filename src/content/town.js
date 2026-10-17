@@ -10,4 +10,5 @@ export const CALLBACKS = {
   botched: `${RIVAL} fitted cheap swing doors and the client regrets it`,
   safety: 'An inspector failed the entrance on safety: too many people clipped',
   access: 'An inspector failed the entrance: no step-free way in',
+  study: 'Your market study found them wanting more: a bigger, busier entrance',
 };

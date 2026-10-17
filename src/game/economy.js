@@ -1,10 +1,12 @@
 // Money and standing: reputation, fees, costs, maintenance, wear, insurance. All pure functions of the save.
 import { PREMISES, STAFF } from '../content/company.js';
 import { TECH } from '../content/tech.js';
+import { PARADOX_CALLS } from '../content/paradoxes.js';
 import { STREETS } from '../content/town.js';
 import { PLOTS, KINDS, buildSite } from '../content/buildings/index.js';
 
-export const rep = S => S.plots.reduce((a, p) => a + p.stars, 0);
+// reputation: each client's best stars, plus a star for every tech the firm has mastered
+export const rep = S => S.plots.reduce((a, p) => a + p.stars, 0) + masteryStars(S);
 export const prem = S => PREMISES[S.premises || 0];
 // How many jobs the firm can sign off a month: the premises, plus research that adds crews' time.
 // Every sign-off counts (tenders, callbacks, research calls, inside jobs); a street-change check doesn't.
@@ -24,7 +26,7 @@ export const wearFactor = p => p.broken ? 0 : (p.wear || 0) < 0.5 ? 1 : 1 - ((p.
 export const loyalty = p => 1 + 0.05 * Math.min(3, p.coped || 0);   // each street change their doors coped with: +5%, up to 15%
 export const upkeep = (S, p) => Math.round((p.fee * 0.007 * p.stars + 100) * (S.staff && S.staff.engineer ? 1.4 : 1) * (p.green ? 1.15 : 1) * (p.cert ? 1.1 : 1) * loyalty(p) * wearFactor(p) / 50) * 50;
 // a client calling about new research (a paradox callback) is still happy and still pays
-export const paying = p => p.status === 'fitted' || p.status === 'checking' || (p.status === 'callback' && p.reason === 'paradox');
+export const paying = p => p.status === 'fitted' || p.status === 'checking' || (p.status === 'callback' && (p.reason === 'paradox' || p.reason === 'study'));
 // maintenance coming in each month: the whole firm's, or one street's
 export const monthlyIncome = (S, street) => S.plots.filter(p => paying(p) && (!street || streetOf(p) === street)).reduce((a, p) => a + upkeep(S, p), 0);
 // doors wear with traffic: revolving doors and gates fastest, swing doors slowest
@@ -42,9 +44,17 @@ export const overheads = S => prem(S).rent + STAFF.reduce((a, s) => a + (S.staff
 
 // research a client insists on before it will take bids (a landmark needs several at once)
 export const plotNeeds = p => { const n = (PLOTS[p.i] || {}).needs; return n ? [].concat(n) : []; };
-export const missingNeeds = (S, p) => plotNeeds(p).filter(k => !S.unlocks[k]);
+// Owned, then mastered: a finished tech is in the workshop at once, and mastered when you sign off a job that
+// teaches it (its research call). Research with no such job anywhere but at the client that needs it (route
+// closures, the Galleria) is mastered as soon as it's owned. Landmarks (clients needing several techs) want
+// them mastered; mastery also earns a star on the firm's record.
+export const isLandmarkPlot = p => plotNeeds(p).length > 1;
+export const needsMastery = key => (PARADOX_CALLS[key] || []).some(def => def.kinds.some(k => !PLOTS.some(pl => pl.kind === k && [].concat(pl.needs || []).includes(key))));
+export const isMastered = (S, key) => !!(S.unlocks[key] && (!needsMastery(key) || (S.mastered || {})[key]));
+export const masteryStars = S => Object.keys(S.mastered || {}).filter(k => S.unlocks[k] && needsMastery(k)).length;
+export const missingNeeds = (S, p) => plotNeeds(p).filter(k => isLandmarkPlot(p) ? !isMastered(S, k) : !S.unlocks[k]);
 export const needsMet = (S, p) => missingNeeds(S, p).length === 0;
-export const needsText = (S, p) => missingNeeds(S, p).map(techName).join(', ');
+export const needsText = (S, p) => missingNeeds(S, p).map(k => S.unlocks[k] ? `${techName(k)} (mastered)` : techName(k)).join(', ');
 
 // the town
 export const streetOf = p => (PLOTS[p.i] || {}).street || 'high';
@@ -57,5 +67,5 @@ export const tierOf = (S, p) => Math.min(7, Math.floor(S.jobs / 3) + (p.tier || 
 // can a wheelchair get in? (the inspector checks this at public buildings)
 export function stepFreeOk(p) {
   const site = buildSite(p.kind, p.install.length);
-  return p.install.some((s, i) => (s.type === 'slider' || (s.type === 'revolve' && s.wide && s.wings <= 3) || (s.type === 'gates' && s.wide)) && (!site.rampBays || site.rampBays.includes(i)));
+  return p.install.some((s, i) => (s.type === 'slider' || (s.type === 'swing' && s.auto) || (s.type === 'revolve' && s.wide && s.wings <= 3) || (s.type === 'gates' && s.wide)) && (!site.rampBays || site.rampBays.includes(i)));
 }
