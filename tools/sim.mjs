@@ -28,6 +28,7 @@ export async function simulate({ months = 24, seed = 1, log = () => {} } = {}) {
         c = await generateSolved(c, techOf(S), S.recent || []);
         if (!c) { p.contract = null; tally.unsurveyable++; continue; }
         if (p.status === 'callback' && c.existing && c.par.cost === 0) { p.status = 'fitted'; p.contract = null; p.reason = null; tally.falseAlarms++; continue; }
+        if (p.status === 'callback' && c.opts && c.opts.callback) p.reason = c.opts.callback;
         p.contract = c;
       }
       if (feeOf(S, c) - charge(S, c.par.cost) < 0 || S.cash < charge(S, c.par.cost)) { tally.skipped++; continue; }

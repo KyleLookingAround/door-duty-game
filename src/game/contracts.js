@@ -451,6 +451,16 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
       attempt--;
       continue;
     }
+    // still nothing to fix even at its worst: the doors genuinely beat that problem, so the client calls
+    // about a different one (a cold snap, an older crowd, a busier street) instead
+    if (free && !c.relaxed && opts.callback && (opts.switched || 0) < 2) {
+      const order = ['cold', 'older', 'busier', 'access'].filter(r => r !== opts.callback);
+      const next = order[(opts.switched || 0) % order.length];
+      severity = 0;
+      c = makeContract(c.kind, c.tier, c.month, c.seed, { ...opts, callback: next, severity: 0, switched: (opts.switched || 0) + 1 }); c.job = job;
+      attempt--;
+      continue;
+    }
     if (attempt === MAX - 1) break;
     if (c.relaxed) {
       // unfair combination: same building and callback reason, fresh random twists

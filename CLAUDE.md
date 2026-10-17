@@ -64,6 +64,6 @@ docs/game-loop.html      the design page: the game loop, systems and roadmap
 
 ## Known issues / TODO
 
-- **False-alarm callbacks are common**: about 16 in a 48-month bot game, the client calls back and the surveyor finds your existing doors already cope. Callbacks should more often come with a change that the installed doors genuinely fail.
+- Callbacks the installed doors already cope with escalate (up to three times) and then switch complaint, so false alarms should now be rare; if they reappear, check generateSolvedInner in contracts.js.
 - The survey is CPU-heavy (a few seconds per tender); the worker hides it, but a full golden run takes ~8 minutes.
 - `prototype/` was removed in the restructure; the original single-file build is in the first commit if a comparison is needed.

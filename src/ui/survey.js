@@ -6,6 +6,7 @@ import { generateSolved, GATE } from '../game/contracts.js';
 import { refreshPlots } from '../game/plots.js';
 import { techOf } from '../game/economy.js';
 import { TWISTS } from '../content/twists.js';
+import { CALLBACKS } from '../content/town.js';
 
 // the street listens here to redraw when a survey lands
 export const surveyHooks = { changed: () => {} };
@@ -48,6 +49,8 @@ export function survey(p) {
         surveyHooks.changed();
         return null;
       }
+      // the surveyor may have switched the complaint (the doors coped with the first one)
+      if (p.status === 'callback' && sc.opts && sc.opts.callback && CALLBACKS[sc.opts.callback]) p.reason = sc.opts.callback;
       p.contract = sc; save(); surveyHooks.changed();
     }
     return sc;
