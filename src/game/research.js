@@ -9,21 +9,28 @@
 //  - Owned, then mastered: signing off the job that teaches a tech masters it (see economy.js).
 import { TECH, STUDY } from '../content/tech.js';
 import { PARADOX_CALLS, callFits } from '../content/paradoxes.js';
-import { prem, needsMastery } from './economy.js';
+import { prem, needsMastery, isMastered } from './economy.js';
 import { random, randomInt } from './state.js';
 
 export const techOrStudy = key => key === STUDY.key ? STUDY : TECH.find(t => t.key === key);
-// what a project costs each month it runs
-export const instalment = t => t.price ? Math.ceil(t.price / t.months / 500) * 500 : 0;
-export const benches = S => prem(S).labs;
+// a refinement's level (0 until researched); its next level's price, months and text, or null at the top
+export const levelOf = (S, key) => +S.unlocks[key] || 0;
+export const nextLevel = (S, t) => t.kind === 'refine' ? t.levels[levelOf(S, t.key)] || null : t;
+// what a project (or the next level of a refinement) costs each month it runs
+export const instalment = (t, S) => { const n = S ? nextLevel(S, t) || t : t; return n.price ? Math.ceil(n.price / n.months / 500) * 500 : 0; };
+// the premises' benches, plus one with the Research lab
+export const benches = S => prem(S).labs + (S.unlocks.lab ? 1 : 0);
 // this month's research bill: every running paid project's instalment
-export const researchOut = S => S.moving ? 0 : S.research.reduce((a, r) => a + (r.owe > 0 ? instalment(techOrStudy(r.key)) : 0), 0);
+export const researchOut = S => S.moving ? 0 : S.research.reduce((a, r) => a + (r.owe > 0 ? r.per ?? instalment(techOrStudy(r.key)) : 0), 0);
 // a free bench: one not running a project (while moving, the benches are packed up: none is free, none idle)
 export const freeBenches = S => S.moving ? 0 : Math.max(0, benches(S) - S.research.length);
 export const benchesFilled = S => freeBenches(S) === 0;
 const inHand = (S, key) => S.research.some(r => r.key === key) || (S.queue || []).some(q => q.key === key);
-// research the firm could take on: not owned, not already running or queued, what it needs owned, within the premises' tier
-export const canResearch = (S, t) => !S.unlocks[t.key] && !inHand(S, t.key) && (t.req || []).every(k => S.unlocks[k]) && t.tier <= prem(S).tier;
+// research the firm could take on: not owned (or a refinement with a level to go), not already running or queued,
+// within the premises' tier, with what it needs owned (mastered, for tier 3: deeper research builds on what
+// you've used) and, for the sales network, enough market studies behind it
+export const canResearch = (S, t) => (t.kind === 'refine' ? !!nextLevel(S, t) : !S.unlocks[t.key]) && !inHand(S, t.key) && t.tier <= prem(S).tier
+  && (t.req || []).every(k => t.tier >= 3 ? isMastered(S, k) : S.unlocks[k]) && (S.studiesDone || 0) >= (t.studies || 0);
 export const researchingOrQueued = (S, key) => inHand(S, key);
 
 // Start a project on a free bench, or put it in the queue. Returns 'started', 'queued' or false.
@@ -31,7 +38,8 @@ export function startResearch(S, key) {
   const t = techOrStudy(key);
   if (!t) return false;
   if (key !== STUDY.key && !canResearch(S, t)) return false;
-  const job = { key, left: t.months, owe: t.price ? t.months : 0 };
+  const n = key === STUDY.key ? t : nextLevel(S, t);
+  const job = { key, left: n.months, owe: n.price ? n.months : 0, per: instalment(t, S) };
   if (freeBenches(S) > 0) { S.research.push(job); return 'started'; }
   if (key === STUDY.key) return false;   // a study only ever fills a free bench
   S.queue = [...(S.queue || []), job];
@@ -46,21 +54,28 @@ export function fillBenches(S, study) {
 
 // A month of research, at the month end. Returns { done, cost, paused, studies } for the report.
 export function researchMonth(S) {
-  const out = { done: [], cost: 0, paused: [], studies: [] };
+  const out = { done: [], levels: [], cost: 0, paused: [], studies: [] };
   if (S.moving) return out;   // mid-move, research waits
   fillBenches(S, true);       // the safety net: no bench sits idle
   const keep = [];
   for (const r of S.research) {
     // overdrawn: a paid project waits (progress kept) and the bench does a market study instead
     if (r.owe > 0 && S.cash - out.cost < 0) { out.paused.push(r.key); S.queue = [r, ...(S.queue || [])]; r.wait = true; keep.push({ key: STUDY.key, left: 0, owe: 0, sub: true }); continue; }
-    if (r.owe > 0) { out.cost += instalment(techOrStudy(r.key)); r.owe--; }
+    if (r.owe > 0) { out.cost += r.per ?? instalment(techOrStudy(r.key)); r.owe--; }
     r.left--;
     if (r.left > 0) { keep.push(r); continue; }
-    if (r.key === STUDY.key) out.studies.push(studyResult(S));
-    else { S.unlocks[r.key] = true; out.done.push(r.key); if (!needsMastery(r.key)) S.mastered = { ...(S.mastered || {}), [r.key]: true }; }
+    if (r.key === STUDY.key) out.studies.push(...study(S));
+    else if (techOrStudy(r.key).kind === 'refine') {
+      // a refinement goes up a level; it's mastered at once (nothing to learn on a job). Its first level counts as
+      // finished research (clients may call about it); later ones are listed as levels.
+      const lv = levelOf(S, r.key) + 1;
+      S.unlocks[r.key] = lv; S.mastered = { ...(S.mastered || {}), [r.key]: true };
+      if (r.key === 'heat' && lv >= 2) S.unlocks.heat2 = true;   // heat pumps: what the engine and older code read
+      if (lv === 1) out.done.push(r.key); else out.levels.push({ key: r.key, level: lv });
+    } else { S.unlocks[r.key] = true; out.done.push(r.key); if (!needsMastery(r.key)) S.mastered = { ...(S.mastered || {}), [r.key]: true }; }
   }
   // a stand-in study finishes this month too: it was the bench's work while the project waited
-  for (const r of keep.filter(x => x.sub)) out.studies.push(studyResult(S));
+  for (const r of keep.filter(x => x.sub)) out.studies.push(...study(S));
   S.research = keep.filter(x => !x.sub);
   S.cash -= out.cost;
   for (const q of S.queue || []) delete q.wait;
@@ -69,6 +84,11 @@ export function researchMonth(S) {
   return out;
 }
 
+// a finished market study: one piece of work, or two with the Sales network
+function study(S) {
+  S.studiesDone = (S.studiesDone || 0) + 1;
+  return Array.from({ length: S.unlocks.network ? 2 : 1 }, () => studyResult(S)).filter((x, i) => i === 0 || x.kind !== 'none');
+}
 // What a market study brings in: a client asking for research (an enquiry), or a fitted client wanting more
 // (a callback at a higher tier, while they keep paying). Returns { kind, p } or { kind: 'none' }.
 export function studyResult(S) {

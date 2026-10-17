@@ -282,7 +282,7 @@ export class World {
         }
         // wind forces air through wide mouths even when the wings seal
         const wind = (c.wind || 0) + (c.stack || 0) * 1.5;
-        d.leak = lk * 1.0 + wind * Math.max(0, d.mouth - 30) / 40 * 0.12 * (c.seals ? 0.15 : 1);
+        d.leak = lk * 1.0 + wind * Math.max(0, d.mouth - 30) / 40 * 0.12 * [1, 0.15, 0.08, 0.04][Math.min(3, +c.seals || 0)];
       } else if (d.type === 'slider') {
         let want = false;
         for (const p of this.people) {

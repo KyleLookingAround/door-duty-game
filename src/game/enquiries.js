@@ -7,7 +7,7 @@ import { PREMISES } from '../content/company.js';
 import { PARADOX_CALLS, callFits } from '../content/paradoxes.js';
 import { prem, rep, rivalActive, missingNeeds } from './economy.js';
 import { random, randomInt } from './state.js';
-import { canResearch, researchingOrQueued } from './research.js';
+import { canResearch, freeBenches, researchingOrQueued } from './research.js';
 import { kmoney } from '../util/format.js';
 
 export const MAX_ENQUIRIES = 2;
@@ -50,7 +50,7 @@ export function settleEnquiries(S, quiet) {
     }
     if (opts.length) {
       const o = opts[randomInt(S, opts.length)];
-      o.p.enquiry = { tech: o.t.key, j: o.j, by: S.month + o.t.months + ENQUIRY_SLACK, text: o.def.text, bonus: enquiryBonus(o.t.key) };
+      o.p.enquiry = { tech: o.t.key, j: o.j, by: S.month + o.t.months + ENQUIRY_SLACK + (S.unlocks.network ? 1 : 0), text: o.def.text, bonus: enquiryBonus(o.t.key) };
       fresh = o.p;
     }
   }
@@ -59,7 +59,7 @@ export function settleEnquiries(S, quiet) {
 
 // What would bring in work? One suggestion: { text, tab } (tab: the Company tab to open, if any), or null.
 export function advice(S) {
-  const P = prem(S), free = P.labs - S.research.length, r = rep(S);
+  const P = prem(S), free = freeBenches(S), r = rep(S);
   const short = t => S.cash < t.price ? `, and you need ${kmoney(t.price - S.cash)} more for it` : '';
   // an enquiry waiting on research you haven't started
   const asked = S.plots.find(p => p.enquiry && !p.enquiry.ready && !researchingOrQueued(S, p.enquiry.tech));

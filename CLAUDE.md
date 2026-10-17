@@ -41,9 +41,11 @@ src/
     designs.js           new and copied designs (always deep copies), defaultSlot
     briefs.js            brief wording that depends on the job: job labels, why a client called, stage twists
     stagejobs.js         inside jobs: makeStageContract, solveStage (the surveyor for stages), runStage, result rows
-    economy.js           fees, upkeep, wear, insurance, reputation, unlock checks, jobs a month (jobsPerMonth: premises + research)
+    economy.js           fees, upkeep, wear, insurance, reputation (stars + mastery), unlock checks (landmarks need mastery),
+                         jobs a month (jobsPerMonth: premises + research)
                          (a premises move takes PREMISES[i].moveMonths; S.moving pauses research, see endMonth)
-    jobs.js              grade a result, signOff, and the firm's decisions (research, hire, premises, service)
+    jobs.js              grade a result, signOff, and the firm's decisions (hire, premises, service)
+    research.js          benches, the queue, monthly instalments, the market study, refinement levels, mastery
     month.js             endMonth(S) -> report; inspect
     enquiries.js         clients asking for research you haven't done (with a date), and advice(S) for quiet months
     plots.js             refreshPlots: which clients talk to you, and new tenders
@@ -98,6 +100,14 @@ Rules: a stage must work fed (`sim.fed`, people come from `admit`) as well as on
 Escalators have three levers: the rule, which way each one runs (`down`: how many run down; everyone without an escalator their way takes the stairs) and the speed (`fast` boards slower and makes the unsteady stumble). Stations and shops have a crowd both ways (`params.down`), turned round by the Evening peak and Closing time twists (`turnTwists`); research calls and chained levels are one-way and fixed speed. The Galleria has two layouts (`params.layout`): `shortcut` (close the bridge) and `long` (the bridge is a real shortcut: widen a pinch point). Inside jobs whose setup already passes tighten the target towards a cheap change before a rebuild (`solveStage`).
 
 Clients get inside jobs three ways: a paradox callback when research finishes (`content/paradoxes.js`, see `endMonth`), a building whose `jobs` list is all inside work (Riverside), or a normal callback about an inside setup they already have (`p.inside`). A building can rename and retune a stage for itself (`tune: { queue: { name: 'Bag check', rate, params } }`), reword its twists (`tune: { queue: { twists: { payday: { label, text } } } }`, as the arena does) and set what's already there (`inside: { queue: { desks: 3 } }`).
+
+## Research
+
+Research never stops (`game/research.js`). Every bench needs a project before the month can end (`benchesFilled`; the button reads "Choose research"); `endMonth` puts a market study on any free bench as a safety net. `startResearch` starts a project on a free bench or queues it (`S.queue`). A project is paid in monthly instalments (`r.per`, `r.owe`); overdrawn at a month end, it waits at the front of the queue with its progress and the bench runs a market study. The market study (`STUDY`) is free, one month, always there, and brings in work (`studyResult`: an enquiry, or a fitted client wanting more, reason `study`).
+
+A finished tech is owned (`S.unlocks`) and becomes mastered (`S.mastered`) when you sign off the job that teaches it (`masterFrom`: its research call, or a lesson tender). Research only the client that needs it could teach is mastered on finish (`needsMastery`). Landmarks (plots needing several techs) and tier-3 research want what they build on mastered; each mastery is a ★ in `rep`. A research call that waits two months for a fitted client becomes a lesson tender (`p.lessonTender`) at an open client of the right kind; the rival never bids on it.
+
+Five branches (`BRANCHES`): revolving doors, open doors, crowd science, inside work, the firm. Refinements (`kind: 'refine'`: brush seals, heat recovery, the supplier contract) have levels with rising prices; `S.unlocks[key]` holds the level, and heat recovery level 2 is heat pumps (Office Towers' `needLevels`). The Sales network needs 3 market studies behind it (`studies`) and doubles what each brings; the Research lab adds a bench.
 
 ## Callbacks
 

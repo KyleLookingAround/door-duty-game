@@ -137,6 +137,18 @@ They differ in one important way. With research calls and enquiries now true of 
 
 This is the biggest phase, so it ships as two pull requests: **2a** is the research rework (item 3) with its onboarding (item 4), and **2b** is pacing and money (items 1, 2 and 5).
 
+**Status: 2a done, October 2026.** Items 3, 4 and 5 (`game/research.js`, save version 7):
+- Research never stops: the month button reads "Choose research" while a bench is free, and `endMonth` puts a market study on any bench left free.
+- A firm-wide queue (one queue feeding whichever bench comes free, simpler than a queue per bench).
+- Paid monthly, pausing with its progress when overdrawn while the bench runs a market study.
+- The market study: free, one month, brings an enquiry or a fitted client wanting more (reason `study`, still paying).
+- Owned, then mastered: signing off the research call masters a tech and earns a ★. Landmarks and tier-3 research need mastery. Research only the client that needs it could teach is mastered on finish, so nothing deadlocks. A call that waits two months becomes a lesson tender.
+- Five branches. Brush seals, heat recovery (level 2 is heat pumps, which Office Towers asks for) and the supplier contract are refinements with three levels each.
+- New nodes: Sales network (needs 3 market studies; doubles what each brings, enquiries wait a month longer) and Research lab (a third bench). **Crowd counters is left for Phase 4**, with the door metering it unlocks: a node with nothing to do would be the passive kind this phase removes.
+- Mastery uses the research call rather than `c.lesson` alone: about a third of door calls can still fall back to an ordinary job (Phase 1, item 4), and that mustn't block a landmark.
+
+Tests: `test/research.test.js` (the PLAN 4.5 rules, refinements, the lab, the network, the tier-3 mastery gate). Quick balance (2 seeds, 12 months) against the Phase 1 baseline: months with an idle bench 6–10 → 1, reputation at month 12 32–36 → 38–40 (mastery stars), Market Square at month 4, Riverside at month 10, cash at month 12 £151k–£211k (still too much: 2b).
+
 **Work**
 1. D5: **each street takes 6–12 months.** Today the High Street and Market Square are both done by month 4. A strong player moves on after about 6 months, a typical one after about 12, and a player who plays poorly can take a lot longer; the difference comes from how well they play and which research they pick. So for most players Market Square opens between months 6 and 12, and Riverside 6–12 months after that (between months 12 and 24).
    - **Street standing, not total stars.** Each street opens on standing earned on the street before it: the stars from every job signed there (callbacks, research calls and repeat work count, not just each client's best), plus mastery stars. Today's single 3★ per client caps out in a few months; counting every job keeps standing growing for the whole stay.
@@ -268,7 +280,7 @@ Refinement: **Heat recovery** levels (today's Heat recovery and Heat pumps becom
 | **Wayfinding signs** (new) | 1 | – | Signs that turn phone zombies and tourists the right way early: information beats capacity | 4 |
 | Pillars | 2 | Barriers | Fire drills | as now |
 | Ticket gates | 2 | Barriers | Station Quarter | as now |
-| **Crowd counters** (new) | 2 | Barriers | Live counts: metering at doors as well as concourses, and the prerequisite for stewarding and door controllers | 2 |
+| **Crowd counters** (new) | 2 | Barriers | Live counts: metering at doors as well as concourses, and the prerequisite for stewarding and door controllers | 4 (moved from 2: it comes with door metering) |
 | Tidal-flow gates | 3 | Gates | Auto lanes | as now |
 | Event stewarding | 3 | Pillars, Counters | Apollo Arena | as now, new prerequisite |
 | **Turnstiles and bag search** (new) | 3 | Gates, Stewarding (mastered) | The Stadium | 4 |

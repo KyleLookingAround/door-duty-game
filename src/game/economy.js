@@ -16,7 +16,8 @@ export const jobsLeft = S => Math.max(0, jobsPerMonth(S) - (S.monthJobs || 0));
 export const techOf = S => ({ ...S.unlocks, doorman: !!(S.unlocks.doorman && S.staff.doorman) });
 export const techName = k => (TECH.find(t => t.key === k) || {}).name || k;
 
-export const costMult = S => (S.staff.fitter ? 0.9 : 1) * (S.unlocks.supplier ? 0.92 : 1);
+export const SUPPLIER_OFF = [0, 0.08, 0.12, 0.15];   // the supplier contract's discount at each level
+export const costMult = S => (S.staff.fitter ? 0.9 : 1) * (1 - SUPPLIER_OFF[Math.min(3, +S.unlocks.supplier || 0)]);
 export const feeMult = S => (1 + (S.staff.sales ? 0.3 : 0) + (prem(S).fee || 0));
 export const charge = (S, c) => Math.round(c * costMult(S) / 50) * 50;            // what hardware actually costs you
 export const feeOf = (S, c) => c.par.cost + Math.round((c.margin != null ? c.margin : c.fee - c.par.cost) * feeMult(S) / 500) * 500;   // bonuses scale your margin
@@ -52,9 +53,11 @@ export const isLandmarkPlot = p => plotNeeds(p).length > 1;
 export const needsMastery = key => (PARADOX_CALLS[key] || []).some(def => def.kinds.some(k => !PLOTS.some(pl => pl.kind === k && [].concat(pl.needs || []).includes(key))));
 export const isMastered = (S, key) => !!(S.unlocks[key] && (!needsMastery(key) || (S.mastered || {})[key]));
 export const masteryStars = S => Object.keys(S.mastered || {}).filter(k => S.unlocks[k] && needsMastery(k)).length;
-export const missingNeeds = (S, p) => plotNeeds(p).filter(k => isLandmarkPlot(p) ? !isMastered(S, k) : !S.unlocks[k]);
+// (a refinement can be needed at a level: Office Towers wants heat recovery at level 2, heat pumps)
+export const neededLevel = (p, k) => ((PLOTS[p.i] || {}).needLevels || {})[k] || 1;
+export const missingNeeds = (S, p) => plotNeeds(p).filter(k => (+S.unlocks[k] || 0) < neededLevel(p, k) || (isLandmarkPlot(p) && !isMastered(S, k)));
 export const needsMet = (S, p) => missingNeeds(S, p).length === 0;
-export const needsText = (S, p) => missingNeeds(S, p).map(k => S.unlocks[k] ? `${techName(k)} (mastered)` : techName(k)).join(', ');
+export const needsText = (S, p) => missingNeeds(S, p).map(k => neededLevel(p, k) > 1 ? `${techName(k)} level ${neededLevel(p, k)}` : S.unlocks[k] ? `${techName(k)} (mastered)` : techName(k)).join(', ');
 
 // the town
 export const streetOf = p => (PLOTS[p.i] || {}).street || 'high';

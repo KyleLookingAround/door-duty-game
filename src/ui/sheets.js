@@ -11,7 +11,7 @@ import { charge, costMult, feeOf, insurance, isMastered, jobsLeft, jobsPerMonth,
 import { advice, hasWork } from '../game/enquiries.js';
 import { bookedText, callText, isResearchCall, jobLabel, movingText, stageTwist } from '../game/briefs.js';
 import { fire, hire, movePremises, service } from '../game/jobs.js';
-import { freeBenches, benchesFilled, instalment, researchOut, startResearch, techOrStudy, unqueue } from '../game/research.js';
+import { benches, freeBenches, benchesFilled, instalment, levelOf, nextLevel, researchOut, startResearch, techOrStudy, unqueue } from '../game/research.js';
 import { CLAIM_EXCESS, INSPECTION_FINE, endMonth, changeWhere } from '../game/month.js';
 import { CHANGE, changeText } from '../content/changes.js';
 import { coach } from './coach.js';
@@ -180,34 +180,39 @@ export function openCompany(tab) {
   if (coTab === 'research') {
     // the benches: what each is doing, then the queue, then the tree
     const benchRows = S.moving ? `<p class="note"><span class="hot">${movingText(S)}</span></p>`
-      : Array.from({ length: P.labs }, (_, i) => {
+      : Array.from({ length: benches(S) }, (_, i) => {
         const r = S.research[i];
         if (!r) return `<div class="node avail"><div><b>Bench ${i + 1} · free</b><p>Research never stops: pick a project below, or run a market study (free, one month) to bring in work.</p></div><button class="go" type="button" data-k="study">Market study</button></div>`;
-        const t = techOrStudy(r.key), per = r.owe > 0 ? instalment(t) : 0;
+        const t = techOrStudy(r.key), per = r.owe > 0 ? r.per ?? instalment(t) : 0;
         return `<div class="node doing"><div><b>Bench ${i + 1} · ${t.name}</b><p>${r.left} month${r.left > 1 ? 's' : ''} left${per ? ` · ${kmoney(per)} a month` : r.key === 'study' ? ' · free' : ' · paid'}.</p></div><span class="pill open">${r.left} mo</span></div>`;
       }).join('');
     const queue = S.queue || [];
-    const queueRows = queue.length ? `<div class="branch"><div class="eyebrow">Next up</div>${queue.map(q => { const t = techOrStudy(q.key); return `<div class="node"><div><b>${t.name}</b><p>${q.left < t.months ? `${q.left} of ${t.months} months to go (paused: it waits for the money)` : `${t.months} month${t.months > 1 ? 's' : ''} · ${kmoney(instalment(t))} a month`}. Starts when a bench comes free.</p></div><button class="ghost small" type="button" data-unq="${q.key}">Remove</button></div>`; }).join('')}</div>` : '';
+    const queueRows = queue.length ? `<div class="branch"><div class="eyebrow">Next up</div>${queue.map(q => { const t = techOrStudy(q.key); return `<div class="node"><div><b>${t.name}${t.kind === 'refine' ? ` level ${levelOf(S, t.key) + 1}` : ''}</b><p>${q.left} month${q.left > 1 ? 's' : ''} to go · ${kmoney(q.per ?? instalment(t))} a month. Starts when a bench comes free.</p></div><button class="ghost small" type="button" data-unq="${q.key}">Remove</button></div>`; }).join('')}</div>` : '';
     const wanted = TECH.filter(t => !S.unlocks[t.key] && S.plots.some(p => p.enquiry && p.enquiry.tech === t.key && !p.enquiry.ready));
     body = `<p>Research never stops: every bench needs a project before the month can end. Projects are paid month by month, and finish at a month end. A finished tech is <b>owned</b>; sign off the job that teaches it and it's <b>mastered</b>, which earns a ★ and is what landmarks ask for.${broke ? ' <span class="hot">Overdrawn: paid projects wait, and the bench runs a market study.</span>' : ''}</p>
       <div class="branch"><div class="eyebrow">Benches</div>${benchRows}</div>${queueRows}
       ${wanted.length ? `<p class="note"><b>Wanted:</b> ${wanted.map(t => t.name).join(', ')}.</p>` : ''}` +
       BRANCHES.map(([b, label]) => { const nodes = TECH.filter(t => t.branch === b).map(t => {
-        const owned = S.unlocks[t.key], doing = S.research.find(r => r.key === t.key), queued = queue.some(q => q.key === t.key);
+        // a refinement shows its level and offers the next one; it reads as owned only at the top level
+        const refine = t.kind === 'refine', lv = levelOf(S, t.key), step = nextLevel(S, t);
+        const owned = refine ? !step : S.unlocks[t.key], doing = S.research.find(r => r.key === t.key), queued = queue.some(q => q.key === t.key);
         const mastered = owned && isMastered(S, t.key);
         const missing = (t.req || []).filter(r => !S.unlocks[r]);
+        const unmastered = t.tier >= 3 ? (t.req || []).filter(r => S.unlocks[r] && !isMastered(S, r)) : [];
         const tierOk = t.tier <= P.tier;
         let state, action = '';
         const how = LESSONS[t.key] ? `<button class="ghost small" type="button" data-lesson="${t.key}">How to use</button>` : '';
-        if (owned) state = `<div style="display:grid;gap:4px;justify-items:end"><span class="pill done">${mastered ? 'Mastered ★' : 'Owned'}</span>${how}</div>`;
+        if (owned) state = `<div style="display:grid;gap:4px;justify-items:end"><span class="pill done">${refine ? 'Top level' : mastered ? 'Mastered ★' : 'Owned'}</span>${how}</div>`;
         else if (doing) state = `<span class="pill open">${doing.left} mo</span>`;
         else if (queued) state = '<span class="pill open">Queued</span>';
         else if (!tierOk) state = `<span class="pill lock">Tier ${t.tier}</span>`;
-        else if (missing.length) state = `<span class="pill lock">Locked</span>`;
-        else action = `<div style="display:grid;gap:4px;justify-items:end"><button class="go" type="button" data-k="${t.key}">${freeBenches(S) > 0 ? 'Start' : 'Queue'} · ${kmoney(instalment(t))}/mo</button><span class="why">${t.months} month${t.months > 1 ? 's' : ''}, ${kmoney(t.price)} in all</span></div>`;
-        const why = !owned && !doing && !queued ? (!tierOk ? `Needs ${PREMISES[t.tier - 1].name.toLowerCase()} premises. ` : missing.length ? `Needs ${missing.map(techName).join(', ')}. ` : '') : '';
-        const learn = owned && !mastered ? '<br><span class="opens">Master it: sign off the job a client calls you with about it.</span>' : '';
-        const html = `<div class="node ${owned ? 'owned' : doing || queued ? 'doing' : action ? 'avail' : 'locked'}"><div><b>${t.name}</b><p>${why}${t.text}${t.opens ? `<br><span class="opens">Opens specialist jobs: ${t.opens}</span>` : ''}${learn}${(() => { const a = !owned && S.plots.find(p => p.enquiry && p.enquiry.tech === t.key && !p.enquiry.ready); return a ? `<br><span class="opens" style="color:var(--brass)">${a.name} wants this within ${a.enquiry.by - S.month} month${a.enquiry.by - S.month === 1 ? '' : 's'}: ${kmoney(a.enquiry.bonus)} bonus</span>` : ''; })()}</p></div>${state || action}</div>`;
+        else if (missing.length || unmastered.length) state = `<span class="pill lock">Locked</span>`;
+        else if ((S.studiesDone || 0) < (t.studies || 0)) state = `<span class="pill lock">${S.studiesDone || 0}/${t.studies} studies</span>`;
+        else action = `<div style="display:grid;gap:4px;justify-items:end"><button class="go" type="button" data-k="${t.key}">${refine && lv ? `Level ${lv + 1}` : freeBenches(S) > 0 ? 'Start' : 'Queue'} · ${kmoney(instalment(t, S))}/mo</button><span class="why">${step.months} month${step.months > 1 ? 's' : ''}, ${kmoney(step.price)} in all</span></div>`;
+        const why = !owned && !doing && !queued ? (!tierOk ? `Needs ${PREMISES[t.tier - 1].name.toLowerCase()} premises. ` : missing.length ? `Needs ${missing.map(techName).join(', ')}. ` : unmastered.length ? `Needs ${unmastered.map(techName).join(', ')} mastered. ` : (S.studiesDone || 0) < (t.studies || 0) ? `Needs ${t.studies} market studies behind it. ` : '') : '';
+        const levelText = refine ? `<br><span class="opens">${lv ? `Level ${lv} of ${t.levels.length}: ${t.levels[lv - 1].text}` : ''}${step ? `${lv ? ' ' : ''}Next: ${step.text}` : ''}</span>` : '';
+        const learn = !refine && owned && !mastered ? '<br><span class="opens">Master it: sign off the job a client calls you with about it.</span>' : '';
+        const html = `<div class="node ${owned ? 'owned' : doing || queued ? 'doing' : action ? 'avail' : 'locked'}"><div><b>${t.name}</b><p>${why}${t.text}${levelText}${t.opens ? `<br><span class="opens">Opens specialist jobs: ${t.opens}</span>` : ''}${learn}${(() => { const a = !owned && S.plots.find(p => p.enquiry && p.enquiry.tech === t.key && !p.enquiry.ready); return a ? `<br><span class="opens" style="color:var(--brass)">${a.name} wants this within ${a.enquiry.by - S.month} month${a.enquiry.by - S.month === 1 ? '' : 's'}: ${kmoney(a.enquiry.bonus)} bonus</span>` : ''; })()}</p></div>${state || action}</div>`;
         return { html, later: !owned && !doing && !queued && !action };
       });
       const now = nodes.filter(n => !n.later), later = nodes.filter(n => n.later);

@@ -1,7 +1,7 @@
 // The second landmark: the stack effect at the door, and a day in three waves.
 export default {
   key: 'towers',
-  plot: { name: 'Office Towers', rep: 24, street: 'market', needs: ['vestibule', 'wide', 'heat2'], why: 'The towers only talk to firms that can beat the stack effect' },
+  plot: { name: 'Office Towers', rep: 24, street: 'market', needs: ['vestibule', 'wide', 'heat'], needLevels: { heat: 2 }, why: 'The towers only talk to firms that can beat the stack effect' },
   kind: { label: 'Office towers', slots: 4, in: 3.0, out: 2.6, mix: { case: 0.05 }, towers: true, comfort: 19, hook: { twists: [], temp: 4 } },
   twistPool: ['fragile', 'stepfree', 'rain', 'wind', 'bikes'],
   inside: { lifts: { count: 6, mode: 'all' } },

@@ -77,7 +77,7 @@ export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth 
     // cheapest; pay-as-you-go, so only take on what the month's instalments allow (otherwise a market study)
     const order = [...TECH].sort((a, b) => (wanted.includes(b.key) - wanted.includes(a.key)) || a.price - b.price);
     for (const t of order) {
-      if (!canResearch(S, t) || S.cash < instalment(t) * 2 + 10000 || (S.queue || []).length >= 1) continue;
+      if (!canResearch(S, t) || S.cash < instalment(t, S) * 2 + 10000 || (S.queue || []).length >= 1) continue;
       startResearch(S, t.key);
     }
     const next = PREMISES[(S.premises || 0) + 1];

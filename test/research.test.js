@@ -91,3 +91,46 @@ test('an old save migrates: running research was paid for, owned techs count as 
   assert.equal(S.cash, cash, 'nothing more to pay');
   assert.ok(S.unlocks.padded);
 });
+
+test('refinements go up a level at a time, dearer each time, and stop at the top', () => {
+  const S = freshState(7); S.cash = 1e7; S.premises = 2;
+  const prices = [];
+  for (let lv = 1; lv <= 3; lv++) {
+    assert.equal(startResearch(S, 'supplier'), 'started', `level ${lv}`);
+    prices.push(S.research[0].per * S.research[0].left);
+    while (S.research.length) researchMonth(S);
+    assert.equal(S.unlocks.supplier, lv);
+  }
+  assert.ok(prices[0] < prices[1] && prices[1] < prices[2], `rising prices ${prices}`);
+  assert.equal(startResearch(S, 'supplier'), false, 'no level 4');
+  // heat recovery level 2 is heat pumps: Office Towers asks for it
+  const towers = S.plots.find(p => p.kind === 'towers');
+  S.unlocks.vestibule = S.unlocks.wide = true; S.mastered = { vestibule: true, wide: true };
+  S.unlocks.heat = 1; S.mastered.heat = true;
+  assert.deepEqual(missingNeeds(S, towers), ['heat']);
+  startResearch(S, 'heat'); while (S.research.length) researchMonth(S);
+  assert.deepEqual(missingNeeds(S, towers), []);
+  assert.ok(S.unlocks.heat2, 'the engine reads heat pumps as heat2');
+});
+
+test('the research lab adds a bench; the sales network needs market studies behind it', () => {
+  const S = freshState(8); S.cash = 1e7; S.premises = 2;
+  assert.equal(startResearch(S, 'network'), false, 'no studies yet');
+  S.studiesDone = 3;
+  assert.equal(startResearch(S, 'network'), 'started');
+  assert.equal(startResearch(S, 'lab'), 'started', 'headquarters has two benches');
+  assert.equal(startResearch(S, 'curtain'), 'queued');
+  for (let m = 0; m < 3; m++) researchMonth(S);
+  assert.ok(S.unlocks.lab);
+  assert.equal(S.research.length + (S.queue || []).length <= 3, true);
+  assert.ok(S.research.some(r => r.key === 'curtain') || S.unlocks.curtain, 'the third bench picked up the queue');
+});
+
+test('tier 3 research needs what it builds on mastered, not just owned', () => {
+  const S = freshState(9); S.cash = 1e6; S.premises = 2;
+  for (const k of ['mouth', 'padded', 'sensor']) S.unlocks[k] = true;
+  S.mastered = { mouth: true };
+  assert.equal(startResearch(S, 'wide'), false, 'presence sensors owned but not mastered');
+  S.mastered.sensor = true;
+  assert.equal(startResearch(S, 'wide'), 'started');
+});

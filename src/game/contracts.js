@@ -270,7 +270,7 @@ export function newSim(contract, design, tech, preview) {
 export function worldCfg(contract, slots, tech) {
   const t = tech || {};
   return { slots, crowd: contract.crowd, outsideTemp: contract.outsideTemp, duration: TEST_SECONDS, seed: contract.seed,
-    heater: t.heat2 ? 2.4 : t.heat ? 1.6 : 1, wind: contract.wind || 0, stack: contract.stack || 0, seals: !!t.seals, rain: !!contract.rain, site: contract.site, drill: contract.drill || null };
+    heater: t.heat >= 3 ? 3 : t.heat2 || t.heat >= 2 ? 2.4 : t.heat ? 1.6 : 1, wind: contract.wind || 0, stack: contract.stack || 0, seals: +t.seals || 0, rain: !!contract.rain, site: contract.site, drill: contract.drill || null };
 }
 // how long a test runs: the 40s rush plus time for the last people to clear, or a fire drill's evacuation window
 export const runSeconds = contract => contract.stage ? contract.run : contract.drill ? contract.drill.at + 35 : RUN_SECONDS;

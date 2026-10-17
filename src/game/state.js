@@ -34,6 +34,9 @@ export function migrate(S) {
   // v7: research is paid monthly, queues up and is mastered: what's already running was paid for up front,
   // and everything already owned counts as mastered (nobody loses a landmark they had)
   if ((S.version || 0) < 7) { for (const r of S.research) r.owe = 0; S.mastered = { ...S.unlocks }; }
+  // ...and heat pumps became level 2 of heat recovery (a refinement)
+  if (S.unlocks.heat2) S.unlocks.heat = Math.max(+S.unlocks.heat || 0, 2);
+  S.research = S.research.filter(r => r.key !== 'heat2'); S.queue = (S.queue || []).filter(r => r.key !== 'heat2');
   S.queue = S.queue || []; S.mastered = S.mastered || {};
   S.version = SAVE_VERSION;
   return S;
