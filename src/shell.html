@@ -169,6 +169,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
   padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px));
   padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); padding-top: max(12px, env(safe-area-inset-top, 0px));
 }
+.paper { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #ece6d8; color: #1c1a17; display: grid; gap: 4px; }
+.paper small { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #6b6458; border-bottom: 1px solid #c9c0ae; padding-bottom: 4px; }
+.paper b { font-family: var(--f-display); font-size: 18px; line-height: 1.15; }
+.paper p { margin: 0; font-size: 13px; color: #3a362f; }
 .sheet { width: 100%; max-width: 520px; max-height: 100%; overflow: auto; overscroll-behavior: contain; box-sizing: border-box; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: grid; gap: 14px; }
 /* the close button floats in the top corner; the last row of buttons stays pinned while the sheet scrolls */
 .sheetx { position: sticky; top: -6px; justify-self: end; margin: -8px -8px -44px 0; z-index: 2; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--raised); color: var(--mute); font-size: 20px; line-height: 1; cursor: pointer; }

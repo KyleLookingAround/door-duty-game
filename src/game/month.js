@@ -69,6 +69,7 @@ export function landChange(S, ch) {
 }
 
 export function endMonth(S) {
+  const news = S.news || []; S.news = [];   // what happened this month, for the local paper
   const inc = monthlyIncome(S), rent = prem(S).rent, ins = insurance(S);
   const premName = prem(S).name;
   const wages = STAFF.filter(s => S.staff[s.key]);
@@ -171,5 +172,5 @@ export function endMonth(S) {
     if ((p.contract.event || null) !== wantEv || (p.status === 'open' && (done.length || random(S) < 0.35))) p.contract = null;
   }
   const net = inc - rent - wageTotal - ins - research.cost - claims.length * CLAIM_EXCESS - (insp && !insp.pass ? INSPECTION_FINE : 0);
-  return { research, lessonTenders, moved, moving: S.moving ? { ...S.moving } : null, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry };
+  return { news, research, lessonTenders, moved, moving: S.moving ? { ...S.moving } : null, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry };
 }

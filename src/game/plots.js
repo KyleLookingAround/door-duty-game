@@ -31,6 +31,7 @@ export function refreshPlots(S) {
   const r = rep(S);
   if (!S.marketOpen && streetOpen(S, 'market')) { S.marketOpen = true; S.marketOpenedAt = S.month; notes.push('market'); }
   if (!S.riversideOpen && streetOpen(S, 'riverside')) { S.riversideOpen = true; S.riversideOpenedAt = S.month; notes.push('riverside'); }
+  for (const k of notes) S.news = [...(S.news || []), { kind: 'street', key: k }];
   for (const p of S.plots) {
     if (p.status === 'locked' && r >= p.rep && needsMet(S, p) && streetOpen(S, streetOf(p))) p.status = 'open';
     if (p.status === 'rival' && S.month >= (p.rivalUntil || 0)) { p.status = 'callback'; p.reason = 'botched'; p.install = rivalInstall(p); p.contract = null; p.callStage = null; p.callChain = null; p.callTwist = null; }

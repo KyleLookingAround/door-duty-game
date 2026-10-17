@@ -1,9 +1,10 @@
 // Brief wording that depends on the job, kept out of the page so tests can check every case.
-import { CALLBACKS } from '../content/town.js';
+import { CALLBACKS, RIVAL } from '../content/town.js';
+import { JOURNAL, HEADLINES } from '../content/journal.js';
 import { STAGE_TWISTS } from '../engine/stages/index.js';
 import { PREMISES } from '../content/company.js';
 import { TECH } from '../content/tech.js';
-import { jobsLeft, jobsPerMonth } from './economy.js';
+import { jobsLeft, jobsPerMonth, techName } from './economy.js';
 
 // a research call: a client you fitted heard about your new research and has work for it
 export const isResearchCall = p => p.status === 'callback' && p.reason === 'paradox';
@@ -30,6 +31,29 @@ export function stageTwist(c, t) {
   }
   return STAGE_TWISTS[t] || { label: t, text: '' };
 }
+
+// The local paper's headline for the month report: the biggest story of the month, if there was one.
+// rpt: endMonth's report. Returns { head, text } or null. Picks by the month (no dice), so a month replays.
+export function headline(S, rpt) {
+  const pick = (kind, n) => { const hs = HEADLINES[kind]; return hs[S.month % hs.length](n); };
+  const name = i => (S.plots[i] || {}).name || '';
+  const news = rpt.news || [];
+  const lm = news.find(n => n.kind === 'landmark');
+  if (lm) return { head: pick('landmark', { name: name(lm.i) }), text: `${name(lm.i)} is open, and the crowds are moving. Your firm fitted it.` };
+  const st = news.find(n => n.kind === 'street');
+  if (st) { const nm = st.key === 'market' ? 'Market Square' : 'Riverside'; return { head: pick('street', { name: nm }), text: `${nm} is open to your firm: new clients want to talk.` }; }
+  const ms = news.find(n => n.kind === 'mastered');
+  if (ms && JOURNAL[ms.key]) return { head: pick('mastered', { what: techName(ms.key), lesson: JOURNAL[ms.key][0] }), text: `${JOURNAL[ms.key][1]} It's in your journal (Company › Guide).` };
+  if (rpt.lost && rpt.lost.length) return { head: pick('rival', { rival: RIVAL, name: rpt.lost[0].name }), text: `Tenders left sitting go to ${RIVAL}.` };
+  if (rpt.insp && !rpt.insp.pass) return { head: pick('inspectFail', { name: rpt.insp.p.name }), text: '' };
+  if (rpt.claims && rpt.claims.length) return { head: pick('claim', { name: rpt.claims[0].name }), text: '' };
+  if (rpt.insp && rpt.insp.pass) return { head: pick('inspectPass', { name: rpt.insp.p.name }), text: '' };
+  if (rpt.done && rpt.done.length) return { head: pick('research', { what: techName(rpt.done[0]) }), text: '' };
+  if (rpt.evNow) return { head: pick('event', { what: rpt.evNow.label }), text: '' };
+  return null;
+}
+// the paradox journal: every mastered tech's lesson, in the order they were mastered
+export const journal = S => Object.keys(S.mastered || {}).filter(k => JOURNAL[k] && S.unlocks[k]).map(k => ({ key: k, title: JOURNAL[k][0], text: JOURNAL[k][1], tech: techName(k) }));
 
 // The crews' month. jobsLine: what the street says; bookedText: why a job can't be taken right now, and
 // what would give the firm more jobs a month (bigger premises, or research it could start).

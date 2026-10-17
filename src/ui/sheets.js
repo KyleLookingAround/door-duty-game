@@ -9,7 +9,7 @@ import { STAGES, stageName, stageAbout } from '../engine/stages/index.js';
 import { MONTHS, candidates } from '../game/contracts.js';
 import { advertCost, charge, costMult, feeOf, insurance, isMastered, jobsLeft, jobsPerMonth, monthlyIncome, overheads, prem, rep, rivalActive, serviceCost, techName, techOf, upkeep, loyalty } from '../game/economy.js';
 import { advice, hasWork } from '../game/enquiries.js';
-import { bookedText, callText, isResearchCall, jobLabel, movingText, stageTwist } from '../game/briefs.js';
+import { bookedText, callText, headline, isResearchCall, jobLabel, journal, movingText, stageTwist } from '../game/briefs.js';
 import { advertise, fire, hire, movePremises, service } from '../game/jobs.js';
 import { benches, freeBenches, benchesFilled, instalment, levelOf, nextLevel, researchOut, startResearch, techOrStudy, unqueue } from '../game/research.js';
 import { CLAIM_EXCESS, INSPECTION_FINE, endMonth, changeWhere } from '../game/month.js';
@@ -223,6 +223,7 @@ export function openCompany(tab) {
     const owned = TECH.filter(t => S.unlocks[t.key] && LESSONS[t.key]);
     body = `<p>Everything the game has taught you, any time you need it.</p>
       <div class="branch"><div class="eyebrow">The basics</div>${BASICS.map(([k, t]) => `<button class="lessonrow" type="button" data-lesson="${k}"><b>${t}</b><span>›</span></button>`).join('')}</div>
+      <div class="branch"><div class="eyebrow">Paradox journal</div>${(() => { const j = journal(S); return j.length ? j.map(e => `<div class="node owned"><div><b>${e.title}</b><p>${e.text}<br><span class="opens">${e.tech}, mastered</span></p></div></div>`).join('') : '<p class="note">Master a piece of research (sign off the job a client calls you with about it) and what it taught you is kept here.</p>'; })()}</div>
       <div class="branch"><div class="eyebrow">Your research</div>${owned.length ? owned.map(t => `<button class="lessonrow" type="button" data-lesson="${t.key}"><b>${t.name}</b><span>›</span></button>`).join('') : '<p class="note">Lessons for new kit appear here as your research finishes.</p>'}</div>
       <button class="ghost" type="button" id="tutReplay">Replay the walk-through</button>
       <div class="branch"><div class="eyebrow">Start again</div><p class="note">Wipes this firm: cash, clients, research and staff.</p><button class="ghost" type="button" id="coNew">Start a new firm</button></div>`;
@@ -316,10 +317,12 @@ export function initSheets() {
   $('monthBtn').onclick = guarded(() => {
   // research never stops: a free bench has to be given a project (or a market study) first
   if (!benchesFilled(S)) { openCompany('research'); toast('A bench is free: choose research, or run a market study', true); return; }
-  const { research, lessonTenders, moved, moving, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry } = endMonth(S);
+  const rpt = endMonth(S), paper = headline(S, rpt);
+  const { research, lessonTenders, moved, moving, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry } = rpt;
   save();
   renderStreet();
   sheet(`<div class="eyebrow">${MONTHS[S.month % 12]} ${S.year}</div><h3>${net >= 0 ? 'Up ' + money(net) : 'Down ' + money(-net)} this month</h3>
+    ${paper ? `<div class="paper"><small>The ${S.marketOpen ? 'Town' : 'High Street'} Herald · ${MONTHS[S.month % 12]} ${S.year}</small><b>${paper.head}</b>${paper.text ? `<p>${paper.text}</p>` : ''}</div>` : ''}
     <ul class="list">
       <li class="pass"><span>Maintenance fees</span><span>+${money(inc)}</span></li>
       <li><span>Rent · ${premName.toLowerCase()}</span><span>−${money(rent)}</span></li>

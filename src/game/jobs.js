@@ -5,7 +5,7 @@ import { STAGES, stageName } from '../engine/stages/index.js';
 import { TECH } from '../content/tech.js';
 import { PREMISES, STAFF } from '../content/company.js';
 import { money } from '../util/format.js';
-import { advertCost, feeOf, charge, prem, rep, serviceCost, standing, streetOf } from './economy.js';
+import { advertCost, feeOf, charge, isLandmarkPlot, prem, rep, serviceCost, standing, streetOf } from './economy.js';
 import { masterFrom, studyResult } from './research.js';
 
 // "a, b or c"
@@ -96,7 +96,7 @@ export const isGreen = (c, r) => (c.goals.minTemp != null && c.outsideTemp < 12 
 // Sign off a passed job. r: the result the stars were earned with.
 export function signOff(S, p, c, design, stars, r) {
   const cost = designCost(design, c.existing), profit = feeOf(S, c) - charge(S, cost);
-  const lockedBefore = S.plots.filter(x => x.status === 'locked').length;
+  const lockedBefore = S.plots.filter(x => x.status === 'locked').length, firstFit = !p.stars;
   // a client who asked for this and waited for your research pays a bonus for having it ready
   const bonus = p.enquiry && p.enquiry.ready && p.status === 'callback' && p.reason === 'paradox' ? p.enquiry.bonus || 0 : 0;
   const mastered = masterFrom(S, p, c);   // the job that teaches a tech masters it
@@ -116,6 +116,9 @@ export function signOff(S, p, c, design, stars, r) {
   S.jobs++; S.monthJobs = (S.monthJobs || 0) + 1;
   S.standing = { ...(S.standing || {}), [streetOf(p)]: standing(S, streetOf(p)) + stars };   // every job's stars count on its street
   S.recent = [...(S.recent || []), designSig(design)].slice(-4);
+  // for the local paper at the month end
+  if (mastered) S.news = [...(S.news || []), { kind: 'mastered', key: mastered }];
+  if (firstFit && isLandmarkPlot(p)) S.news = [...(S.news || []), { kind: 'landmark', i: p.i }];
   return { profit: profit + bonus, bonus, lockedBefore, mastered };
 }
 

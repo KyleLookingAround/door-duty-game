@@ -232,7 +232,7 @@ Already on the design page as Later, plus two unbuilt landmarks. Each comes with
 2. **Doors as a chain stage:** the Station's escalators feeding the gate line, the Skyport kerb into the terminal. *Architecture:* the biggest structural piece. A `DoorStage` adapter gives the door `World` the `StageSim` interface (`admit`, `finish`), so a frontage can feed a stage or be fed by one. Design it early: it changes where the World's arrivals come from.
 3. **New guests:** kids racing ahead, tourists riding the door round, phone zombies.
 4. **Landmarks:** the Stadium (pillars, gates, barriers) and the full airport chain (kerb, check-in, security, gate, bags). Decide then where the Stadium goes: the end of Riverside, or a fourth street (which brings its own 6–12 months).
-5. **Paradox journal and local paper headlines:** cheap to build, and they reward finishing a lesson.
+5. **Paradox journal and local paper headlines:** cheap to build, and they reward finishing a lesson. **Done (October 2026):** Company › Guide keeps a journal of every mastered tech's counterintuitive bit (`content/journal.js`, `journal` in `briefs.js`), and the month report opens with the Herald's headline for the month's biggest story: a landmark fitted, a street opened, a tech mastered, the rival winning, a claim or an inspection (`headline`, no dice, so a month replays). Tests in `test/journal.test.js`.
 6. From CLAUDE.md: real callbacks still escalate when the doors already cope.
 
 **Tests that must pass:** each new stage gets a paradox test, golden cases, variety coverage and a bot pass.
