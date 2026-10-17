@@ -9,6 +9,7 @@
 import { readFileSync, writeFileSync, mkdirSync, watch } from 'node:fs';
 import { dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { Script } from 'node:vm';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const rel = p => relative(ROOT, p);
@@ -60,9 +61,22 @@ function bundle(entry) {
   return `(() => {\n'use strict';\n${parts.join('\n')}\n})();\n`;
 }
 
+// The bundles are plain scripts: compile them here, so a syntax error fails the build (naming the source
+// file and line) instead of shipping a page that won't start.
+function checkSyntax(code, name) {
+  try { new Script(code, { filename: name }); }
+  catch (e) {
+    const at = +(/:(\d+)/.exec(String(e.stack).split('\n')[0]) || [])[1] || 0, lines = code.split('\n');
+    let file = '?', line = at;
+    for (let i = at - 1; i >= 0; i--) { const m = /^\/\/ ---- (.+) ----$/.exec(lines[i]); if (m) { file = m[1]; line = at - i - 1; break; } }
+    throw new Error(`build failed: ${e.message} in ${file} near line ${line} (${name})`);
+  }
+}
+
 export function build() {
   const app = bundle('src/ui/main.js');
   const core = bundle('src/worker.js');
+  checkSyntax(app, 'the app bundle'); checkSyntax(core, 'the survey worker bundle');
   const shell = readFileSync(resolve(ROOT, 'src/shell.html'), 'utf8');
   // GitHub Pages serves the page as-is: without these a phone renders it as a shrunken desktop page
   if (!/^<!doctype html>/i.test(shell) || !/<meta name="viewport"/.test(shell)) throw new Error('build failed: src/shell.html needs <!doctype html> and a viewport meta tag');
