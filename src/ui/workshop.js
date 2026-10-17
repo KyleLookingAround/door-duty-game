@@ -88,6 +88,7 @@ function designDirty() { if (W.mode === 'result') { W.mode = 'design'; } W.passe
 function updateCost() {
   const c = W.contract, cost = designCost(W.design, c.existing), paid = charge(S, cost);
   // list price, and what you actually pay once the fitting crew and supplier discounts come off
+  $('kCostL').textContent = c.stage ? 'Your setup' : 'Your doors';
   $('kCost').innerHTML = money(cost) + (paid !== cost ? `<small>you pay ${kmoney(paid)}</small>` : ''); $('kCost').className = cost > c.budget ? 'over' : '';
   $('kBudget').textContent = money(c.budget); $('kPar').textContent = money(c.par.cost);
   const profit = feeOf(S, c) - paid;
@@ -195,7 +196,9 @@ function stageHud() {
   const left = Math.max(0, Math.ceil(c.arrive - w.t));
   chip('Clock', testing && w.t >= c.arrive ? 'Clearing' : 'Doors open', testing ? (w.t < c.arrive ? `${left}s` : `+${Math.ceil(w.t - c.arrive)}s`) : `${c.arrive}s`);
   chip('Thru', 'Through', `${r.through}/${g.through}`, testing && r.through >= g.through ? 'good' : '');
-  chip('Bump', st.bumps ? 'Bumps' : 'Bumps', `${r.bumps}/${g.bumps}`, r.bumps > g.bumps ? 'bad' : '');
+  // bumps only count where the stage grades them (a crush, a stumble); elsewhere the counter goes
+  $('cBump').hidden = !st.bumps && !c.chain;
+  chip('Bump', st.bumpLabel && st.bumpLabel.length < 12 ? st.bumpLabel : 'Bumps', `${r.bumps}/${g.bumps}`, r.bumps > g.bumps ? 'bad' : '');
   const sofar = testing && w.waits && w.waits.length ? (c.metric === 'mean' ? w.waitMean() : w.waitP90()) : null;
   chip('Temp', c.metric === 'mean' ? 'Average' : '9 in 10', sofar == null ? `≤${g.wait}s` : `${sofar.toFixed(0)}s`, sofar != null && sofar > g.wait ? 'bad' : '');
   chip('Acc', 'Inside', String(testing ? w.people.length : 0), '');
@@ -216,7 +219,7 @@ function renderStageEditor() {
     if (o.tech && !u[o.tech]) { later.push(o.label.toLowerCase()); continue; }
     if (o.kind === 'stepper') {
       const max = o.maxOf ? o.maxOf(d) : o.max;
-      html += `<div class="row"><span class="lbl">${o.label}</span><div class="stepper"><button type="button" data-step="${o.key}" data-by="-1" ${locked || d[o.key] <= o.min ? 'disabled' : ''} aria-label="Fewer">−</button><div class="dots">${Array.from({ length: o.max }, (_, i) => `<i class="${i < d[o.key] ? 'on' : ''}"></i>`).join('')}</div><button type="button" data-step="${o.key}" data-by="1" ${locked || d[o.key] >= max ? 'disabled' : ''} aria-label="More">+</button></div><output>${d[o.key]}</output></div>`;
+      html += `<div class="row"><span class="lbl">${o.label}</span><div class="stepper"><button type="button" data-step="${o.key}" data-by="-1" ${locked || d[o.key] <= o.min ? 'disabled' : ''} aria-label="Fewer: ${o.label.toLowerCase()}">−</button><div class="dots">${Array.from({ length: o.max }, (_, i) => `<i class="${i < d[o.key] ? 'on' : ''}"></i>`).join('')}</div><button type="button" data-step="${o.key}" data-by="1" ${locked || d[o.key] >= max ? 'disabled' : ''} aria-label="More: ${o.label.toLowerCase()}">+</button></div><output>${d[o.key]}</output></div>`;
     } else if (o.kind === 'seg') {
       const ch = o.choices.filter(x => !x[2] || u[x[2]]);
       for (const x of o.choices) if (x[2] && !u[x[2]]) later.push(`${x[1].toLowerCase()} (${techName(x[2])})`);
@@ -316,7 +319,7 @@ export function updateHud() {
   $('cClock').className = 'chip' + (testing && w.alarm ? ((w.stats.evac ?? (w.t - w.alarmT)) > g.evac ? ' bad' : w.stats.evac != null ? ' good' : '') : '');
   $('hThru').textContent = `${st.through}/${g.through}`;
   $('cThru').className = 'chip' + (testing && st.through >= g.through ? ' good' : '');
-  $('hBump').textContent = `${st.bumps}/${g.bumps}`;
+  $('cBump').hidden = false; $('hBump').textContent = `${st.bumps}/${g.bumps}`;
   $('cBump').className = 'chip' + (st.bumps > g.bumps ? ' bad' : '');
   const hot = g.maxTemp != null;
   $('hTemp').textContent = BUILDING[c.kind].concourse && testing ? String(w.people.filter(p => p.state === 'approach').length) : testing ? `${(hot ? w.maxTemp : w.minTemp).toFixed(1)}°` : `${c.outsideTemp}°C`;

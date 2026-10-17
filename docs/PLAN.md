@@ -195,6 +195,17 @@ Pacing (`npm run pacing`; month of play when each street opens):
 
 ### Phase 3: UX pass
 
+**Status: done, October 2026, except the cheaper single surveys (item 6) and the keyboard pass (item 7).**
+- **1. The walk-through bubble** goes below, above or beside its target, wherever it fits without covering it; on a phone with a tall target it takes the side with more room. The bot fails if a bubble covers more than a quarter of what it points at.
+- **2. Canvas fit:** door jobs already fit their bays to the canvas width (`sizeCanvas`), so no change was needed; stages use `stageLayout`.
+- **3. Phone width and desktop:** at 390px the subtitle now hides as intended (a later rule was overriding it), and calendar cards wrap to two lines instead of an ellipsis. Desktop gets a 760px column and 600px sheets.
+- **4. D7:** the "Not yet" list shows everything a client is waiting for from the start: the street opening, the stars and the research.
+- **5. Inside jobs:** the cost bar says "Your setup", and the bumps counter is hidden where the stage doesn't grade bumps. The street tabs no longer show the old star thresholds.
+- **6. Faster surveys:** a pool of survey workers (cores − 1, up to 3), so several briefs survey at once; the focused brief still goes first within its worker. In the bot, briefs open in 0.3–7s. Not done: cheaper single surveys (a capped chain search, fewer candidates). They change jobs, so they need a deliberate golden re-record. A research call with its lesson is still the slowest survey (about 29s in Node).
+- **7. Accessibility:** steppers name what they change, and the plan view has a text label. Reduced motion was already honoured in the street and confetti. Not done: a keyboard pass on the street scene (the list view works from the keyboard).
+- **8. The design page's** research-tree and landmark tables are generated from `TECH` and `BUILDINGS` by the build (between the `TECHDATA` markers); its street wording matches Phase 2b.
+- **Layer 5:** the bot checks layout at 390×800 and 1280×800: no sideways scrolling, no clipped title, dock or cost bar, calendar cards within their lines, and bubbles off their targets.
+
 **Work**
 1. Place the coach bubble away from what it points at.
 2. Fit the canvas to the frontage width. *Architecture:* one fitting function shared by `ui/canvas.js` and `ui/stageart.js`.

@@ -33,11 +33,19 @@ export function placeCoach() {
   $('coach').hidden = false;
   const r = el.getBoundingClientRect(), ring = $('coachRing'), bub = $('coachBubble'), pad = 6;
   ring.style.left = (r.left - pad) + 'px'; ring.style.top = (r.top - pad) + 'px'; ring.style.width = (r.width + pad * 2) + 'px'; ring.style.height = (r.height + pad * 2) + 'px';
-  const bw = Math.min(320, innerWidth - 24), bh = bub.offsetHeight || 120;
-  const below = r.bottom + 14 + bh < innerHeight - 8;
-  bub.style.width = bw + 'px';
-  bub.style.left = Math.max(12, Math.min(innerWidth - bw - 12, r.left + r.width / 2 - bw / 2)) + 'px';
-  bub.style.top = (below ? r.bottom + 14 : Math.max(8, r.top - 14 - bh)) + 'px';
+  // the bubble goes wherever there's room without covering the target: below, above, or beside it; if
+  // nothing fits (a tall target on a phone), the side with more room, kept on screen
+  const bw = Math.min(320, innerWidth - 24); bub.style.width = bw + 'px';
+  const bh = bub.offsetHeight || 120, gap = 14;
+  const room = { below: innerHeight - r.bottom - gap - 8, above: r.top - gap - 8, right: innerWidth - r.right - gap - 8, left: r.left - gap - 8 };
+  const clampX = x => Math.max(12, Math.min(innerWidth - bw - 12, x)), clampY = y => Math.max(8, Math.min(innerHeight - bh - 8, y));
+  let x = clampX(r.left + r.width / 2 - bw / 2), y;
+  if (room.below >= bh) y = r.bottom + gap;
+  else if (room.above >= bh) y = r.top - gap - bh;
+  else if (room.right >= bw) { x = r.right + gap; y = clampY(r.top + r.height / 2 - bh / 2); }
+  else if (room.left >= bw) { x = r.left - gap - bw; y = clampY(r.top + r.height / 2 - bh / 2); }
+  else y = clampY(room.below >= room.above ? r.bottom + gap : r.top - gap - bh);
+  bub.style.left = x + 'px'; bub.style.top = y + 'px';
 }
 
 export function initCoach() {

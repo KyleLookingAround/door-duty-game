@@ -16,6 +16,24 @@ def sweep(pg, where):
     text = pg.inner_text('body')
     for m in BROKEN.finditer(text):
         fail(f'broken text on the {where}: "...{text[max(0, m.start() - 50):m.end() + 30]}..."'.replace('\n', ' '))
+# layout: no sideways scrolling, nothing that should fit cut off, and the walk-through bubble clear of its target
+def layout(pg, where):
+    bad = pg.evaluate("""() => {
+      const out = [], vw = innerWidth;
+      if (document.documentElement.scrollWidth > vw + 1) out.push(`the page scrolls sideways (${document.documentElement.scrollWidth}px wide at ${vw}px)`);
+      const cut = el => el && el.offsetParent && el.scrollWidth > el.clientWidth + 1;
+      for (const sel of ['.brand', '#streetTitle', '.dock .in button', '.costbar b']) for (const el of document.querySelectorAll(sel)) if (cut(el) && getComputedStyle(el).overflow !== 'visible') out.push(`${sel} is cut off: "${el.textContent.trim().slice(0, 30)}"`);
+      // the calendar: two lines for an event, three for a street change, then no more
+      for (const el of document.querySelectorAll('.calm b, .calm .calch')) if (el.offsetParent && el.scrollHeight > el.clientHeight + 2) out.push(`a calendar card is cut off: "${el.textContent.trim()}"`);
+      const coach = document.getElementById('coach');
+      if (coach && !coach.hidden) {
+        const a = document.getElementById('coachBubble').getBoundingClientRect(), b = document.getElementById('coachRing').getBoundingClientRect();
+        const over = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+        if (over > 0.25 * b.width * b.height && b.height < innerHeight * 0.6) out.push('the walk-through bubble covers what it points at');
+      }
+      return out;
+    }""")
+    for x in bad: fail(f'layout on the {where} ({pg.viewport_size["width"]}px): {x}')
 def state(pg): return json.loads(pg.evaluate("localStorage.getItem('doorduty-tycoon-v2')") or 'null')
 def set_range(pg, sel, v):
     pg.evaluate("([s,v])=>{const el=document.querySelector(s);if(!el)return;el.value=v;el.dispatchEvent(new Event('input'));el.dispatchEvent(new Event('change'))}", [sel, v])
@@ -139,7 +157,7 @@ with sync_playwright() as p:
         pg.wait_for_function("document.querySelector('#bTake') || document.getElementById('sheetWrap').hidden", timeout=180000)
         if not pg.query_selector('#bTake'):
             log(f"  {q['name']} false alarm after {time.time()-t0:.1f}s: {pg.inner_text('#toast')}"); pg.wait_for_timeout(700); continue
-        sweep(pg, f"brief for {q['name']}")
+        sweep(pg, f"brief for {q['name']}"); layout(pg, 'brief')
         if pg.query_selector('#bTake').is_disabled():
             # the crews are booked up this month: the brief must say so; end the month and come back
             if 'booked up' not in pg.inner_text('#sheet'): fail(f"{q['name']}: Take is disabled but the brief doesn't say why")
@@ -150,6 +168,7 @@ with sync_playwright() as p:
         pg.click('#bTake'); pg.wait_for_timeout(250)
         if q['status']=='callback' and not globals().get('shot_cb'):
             pg.screenshot(path='p_callback_ws.png', full_page=True); globals()['shot_cb']=1
+        layout(pg, 'job screen')
         apply_design(pg, c['par']['slots'])
         cost=pg.inner_text('#kCost')
         # the readout must match what the design costs (list price), on door jobs and inside jobs alike
@@ -167,7 +186,11 @@ with sync_playwright() as p:
         if rnd % 3 == 2:
             pg.wait_for_timeout(300)
             end_month(pg)
-    pg.click('[data-view="list"]'); pg.wait_for_timeout(300); sweep(pg, 'street')
+    pg.click('[data-view="list"]'); pg.wait_for_timeout(300); sweep(pg, 'street'); layout(pg, 'street')
+    # the same screens on a desktop
+    pg.set_viewport_size({'width': 1280, 'height': 800}); pg.wait_for_timeout(400); layout(pg, 'street')
+    pg.click('#rdBtn'); pg.wait_for_selector('#coClose'); layout(pg, 'company sheet'); pg.click('#coClose'); pg.wait_for_timeout(400)
+    pg.set_viewport_size({'width': 390, 'height': 800}); pg.wait_for_timeout(300)
     pg.screenshot(path='p_end.png', full_page=True)
     if errs: fail('JS errors', errs)
     b.close()

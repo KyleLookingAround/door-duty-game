@@ -15,7 +15,8 @@ npm test             # fast suite (~1.5 min on 4 cores): content checks, save/mo
 npm run test:full    # every golden survey, every research call's lesson, survey times, a 6-month headless game (~5 min on 4 cores)
 npm run sim -- 24 1  # headless game: 24 months, seed 1, prints the firm's books month by month
 npm run bot -- 9     # browser smoke test (Playwright for Python, pinned in tools/requirements.txt): plays dist/index.html
-                     # for 9 rounds (about 3 months); exits 1 on script errors, broken text, a wrong cost or a failed par
+                     # for 9 rounds (about 3 months); exits 1 on script errors, broken text, a wrong cost, a failed par,
+                     # a clipped layout at phone or desktop size, or a free research bench at the month end
                      # design. --dev plays src/ instead. CI runs it on every push.
 npm run balance      # balance report: answer variety and pacing over 5 seeds (~30 min on 4 cores; --quick ~6 min);
                      # --compare test/fixtures/balance-baseline.json to see it next to the baseline. Runs nightly in CI.
@@ -60,12 +61,12 @@ src/
     stageart.js          drawing the inside jobs, and laying out a chained level's stages
     sheets.js            bottom sheets: brief, company, client, lessons, the month report
     coach.js survey.js dom.js
-  worker.js              the survey worker: runs generateSolved off the main thread
+  worker.js              the survey worker: runs generateSolved off the main thread (ui/survey.js keeps a pool of them)
   shell.html             markup and CSS; the build fills <!--CORE--> and <!--APP-->
 tools/  build.mjs sim.mjs bot.py (requirements.txt) record-golden.mjs balance.mjs
 test/   *.test.js (lessons.test.js: research calls teach their research; speed.test.js: survey budgets), fixtures/surveyor-golden.json, fixtures/balance-baseline.json (after the last phase merged: Phase 1), balance-phase0.json, balance-before-phase0.json
 .github/workflows/  pages.yml (test, build, bot, deploy on main), nightly.yml (full tests, balance, a year of bot)
-docs/game-loop.html      the design page: the game loop, systems and roadmap
+docs/game-loop.html      the design page: the game loop, systems and roadmap (the build regenerates its research and landmark tables)
 docs/PLAN.md             the build plan: verified findings, phases, testing and architecture changes
 ```
 

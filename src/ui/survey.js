@@ -12,21 +12,32 @@ import { STAGE_TWISTS } from '../engine/stages/index.js';
 // the street listens here to redraw when a survey lands
 export const surveyHooks = { changed: () => {} };
 
-let worker = null, jobId = 0; const pending = new Map();
+// A pool of survey workers (one fewer than the cores, up to 3), so several briefs are surveyed at once. Each job
+// goes to the least busy worker; the brief the player is waiting on goes first within its worker (GATE.focus).
+let workers = [], jobId = 0; const pending = new Map();
 export function startWorker() {
-  try {
-    const core = document.getElementById('core');
-    worker = core
-      ? new Worker(URL.createObjectURL(new Blob([core.textContent], { type: 'text/javascript' })))   // the built page
-      : new Worker('worker.js', { type: 'module' });   // development: src/shell.html served from the repo root
-    worker.onmessage = e => { const j = pending.get(e.data.id); if (!j) return; if (e.data.done) { pending.delete(e.data.id); j.resolve(e.data.failed ? null : e.data.contract); } else j.progress(e.data.progress, e.data.attempt); };
-    worker.onerror = () => { worker = null; };
-  } catch (e) { worker = null; }
+  const core = document.getElementById('core');
+  const n = Math.max(1, Math.min(3, ((typeof navigator !== 'undefined' && navigator.hardwareConcurrency) || 2) - 1));
+  const url = core ? URL.createObjectURL(new Blob([core.textContent], { type: 'text/javascript' })) : null;
+  for (let i = 0; i < n; i++) {
+    try {
+      const w = url ? new Worker(url) : new Worker('worker.js', { type: 'module' });   // built page, or development (src/shell.html from the repo root)
+      w.load = 0;
+      w.onmessage = e => { const j = pending.get(e.data.id); if (!j) return; if (e.data.done) { pending.delete(e.data.id); w.load--; j.resolve(e.data.failed ? null : e.data.contract); } else j.progress(e.data.progress, e.data.attempt); };
+      // a worker that dies takes its jobs with it: they come back unsurveyed (the street draws fresh tenders)
+      w.onerror = () => { workers = workers.filter(x => x !== w); for (const [id, j] of pending) if (j.w === w) { pending.delete(id); j.resolve(null); } };
+      workers.push(w);
+    } catch (e) { break; }
+  }
 }
 // the brief the player is waiting on gets surveyed first
-export function focusSurvey(seed) { GATE.focus = seed; if (worker) worker.postMessage({ focus: seed }); }
+export function focusSurvey(seed) { GATE.focus = seed; for (const w of workers) w.postMessage({ focus: seed }); }
 function solve(contract, onProgress) {
-  if (worker) return new Promise(resolve => { const id = ++jobId; pending.set(id, { resolve, progress: onProgress }); worker.postMessage({ id, contract, unlocks: techOf(S), recent: S.recent || [] }); });
+  if (workers.length) {
+    const w = workers.reduce((a, b) => (b.load < a.load ? b : a));
+    w.load++;
+    return new Promise(resolve => { const id = ++jobId; pending.set(id, { resolve, progress: onProgress, w }); w.postMessage({ id, contract, unlocks: techOf(S), recent: S.recent || [] }); });
+  }
   return generateSolved(contract, techOf(S), S.recent || [], onProgress).catch(() => null);
 }
 export const surveys = new Map();

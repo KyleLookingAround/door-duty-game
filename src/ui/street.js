@@ -31,8 +31,9 @@ function laterList(list) {
   const sorted = [...list].sort((a, b) => a.rep - b.rep);
   const nextAt = sorted.find(p => p.rep > r);
   return `<div class="later">${sorted.map(p => {
-    const research = r >= p.rep && !needsMet(S, p), shut = !streetOpen(S, streetOf(p));
-    const req = shut ? `When ${streetOf(p) === 'market' ? 'Market Square' : 'Riverside'} opens` : research ? `Research ${needsText(S, p)}` : `${p.rep}★`;
+    // what each client is waiting for, all of it from the start: the street opening, the stars, the research (D7)
+    const research = !needsMet(S, p), shut = !streetOpen(S, streetOf(p));
+    const req = [shut ? `When ${streetOf(p) === 'market' ? 'Market Square' : 'Riverside'} opens` : r < p.rep ? `${p.rep}★` : '', research ? `Research ${needsText(S, p)}` : ''].filter(Boolean).join(' · ');
     const k = KINDS[p.kind];
     return `<div><span><b>${p.name}</b>${sameWord(p.name, k.label) ? '' : ` · ${k.label}`}${streetOf(p) === 'market' ? ' · Market Square' : streetOf(p) === 'riverside' ? ' · Riverside' : ''}</span><span class="req${research || p === nextAt ? ' next' : ''}${research ? ' wide' : ''}">${req}</span></div>`;
   }).join('')}</div>`;
@@ -58,7 +59,7 @@ export function renderStreet() {
   const tabs = $('streetTabs');
   tabs.hidden = !S.marketOpen;
   tabs.style.gridTemplateColumns = `repeat(${STREETS.length}, 1fr)`;
-  tabs.innerHTML = STREETS.map(st => `<button type="button" data-st="${st.key}" aria-pressed="${(S.street || 'high') === st.key}" ${streetOpen(S, st.key) ? '' : 'disabled'}>${st.name}${streetOpen(S, st.key) ? '' : ` · ${st.rep}★`}</button>`).join('');
+  tabs.innerHTML = STREETS.map(st => `<button type="button" data-st="${st.key}" aria-pressed="${(S.street || 'high') === st.key}" ${streetOpen(S, st.key) ? '' : 'disabled'}>${st.name}${streetOpen(S, st.key) ? '' : ' · not yet'}</button>`).join('');
   tabs.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { if (S.street === b.dataset.st) return; S.street = b.dataset.st; delete $('map').dataset.ready; save(); renderStreet(); });
   $('streetTitle').textContent = (STREETS.find(x => x.key === (S.street || 'high')) || STREETS[0]).name;
   const box = $('map'), keepX = box.dataset.ready ? box.scrollLeft : null;
