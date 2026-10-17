@@ -5,7 +5,7 @@
 // them, to see how many different answers the month's jobs have. Work is spread over worker threads.
 //
 // usage: node tools/balance.mjs [--quick] [--seeds 1,2,3] [--months 24] [--out file.json] [--compare file.json]
-//   --quick    2 seeds, 4 sample months, a 12-month game (a few minutes)
+//   --quick    2 seeds, 4 sample months, a 12-month game (about 6 minutes on 4 cores; the full report is about 30)
 //   --out      save the report as JSON (test/fixtures/balance-baseline.json is the baseline)
 //   --compare  print the report next to a saved one
 import { Worker, isMainThread, parentPort } from 'node:worker_threads';

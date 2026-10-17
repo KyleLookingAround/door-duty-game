@@ -16,7 +16,7 @@ npm run sim -- 24 1  # headless game: 24 months, seed 1, prints the firm's books
 npm run bot -- 9     # browser smoke test (Playwright for Python, pinned in tools/requirements.txt): plays dist/index.html
                      # for 9 rounds (about 3 months); exits 1 on script errors, broken text, a wrong cost or a failed par
                      # design. --dev plays src/ instead. CI runs it on every push.
-npm run balance      # balance report: answer variety and pacing over 5 seeds (~30 min; --quick for a few minutes);
+npm run balance      # balance report: answer variety and pacing over 5 seeds (~30 min on 4 cores; --quick ~6 min);
                      # --compare test/fixtures/balance-baseline.json to see it next to the baseline. Runs nightly in CI.
 npm run record-golden  # re-record test/fixtures/surveyor-golden.json after a deliberate rules change; prints which
                        # cases changed (--dry to only print). Put the summary in the commit message.
