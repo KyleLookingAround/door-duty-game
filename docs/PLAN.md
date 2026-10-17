@@ -104,7 +104,7 @@ This is the biggest phase, so it ships as two pull requests: **2a** is the resea
    - **Street standing, not total stars.** Each street opens on standing earned on the street before it: the stars from every job signed there (callbacks, research calls and repeat work count, not just each client's best), plus mastery stars. Today's single 3★ per client caps out in a few months; counting every job keeps standing growing for the whole stay.
    - **Skill moves you faster.** ★★★ work earns standing fastest. Doors with room to spare ride out street changes, and those clients pay more and call with bigger work. A 1★ player still progresses, just more slowly.
    - **Research picks move you faster.** Each street's entry needs a few mastered techs from a short list (for example any 3 of 5), and its clients ask for particular branches through enquiries and research calls. Research what this street's clients want and the work and stars come sooner. Research nobody here needs, and you wait.
-   - **Enough work to fill 6–12 months.** Street changes, research calls, enquiries, the market study and advertising keep each street busy. Clients come back at a higher tier after a while, with bigger jobs. This is a requirement, not a nice-to-have: today the sim does about 3 jobs a month, so 6–12 months is roughly 20–50 jobs per street. The High Street's 8 door clients each need 3–6 jobs during a stay.
+   - **Enough work to fill 6–12 months.** Street changes, research calls, enquiries, the market study and advertising keep each street busy. Clients come back at a higher tier after a while, with bigger jobs. This is a requirement, not a nice-to-have. The target is a shorter game: about 2–6 hours to finish Riverside, so months stay light at 2–3 jobs each. That's roughly 12–36 jobs per street, and each of the High Street's 8 door clients needs 2–4 jobs during a stay. Months without many jobs still move: research runs every month, and street changes, enquiries and calls keep arriving.
    - **A floor, no ceiling.** No street opens in under 6 months on the last one. There's no upper limit: poor play takes longer. But there is always a way forward:
      - there's always work to take (the market study, advertising, tenders refreshing)
      - standing never falls below what it took to open the street you're on
@@ -112,7 +112,7 @@ This is the biggest phase, so it ships as two pull requests: **2a** is the resea
 2. D6: give money a use. Monthly research costs, refinements and the Research lab (section 4), plus **advertising**: on the Company sheet, pay to bring in a tender this month, with the price rising for each one in the same month. The Sales network node makes it cheaper. It's the paid, immediate version of the free one-month market study. (Rushing research and landmark buy-ins were considered and left out.)
 3. **The research rework** (section 4): research never stops, queues, the market study, mastery, refinements, the five-branch layout, paying monthly, and three new nodes (Crowd counters, Sales network, Research lab). Mastery needs `c.lesson` from Phase 1. The other new nodes come in Phases 1, 4 and 5, with what they open.
 4. **Onboarding.** Update the coach and the Guide tab for queues, monthly costs, mastery and street standing. The first month now needs research before it can end, so the coach walks the player through it, with the market study as the safe first pick.
-5. **Saves survive the changes.** Phase 2 is the first save-version bump in the plan. From here on, every bump keeps a copy of the previous save under its own key before migrating. The Company sheet gets save export and import, and the first load after an update shows a short "What's changed" note. How existing games are treated is in section 7.
+5. **Saves.** Nobody else plays yet, so `migrate()` only does enough for an old save to load without errors (owned techs count as mastered, empty queues). No backups, export or "What's changed" note for now. Revisit before the game is shared.
 
 *Architecture:* move prices, star thresholds, wages, rent and research times into `content/balance.js`; let `simulate()` take overrides so values can be tried without code edits. The research changes are in section 4.
 
@@ -324,7 +324,7 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 - **Weak:** 1★ designs (par plus an unneeded extra) and cheapest-first research. Each street opens after about 10–12 months.
 - **Poor:** fails a share of jobs, skips some, and researches at random. There's no time limit, but standing must rise every quarter and there must always be work or research to take, so it can never get stuck.
 
-Also, for every style: 3–5 jobs a month on average, cash under a cap at month 12, no more than 2 quiet months in a row, every bench busy at every month end. All three policies obey the research rule (`tools/sim.mjs` fills benches only when it has spare cash today). Print a short table, including an estimate of play time (jobs × about 3 minutes), so balance changes show as a diff in review.
+Also, for every style: 2–3 jobs a month on average, cash under a cap at month 12, no more than 2 quiet months in a row, every bench busy at every month end. All three policies obey the research rule (`tools/sim.mjs` fills benches only when it has spare cash today). Print a short table, including an estimate of play time (jobs × about 3 minutes, target about 2–6 hours to finish Riverside), so balance changes show as a diff in review.
 
 **5. Browser checks** (extend `tools/bot.py`)
 - Text sweep: fail on "undefined", "NaN", "[object" or "£-" on any screen the bot visits.
@@ -343,7 +343,7 @@ Also, for every style: 3–5 jobs a month on average, cash under a cap at month 
 |---|---|
 | 0 Fixes | Layer 1 tests; golden re-recorded on purpose, with its change summary; bot in CI with a clean text sweep; baseline balance numbers recorded |
 | 1 Puzzles | Layer 3 variety and lesson tests; lazy player passes under about 25%; layer 6 survey times |
-| 2a Research | Research rules and tree-shape tests (section 4.5); old saves migrate with a backup kept |
+| 2a Research | Research rules and tree-shape tests (section 4.5); an old save still loads |
 | 2b Pacing and money | Layer 4 bands for all three player styles on 4 seeds |
 | 3 UX | Layer 5 layout at both sizes; layer 6 survey times within budget |
 | 4–5 Content | Paradox test, golden cases, variety coverage and a bot pass per new stage |
@@ -364,7 +364,6 @@ Also, for every style: 3–5 jobs a month on average, cash under a cap at month 
 | One `TECH` record per tech (text, lesson, calls, lesson goal, kind, levels, what it opens); docs tables generated from it | 2 | Ends three hand-synced sources and the drifting design page |
 | Survey worker pool, pre-surveying, chain time cap | 3 | Survey waits |
 | One canvas-fitting function for `canvas.js` and `stageart.js` | 3 | Clipped frontages and plans |
-| Save backup on every version bump; export and import; a "What's changed" note | 2 | Migrations can't lose a game |
 | Another `SAVE_VERSION` bump for blueprints | 4 | New save data |
 | `DoorStage` adapter on `StageSim` | 4 | Doors inside chains |
 | Programmable doors as rule data | 5 | Deterministic and safe on a shared seed |
@@ -382,6 +381,10 @@ Decided by the owner, October 2026:
 5. **Mastery stars:** each mastery adds a star to the firm's reputation.
 6. **Bot:** stays in Python, with Playwright pinned.
 7. **Summer:** keep the May start, and make summer harder with new pressures and the new Open doors research.
+8. **Releases:** each phase goes live as it merges to main.
+9. **Old saves:** nobody else plays yet, so migrations only need to stop errors. Revisit before sharing the game.
+10. **Length:** shorter than 3–12 hours. Each street still takes 6–12 game months, but months are lighter (2–3 jobs), aiming at about 2–6 hours to finish Riverside.
+11. **Analytics:** none. Pacing is checked with the sim and playtesting; the game stays offline-capable with no tracking.
 
 ---
 
