@@ -149,6 +149,29 @@ This is the biggest phase, so it ships as two pull requests: **2a** is the resea
 
 Tests: `test/research.test.js` (the PLAN 4.5 rules, refinements, the lab, the network, the tier-3 mastery gate). Quick balance (2 seeds, 12 months) against the Phase 1 baseline: months with an idle bench 6–10 → 1, reputation at month 12 32–36 → 38–40 (mastery stars), Market Square at month 4, Riverside at month 10, cash at month 12 £151k–£211k (still too much: 2b).
 
+**Status: 2b done, October 2026.** Items 1, 2 and 5:
+- **Reputation and standing.** Reputation is the stars from every job the firm signs (callbacks, research calls and repeat work count) plus a star per mastered tech, so it keeps growing however you play. Each job's stars also count as standing on its street.
+- **Street gates** (`STREET_GATES` in the new `content/balance.js`): a street opens on standing earned on the street before it (20 on the High Street; 18 on Market Square), after at least 6 months there, with 2 techs from a short list mastered. Once open it stays open. Clients on a street that isn't open don't talk to you, and the street's "Not yet" list and the advice line say what's missing.
+- **Advertising:** buy a client wanting more, or an enquiry, this month; £3k, then £3k more for each further advert that month, 30% off with the Sales network. Nothing is charged when there's nobody to reach.
+- **Research calls always reach a client.** A false alarm puts the call back on the list, and a call that has waited two months goes to any fitted client of the right kind, in plain words. Without this, mastery stalled for months.
+- **The sim plays in three styles** (`simulate({ style })`) and `npm run pacing` reports the bands (nightly in CI). The sim no longer refuses a job for want of cash on hand, since the page doesn't.
+- Save version 8.
+
+Pacing (`npm run pacing`; month of play when each street opens):
+
+| Player | Market Square | Riverside | Target |
+|---|---|---|---|
+| Strong (par designs, the next street's research first) | 6 | 15–16 (9–10 months on Market Square) | about 6 a street |
+| Weak (1★, cheapest research) | 12–13 | not by month 26 | about 12 a street |
+| Poor (a third of jobs fumbled, random research) | 15–17 | not by month 26 | no limit, always progressing |
+
+(First gates, 30 standing and 3 techs for Riverside, on 4 seeds × 30 months: strong 6–7 / 20–24, weak 16–21, poor 21–28. With the gates above, on 2 seeds: weak and poor from a 26-month run, strong from a 22-month run after the sim's strong player was taught to research the next street's techs first. Every street is inside the owner's 6–12 months for a strong or typical player; a strong player is nearer 10 than 6 on Market Square, mostly waiting for research calls to master its techs.)
+
+**Not done in 2b, and why:**
+- Cash stays high for a strong player: £206k–£273k at month 12 (weak £48k–£112k, poor £27k–£53k). Research spending is capped by the number of benches, so money piles up once they're full. The next levers are pricier refinements and premises, or lower maintenance; they need a pacing run each (20–60 minutes), so they're left for a tuning pass.
+- `content/balance.js` holds only the new numbers (street gates, adverts). Moving every price, threshold, wage and rent into it, and letting `simulate()` take overrides, is still to do.
+- "Enough work to fill 6–12 months" is met on jobs a month (strong 2.5, weak 1.8–2, poor 1.4–1.5), but the poor player still has months with an idle bench (5–7 in 26).
+
 **Work**
 1. D5: **each street takes 6–12 months.** Today the High Street and Market Square are both done by month 4. A strong player moves on after about 6 months, a typical one after about 12, and a player who plays poorly can take a lot longer; the difference comes from how well they play and which research they pick. So for most players Market Square opens between months 6 and 12, and Riverside 6–12 months after that (between months 12 and 24).
    - **Street standing, not total stars.** Each street opens on standing earned on the street before it: the stars from every job signed there (callbacks, research calls and repeat work count, not just each client's best), plus mastery stars. Today's single 3★ per client caps out in a few months; counting every job keeps standing growing for the whole stay.

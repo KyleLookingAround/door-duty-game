@@ -4,8 +4,8 @@
 // at least `months` on it, with `mastered` of the techs in `list` mastered: research what the street's clients
 // want and you move on sooner. Standing never falls, so there's always a way forward.
 export const STREET_GATES = {
-  market: { from: 'high', standing: 30, months: 6, mastered: 2, list: ['mouth', 'core', 'padded', 'curtain', 'closer', 'barriers', 'autoswing'] },
-  riverside: { from: 'market', standing: 30, months: 6, mastered: 3, list: ['sensor', 'vestibule', 'pillars', 'escalators', 'zoning', 'telescopic', 'doorman', 'wide'] },
+  market: { from: 'high', standing: 20, months: 6, mastered: 2, list: ['mouth', 'core', 'padded', 'curtain', 'closer', 'barriers', 'autoswing'] },
+  riverside: { from: 'market', standing: 18, months: 6, mastered: 2, list: ['sensor', 'vestibule', 'pillars', 'escalators', 'zoning', 'telescopic', 'doorman', 'wide'] },
 };
 
 // Advertising: pay to bring in work this month. Each advert in the same month costs more; the sales network

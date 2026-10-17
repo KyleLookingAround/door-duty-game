@@ -1,6 +1,6 @@
 # Nightly: the slow checks that don't fit in every push. Every golden survey and a 6-month game, the balance
 # report (variety and pacing over several seeds, next to the saved baseline: the game as it stood after the last
-# accepted phase), and the browser bot for a year.
+# accepted phase), the pacing bands for three styles of player, and the browser bot for a year.
 name: Nightly
 
 on:
@@ -39,6 +39,24 @@ jobs:
           path: |
             balance.txt
             balance.json
+
+  pacing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Pacing bands (strong, weak and poor players)
+        run: npm run pacing -- --out pacing.json | tee pacing.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pacing-report
+          path: |
+            pacing.txt
+            pacing.json
 
   bot:
     runs-on: ubuntu-latest
