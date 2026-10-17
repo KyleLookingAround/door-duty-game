@@ -66,11 +66,16 @@ How to use this page: work the phases in order. Each phase lists the work, the a
 3. B3: a call's twist goes first and is never dropped on retry.
 4. B4: one shared ★ rules string, used by the brief, the result and the guide.
 5. B5: hints name only hardware the job allows; the coach's door text depends on what's allowed; enquiry text depends on the client's actual results; concert twists for the Arena; each street header shows that street's income.
-6. Re-record `test/fixtures/surveyor-golden.json` (items 3 and 5 change which jobs are made) and say so in the commit.
+6. Re-record `test/fixtures/surveyor-golden.json` (items 3 and 5 change which jobs are made) and say so in the commit. `tools/record-golden.mjs` first learns to print what changed (which cases' twists, par or cost moved), so every re-record from here on is reviewed rather than waved through.
+7. **CI that protects every later phase:**
+   - Today every pull-request run shares the `pages` concurrency group with `cancel-in-progress: true` (`.github/workflows/pages.yml`), so pushing to a PR can cancel a deploy from main that's in progress. Give pull requests their own group.
+   - Pin Playwright in `tools/requirements.txt` and add the browser bot (layer 5) now rather than in Phase 3.
+8. **A baseline before anything changes.** Build `tools/balance.mjs` (variety and pacing, section 5 layers 3–4) and record today's numbers. Phases 1 and 2 are judged against them.
+9. Add the new house rules to `CLAUDE.md` as they land: rules and wording out of `ui/`, a lesson on every job, balance numbers in one file. Each later phase updates it too.
 
-**Tests that must pass:** the new Phase 0 regression tests (section 5, layer 1); `npm test`; golden re-recorded on purpose; the bot's text sweep is clean.
+**Tests that must pass:** the new Phase 0 regression tests (section 5, layer 1); `npm test`; golden re-recorded on purpose; the bot's text sweep is clean, in CI.
 
-**Done when** no brief, result or report shows "undefined", chain costs match their parts, and every research call carries its twist.
+**Done when** no brief, result or report shows "undefined", chain costs match their parts, every research call carries its twist, the bot runs in CI, and the baseline numbers are recorded.
 
 ### Phase 1: every job a real puzzle
 
@@ -84,24 +89,30 @@ How to use this page: work the phases in order. Each phase lists the work, the a
 
 *Architecture:* split `makeContract` (`contracts.js`, 534 lines) into explicit steps: required twists (call or lesson), then random twists that can't evict them, then goals, then the lesson goal. Give each job a lesson record, `c.lesson = { tech, goal, mustUse }`. Move brief, result and hint text into a pure `game/briefs.js` that returns data from `(S, p, c)`; `ui/sheets.js` only renders it.
 
-**Tests that must pass:** variety and lesson tests (layer 3); the bot's lazy player passes under about 25% of the time; golden re-recorded on purpose.
+*Watch:* lesson checks add survey runs (a run without the tech, regenerating a job whose par skips the lesson), and surveys are already slow on phones. Time surveys from this phase on (layer 6). If they slow down, bring the Phase 3 worker pool forward.
+
+**Tests that must pass:** variety and lesson tests (layer 3); the bot's lazy player passes under about 25% of the time; survey times within budget (layer 6); golden re-recorded on purpose.
 
 **Done when** no single answer covers more than about 25% of any month's jobs, and no research job can be passed without its research.
 
-### Phase 2: pacing and economy
+### Phase 2: research, pacing and economy
+
+This is the biggest phase, so it ships as two pull requests: **2a** is the research rework (item 3) with its onboarding (item 4), and **2b** is pacing and money (items 1, 2 and 5).
 
 **Work**
 1. D5: **each street takes 6–12 months.** Today the High Street and Market Square are both done by month 4. A strong player moves on after about 6 months, a typical one after about 12, and a player who plays poorly can take a lot longer; the difference comes from how well they play and which research they pick. So for most players Market Square opens between months 6 and 12, and Riverside 6–12 months after that (between months 12 and 24).
    - **Street standing, not total stars.** Each street opens on standing earned on the street before it: the stars from every job signed there (callbacks, research calls and repeat work count, not just each client's best), plus mastery stars. Today's single 3★ per client caps out in a few months; counting every job keeps standing growing for the whole stay.
    - **Skill moves you faster.** ★★★ work earns standing fastest. Doors with room to spare ride out street changes, and those clients pay more and call with bigger work. A 1★ player still progresses, just more slowly.
    - **Research picks move you faster.** Each street's entry needs a few mastered techs from a short list (for example any 3 of 5), and its clients ask for particular branches through enquiries and research calls. Research what this street's clients want and the work and stars come sooner. Research nobody here needs, and you wait.
-   - **Enough work to fill 6–12 months.** Street changes, research calls, enquiries, the market study and advertising keep each street busy. Clients come back at a higher tier after a while, with bigger jobs.
+   - **Enough work to fill 6–12 months.** Street changes, research calls, enquiries, the market study and advertising keep each street busy. Clients come back at a higher tier after a while, with bigger jobs. This is a requirement, not a nice-to-have: today the sim does about 3 jobs a month, so 6–12 months is roughly 20–50 jobs per street. The High Street's 8 door clients each need 3–6 jobs during a stay.
    - **A floor, no ceiling.** No street opens in under 6 months on the last one. There's no upper limit: poor play takes longer. But there is always a way forward:
      - there's always work to take (the market study, advertising, tenders refreshing)
      - standing never falls below what it took to open the street you're on
      - the advice line says what's holding you back ("three more ★★★ jobs", "master one of these techs")
 2. D6: give money a use. Monthly research costs, refinements and the Research lab (section 4), plus **advertising**: on the Company sheet, pay to bring in a tender this month, with the price rising for each one in the same month. The Sales network node makes it cheaper. It's the paid, immediate version of the free one-month market study. (Rushing research and landmark buy-ins were considered and left out.)
 3. **The research rework** (section 4): research never stops, queues, the market study, mastery, refinements, the five-branch layout, paying monthly, and three new nodes (Crowd counters, Sales network, Research lab). Mastery needs `c.lesson` from Phase 1. The other new nodes come in Phases 1, 4 and 5, with what they open.
+4. **Onboarding.** Update the coach and the Guide tab for queues, monthly costs, mastery and street standing. The first month now needs research before it can end, so the coach walks the player through it, with the market study as the safe first pick.
+5. **Saves survive the changes.** Phase 2 is the first save-version bump in the plan. From here on, every bump keeps a copy of the previous save under its own key before migrating. The Company sheet gets save export and import, and the first load after an update shows a short "What's changed" note. How existing games are treated is in section 7.
 
 *Architecture:* move prices, star thresholds, wages, rent and research times into `content/balance.js`; let `simulate()` take overrides so values can be tried without code edits. The research changes are in section 4.
 
@@ -118,7 +129,8 @@ How to use this page: work the phases in order. Each phase lists the work, the a
 4. D7: show locked buildings' research needs from the start.
 5. Inside-job wording ("Your setup"); hide counters that don't apply.
 6. Faster surveys. *Architecture:* a pool of `hardwareConcurrency − 1` survey workers, surveying the next likely job before it's opened, and a time cap on chain searches. Profile `engine/world.js` (700 lines) before tuning the surveyor.
-7. Bring the rest of `docs/game-loop.html` up to date (its tech and landmark tables are generated from `TECH` from Phase 2).
+7. Accessibility: honour reduced motion in the rush hour and the street, check text contrast, label every control, and make the editor work from the keyboard.
+8. Bring the rest of `docs/game-loop.html` up to date (its tech and landmark tables are generated from `TECH` from Phase 2).
 
 **Tests that must pass:** layout checks at both sizes (layer 5); survey times within budget (layer 6).
 
@@ -131,7 +143,7 @@ Already on the design page as Later, plus two unbuilt landmarks. Each comes with
 1. **Blueprint book:** save a design and reuse it on later jobs. More useful once Phase 1 makes answers vary. *Architecture:* new save data, so bump `SAVE_VERSION` again (Phase 2 bumps it first) with a `migrate()` step; store blueprints by job type and stage key, not by plot.
 2. **Doors as a chain stage:** the Station's escalators feeding the gate line, the Skyport kerb into the terminal. *Architecture:* the biggest structural piece. A `DoorStage` adapter gives the door `World` the `StageSim` interface (`admit`, `finish`), so a frontage can feed a stage or be fed by one. Design it early: it changes where the World's arrivals come from.
 3. **New guests:** kids racing ahead, tourists riding the door round, phone zombies.
-4. **Landmarks:** the Stadium (pillars, gates, barriers) and the full airport chain (kerb, check-in, security, gate, bags).
+4. **Landmarks:** the Stadium (pillars, gates, barriers) and the full airport chain (kerb, check-in, security, gate, bags). Decide then where the Stadium goes: the end of Riverside, or a fourth street (which brings its own 6–12 months).
 5. **Paradox journal and local paper headlines:** cheap to build, and they reward finishing a lesson.
 6. From CLAUDE.md: real callbacks still escalate when the doors already cope.
 
@@ -161,13 +173,13 @@ The tree is 23 techs in four branches (`content/tech.js`), costing £810k and 58
 
 ### 4.2 How research will work
 
-1. **Research never stops.** End the Month needs every bench busy; with one free, the button reads "Choose research" and opens the Research tab. The check lives in `game/` (`benchesFilled(S)`), so the page, the sim and the bot share it.
+1. **Research never stops.** End the Month needs every bench busy; with one free, the button reads "Choose research" and opens the Research tab. The check lives in `game/` (`benchesFilled(S)`), so the page, the sim and the bot share it. As a safety net, `endMonth` itself puts a market study on any bench still idle (an old save, a headless run), so research is ongoing by construction and existing tests don't break.
 2. **A queue per bench.** Line up the next projects; when one finishes the next starts. One decision every few months, not every month.
 3. **Paid monthly.** A project costs its price spread over its months, like wages. Research becomes a running cost, a big project is easier to start early, and a queue never needs a lump of cash. If you're overdrawn, paid projects pause (they keep their progress) and the bench falls back to a market study.
 4. **The market study is always available.** Free, one month, any bench: it brings in a tender or an enquiry. The rule can never lock you in, even when you're overdrawn, broke or at the end of the tree, and it fills quiet months with work.
 5. **Owned, then mastered.** A finished tech is *owned*: it's in the workshop. It becomes *mastered* when you sign off a job that grades its lesson (the `c.lesson` from Phase 1). That's usually the research call that follows, or a job that needs it.
    - **Landmarks and deeper nodes need mastery,** not just ownership, as the design page always said.
-   - **A lesson job is guaranteed.** If no fitted client fits the call (`S.pendingCalls` waits today), an open tender carrying the lesson appears within two months.
+   - **A lesson job is guaranteed.** If no fitted client fits the call (`S.pendingCalls` waits today), an open tender carrying the lesson appears within two months. Lesson jobs never go to Brassworks (the rival bids on tenders left sitting), and one that's turned down comes back, so the rival can never block a landmark.
    - **Mastery earns a star** on the firm's own record ("known for big-core drums"). That gives reputation beyond the 3★-per-client ceiling that flattens D5, and a page in the paradox journal (Phase 4).
 6. **Passive boosts become refinements:** repeatable levels with rising prices, available once their base tech is owned. They never run out, so they're the long-term use for money.
 7. **Clearer screen.**
@@ -300,15 +312,19 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 
 **2. Golden surveys** (unchanged): the pin on the surveyor. Re-record on purpose after Phase 0 and each Phase 1 change, and say so in the commit.
 
-**3. Variety and lesson tests** (new `tools/balance.mjs`, in `test:full`)
+**Runtime.** Layers 3 and 4 are too slow for `test:full`'s 10 minutes. The full variety sweep is about 700 surveys, and the pacing runs are 12 sims of 30 months (about 10s a month each). Together that's roughly an hour on one core. They get their own `npm run balance`, which spreads the work over worker threads (15–20 minutes on CI's 4 cores) and has a `--quick` mode that samples 4 months and 2 seeds. The full run is nightly in CI and is required before merging Phases 1 and 2.
+
+**3. Variety and lesson tests** (`npm run balance`)
 - First visits for every building, every month, 5 seeds: no single answer above about 25% of a month's jobs.
 - Each research call: par uses the tech; the client's design before the call fails the lesson goal; a design without the tech can't pass.
 - Each Riverside level varies across seeds.
 
-**4. Pacing bands** (in `test:full`): the sim on 4 seeds for 30 months, with three player styles:
+**4. Pacing bands** (`npm run balance`): the sim on 4 seeds for 30 months, with three player styles:
 - **Strong:** ★★★ designs and research that matches what the street's clients want. Each street opens after 6–8 months, never under 6.
 - **Weak:** 1★ designs (par plus an unneeded extra) and cheapest-first research. Each street opens after about 10–12 months.
-- **Poor:** fails a share of jobs, skips some, and researches at random. There's no time limit, but standing must rise every quarter and there must always be work or research to take, so it can never get stuck. Also: cash under a cap at month 12, no more than 2 quiet months in a row, every bench busy at every month end. Both sim policies have to obey the research rule too (`tools/sim.mjs` fills benches only when it has spare cash today). Print a short table so balance changes show as a diff in review.
+- **Poor:** fails a share of jobs, skips some, and researches at random. There's no time limit, but standing must rise every quarter and there must always be work or research to take, so it can never get stuck.
+
+Also, for every style: 3–5 jobs a month on average, cash under a cap at month 12, no more than 2 quiet months in a row, every bench busy at every month end. All three policies obey the research rule (`tools/sim.mjs` fills benches only when it has spare cash today). Print a short table, including an estimate of play time (jobs × about 3 minutes), so balance changes show as a diff in review.
 
 **5. Browser checks** (extend `tools/bot.py`)
 - Text sweep: fail on "undefined", "NaN", "[object" or "£-" on any screen the bot visits.
@@ -317,7 +333,7 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 - Lazy player: before applying par, try the cheapest common answers (two swing doors, one slider, close the bridge) and log how often they pass.
 - CI: the bot stays in Python. Add a Python step in `pages.yml` with Playwright pinned in `tools/requirements.txt` (matched to the Chromium the runner installs); run the bot for 3 months on `dist/` at phone size before deploy, and 12 months nightly.
 
-**6. Speed** (in `test:full`): time `generateSolved` for a door job, a research call and the Arena chain; fail over budget (for example 5s in Node). The bot logs in-browser survey times.
+**6. Speed** (in `test:full`, from Phase 1): time `generateSolved` for a door job, a research call and the Arena chain; fail over budget (for example 5s in Node). The bot logs in-browser survey times.
 
 **7. People playing:** at the end of each phase, on a real phone, a fresh start through the first winter, one research call of each kind, and the Arena. Ideally 2–3 people who haven't seen it, noting where they stall or misread. Automated checks can't tell you whether a paradox lands.
 
@@ -325,9 +341,10 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 
 | Phase | Must pass before merging |
 |---|---|
-| 0 Fixes | Layer 1 tests; golden re-recorded on purpose; bot text sweep clean |
-| 1 Puzzles | Layer 3 variety and lesson tests; lazy player passes under about 25% |
-| 2 Pacing and research | Layer 4 bands on 4 seeds; research rules and tree-shape tests (section 4.5) |
+| 0 Fixes | Layer 1 tests; golden re-recorded on purpose, with its change summary; bot in CI with a clean text sweep; baseline balance numbers recorded |
+| 1 Puzzles | Layer 3 variety and lesson tests; lazy player passes under about 25%; layer 6 survey times |
+| 2a Research | Research rules and tree-shape tests (section 4.5); old saves migrate with a backup kept |
+| 2b Pacing and money | Layer 4 bands for all three player styles on 4 seeds |
 | 3 UX | Layer 5 layout at both sizes; layer 6 survey times within budget |
 | 4–5 Content | Paradox test, golden cases, variety coverage and a bot pass per new stage |
 
@@ -338,6 +355,7 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 | Change | Phase | Why |
 |---|---|---|
 | Design model in `game/` (`newDesign`, deep `cloneDesign`, `designCost`) | 0 | Removes the shared-object bug class (B1); testable in Node |
+| CI: pull requests in their own concurrency group; bot in CI; `npm run balance` nightly | 0 | A PR push can't cancel a deploy; every later phase is checked |
 | Brief, result and hint text as pure data in `game/briefs.js` | 1 | Wording can be tested; ends "undefined"-style bugs (B2, B5) |
 | `makeContract` in explicit steps; `c.lesson` on every job | 1 | Required twists can't be evicted (B3); the surveyor and tests can check lessons (D3) |
 | Balance numbers in `content/balance.js`; `simulate()` overrides | 2 | Tuning becomes data edits; sweeps without code changes |
@@ -346,7 +364,7 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 | One `TECH` record per tech (text, lesson, calls, lesson goal, kind, levels, what it opens); docs tables generated from it | 2 | Ends three hand-synced sources and the drifting design page |
 | Survey worker pool, pre-surveying, chain time cap | 3 | Survey waits |
 | One canvas-fitting function for `canvas.js` and `stageart.js` | 3 | Clipped frontages and plans |
-| Pinned Playwright, bot in CI | 0–3 | The page itself gets tested |
+| Save backup on every version bump; export and import; a "What's changed" note | 2 | Migrations can't lose a game |
 | Another `SAVE_VERSION` bump for blueprints | 4 | New save data |
 | `DoorStage` adapter on `StageSim` | 4 | Doors inside chains |
 | Programmable doors as rule data | 5 | Deterministic and safe on a shared seed |
