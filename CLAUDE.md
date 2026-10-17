@@ -10,15 +10,15 @@ It ships as **one self-contained HTML page** (`dist/index.html`), deployed to Gi
 npm run dev          # serve the repo; open http://localhost:8080/src/shell.html (live modules, no build step)
 npm run build        # bundle to dist/index.html
 npm run watch        # rebuild on change
-npm test             # fast suite (~2 min): content checks, save/month determinism, grading, a spread of golden surveys
-npm run test:full    # every golden survey plus a 6-month headless game (~10 min)
+npm test             # fast suite (~45 s on 4 cores): content checks, save/month determinism, grading, a spread of golden surveys
+npm run test:full    # every golden survey plus a 6-month headless game (~3 min on 4 cores)
 npm run sim -- 24 1  # headless game: 24 months, seed 1, prints the firm's books month by month
 npm run bot -- 9     # browser smoke test (Playwright for Python, pinned in tools/requirements.txt): plays dist/index.html
                      # for 9 rounds (about 3 months); exits 1 on script errors, broken text, a wrong cost or a failed par
                      # design. --dev plays src/ instead. CI runs it on every push.
 npm run balance      # balance report: answer variety and pacing over 5 seeds (~30 min on 4 cores; --quick ~6 min);
                      # --compare test/fixtures/balance-baseline.json to see it next to the baseline. Runs nightly in CI.
-npm run record-golden  # re-record test/fixtures/surveyor-golden.json after a deliberate rules change; prints which
+npm run record-golden  # re-record test/fixtures/surveyor-golden.json after a deliberate rules change (~2 min); prints which
                        # cases changed (--dry to only print). Put the summary in the commit message.
 ```
 
@@ -116,5 +116,5 @@ The build plan is `docs/PLAN.md`: what's next, the tests each phase must pass, a
 
 - Real callbacks (inspections, the rival, paradox calls) still escalate if the doors already cope (generateSolvedInner); street-change checks don't, by design.
 - A chained level's survey takes 5 to 20 seconds (it improves the route one change at a time, not every combination).
-- The survey is CPU-heavy (a few seconds per tender); the worker hides it, but a full golden run takes ~8 minutes.
+- The survey is CPU-heavy (a few seconds per tender); the worker hides it. Golden surveys run on every core (`surveyAll` in `test/golden-case.js`), so a full golden run is about 2 minutes on 4 cores; a headless game is still one month after another (10-25 s a month).
 - `prototype/` was removed in the restructure; the original single-file build is in the first commit if a comparison is needed.

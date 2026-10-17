@@ -54,18 +54,39 @@ async function runTask(t) {
 }
 if (!isMainThread) parentPort.on('message', async t => parentPort.postMessage(await runTask(t)));
 
-// ---- main: hand tasks to a pool of workers ----
-function pool(tasks, n, onDone) {
+// ---- main: one pool of workers for the games and the surveys ----
+// The games go first (they're the longest), and each game's surveys join the queue the moment that game
+// ends, so no thread sits idle while the last game plays. Results are put back in seed and month order,
+// so the report is the same however the work was scheduled.
+function runAll(seeds, months, sample, n, onProgress) {
   return new Promise((resolve, reject) => {
-    const results = []; let next = 0, done = 0;
-    if (!tasks.length) return resolve(results);
-    const workers = Array.from({ length: Math.min(n, tasks.length) }, () => new Worker(new URL(import.meta.url)));
-    const feed = w => { if (next < tasks.length) { const k = next++; w.k = k; w.postMessage(tasks[k]); } };
+    const queue = seeds.map(seed => ({ type: 'sim', seed, months }));
+    const sims = [], surveys = [], idle = [];
+    let busy = 0;
+    const workers = Array.from({ length: n }, () => new Worker(new URL(import.meta.url)));
+    const stop = () => workers.forEach(w => w.terminate());
+    const dispatch = () => {
+      while (queue.length && idle.length) { const w = idle.pop(); w.t = queue.shift(); busy++; w.postMessage(w.t); }
+      if (!queue.length && !busy) {
+        stop();
+        const at = seed => seeds.indexOf(seed);
+        resolve({ sims: sims.sort((a, b) => at(a.seed) - at(b.seed)), surveys: surveys.sort((a, b) => at(a.seed) - at(b.seed) || sample.indexOf(a.i) - sample.indexOf(b.i)) });
+      }
+    };
     for (const w of workers) {
-      w.on('message', r => { results[w.k] = r; done++; onDone(done, tasks.length); if (done === tasks.length) { workers.forEach(x => x.terminate()); resolve(results); } else feed(w); });
-      w.on('error', e => { workers.forEach(x => x.terminate()); reject(e); });
-      feed(w);
+      w.on('message', r => {
+        busy--;
+        if (w.t.type === 'sim') {
+          sims.push(r);
+          queue.push(...sample.filter(i => r.starts[i]).map(i => ({ type: 'survey', seed: r.seed, i, start: r.starts[i] })));
+        } else surveys.push(r);
+        onProgress(sims.length, seeds.length, surveys.length);
+        idle.push(w); dispatch();
+      });
+      w.on('error', e => { stop(); reject(e); });
+      idle.push(w);
     }
+    dispatch();
   });
 }
 
@@ -139,17 +160,14 @@ if (isMainThread && process.argv[1] && import.meta.url.endsWith(process.argv[1].
   const sample = quick ? [0, 2, 5, 7] : range(0, 11);   // months of play to survey (0 is the first May)
   const n = availableParallelism();
   const t0 = Date.now();
-  const tick = label => (d, all) => process.stderr.write(`\r${label} ${d}/${all}   `);
 
-  const sims = await pool(seeds.map(seed => ({ type: 'sim', seed, months })), n, tick('games'));
-  const tasks = sims.flatMap(s => sample.filter(i => s.starts[i]).map(i => ({ type: 'survey', seed: s.seed, i, start: s.starts[i] })));
-  const surveys = await pool(tasks, n, tick('surveys'));
+  const { sims, surveys } = await runAll(seeds, months, sample, n, (g, all, sv) => process.stderr.write(`\rgames ${g}/${all} · month surveys ${sv}   `));
   process.stderr.write('\n');
 
   const report = { when: new Date().toISOString().slice(0, 10), seeds, months, sample, ...summarise(sims, surveys, sample), failed: sims.flatMap(s => s.failed.map(f => ({ game: s.seed, ...f }))) };
   const base = opt('--compare') ? JSON.parse(readFileSync(opt('--compare'))) : null;
   printReport(report, base);
-  console.log(`\n${seeds.length} seeds · ${months} months · ${tasks.length * KINDS.length} first visits surveyed · ${((Date.now() - t0) / 1000).toFixed(0)}s on ${n} threads`);
+  console.log(`\n${seeds.length} seeds · ${months} months · ${surveys.length * KINDS.length} first visits surveyed · ${((Date.now() - t0) / 1000).toFixed(0)}s on ${n} threads`);
   for (const x of report.failed) console.log(`SURVEY FAILED (game seed ${x.game}): ${x.name} tier ${x.tier} month ${x.month} contract seed ${x.seed}: ${x.error}`);
   if (opt('--out')) { writeFileSync(opt('--out'), JSON.stringify(report, null, 1) + '\n'); console.log(`wrote ${opt('--out')}`); }
   if (report.pacing.some(p => p.parFails)) console.log('PAR FAILURES: the surveyor\'s own design did not pass (npm run sim -- <months> <seed> for details)');

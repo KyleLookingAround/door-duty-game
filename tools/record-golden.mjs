@@ -5,16 +5,14 @@
 // differently. Paste the summary into the commit message.
 // usage: node tools/record-golden.mjs [--dry]   (--dry: print the summary, don't write the file)
 import { readFileSync, writeFileSync } from 'node:fs';
-import { survey } from '../test/golden-case.js';
+import { surveyAll } from '../test/golden-case.js';
 
 const FILE = new URL('../test/fixtures/surveyor-golden.json', import.meta.url);
 const dry = process.argv.includes('--dry');
 const old = JSON.parse(readFileSync(FILE));
-const out = [];
-for (const [i, g] of old.entries()) {
-  out.push({ case: g.case, ...(await survey(g.case)) });
-  process.stdout.write(`\r${i + 1}/${old.length}`);
-}
+// every case at once, on worker threads
+const results = await surveyAll(old.map(g => g.case), { onDone: (d, n) => process.stdout.write(`\r${d}/${n}`) });
+const out = old.map((g, i) => ({ case: g.case, ...results[i] }));
 process.stdout.write('\n');
 
 // what changed, case by case: twists, par, cost, goals, fee and budget
