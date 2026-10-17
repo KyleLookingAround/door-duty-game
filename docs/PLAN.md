@@ -91,7 +91,12 @@ How to use this page: work the phases in order. Each phase lists the work, the a
 ### Phase 2: pacing and economy
 
 **Work**
-1. D5: spread the streets over 6–12 months instead of 4: Market Square opens around month 6, Riverside around month 12. Levers: raise the street thresholds, award stars more slowly, let stars fade while a callback waits, and mastery stars (section 4.2) as a steady extra source.
+1. D5: **each street takes 6–12 months.** Today the High Street and Market Square are both done by month 4. A strong player moves on after about 6 months, a weaker one after about 12; the difference comes from how well they play and which research they pick. So Market Square opens between months 6 and 12, and Riverside 6–12 months after that (between months 12 and 24).
+   - **Street standing, not total stars.** Each street opens on standing earned on the street before it: the stars from every job signed there (callbacks, research calls and repeat work count, not just each client's best), plus mastery stars. Today's single 3★ per client caps out in a few months; counting every job keeps standing growing for the whole stay.
+   - **Skill moves you faster.** ★★★ work earns standing fastest. Doors with room to spare ride out street changes, and those clients pay more and call with bigger work. A 1★ player still progresses, just more slowly.
+   - **Research picks move you faster.** Each street's entry needs a few mastered techs from a short list (for example any 3 of 5), and its clients ask for particular branches through enquiries and research calls. Research what this street's clients want and the work and stars come sooner. Research nobody here needs, and you wait.
+   - **Enough work to fill 6–12 months.** Street changes, research calls, enquiries, the market study and advertising keep each street busy. Clients come back at a higher tier after a while, with bigger jobs.
+   - **A floor and a ceiling.** No street opens before 6 months on the last one. At 12 months it opens anyway: the town grows regardless, but only some of its clients will talk to you until your standing catches up. Nobody is stuck.
 2. D6: give money a use. Monthly research costs, refinements and the Research lab (section 4), plus **advertising**: on the Company sheet, pay to bring in a tender this month, with the price rising for each one in the same month. The Sales network node makes it cheaper. It's the paid, immediate version of the free one-month market study. (Rushing research and landmark buy-ins were considered and left out.)
 3. **The research rework** (section 4): research never stops, queues, the market study, mastery, refinements, the five-branch layout, paying monthly, and three new nodes (Crowd counters, Sales network, Research lab). Mastery needs `c.lesson` from Phase 1. The other new nodes come in Phases 1, 4 and 5, with what they open.
 
@@ -99,7 +104,7 @@ How to use this page: work the phases in order. Each phase lists the work, the a
 
 **Tests that must pass:** the pacing bands (layer 4) on 4 seeds; the research tests (layers 1 and 3).
 
-**Done when** the sim shows steady reputation growth for about a year, cash stays meaningful at month 12, no bench is ever idle at month end on any seed, and every finished tech gets its lesson job within a few months.
+**Done when** a strong sim player opens each street after about 6 months and a weak one after about 12, with nobody under 6 or over 12, cash stays meaningful at month 12, no bench is ever idle at month end on any seed, and every finished tech gets its lesson job within a few months.
 
 ### Phase 3: UX pass
 
@@ -241,7 +246,7 @@ To stop the one-client techs paying off only once, each also gets a second home.
 
 Refinements: **Supplier contract** levels (hardware discount, capped), **Crew training** levels (fitting discount), **Service plans** levels (maintenance).
 
-**Totals.** 32 one-off nodes (19 of today's techs plus 13 new; the other 4 become refinements), plus the market study, roughly 75–85 bench-months. With 1 bench, then 2, then 3 with the lab, the tree finishes around months 30–36 of play, with mastery and refinements running alongside and after. The pacing bands decide the final numbers.
+**Totals.** 32 one-off nodes (19 of today's techs plus 13 new; the other 4 become refinements), plus the market study, roughly 75–85 bench-months. With 1 bench, then 2, then 3 with the lab, the tree finishes around months 30–36 of play. That's about when a typical player has spent their 6–12 months on Riverside, and mastery and refinements carry on after. The pacing bands decide the final numbers.
 
 ### 4.4 Architecture
 
@@ -297,7 +302,7 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 - Each research call: par uses the tech; the client's design before the call fails the lesson goal; a design without the tech can't pass.
 - Each Riverside level varies across seeds.
 
-**4. Pacing bands** (in `test:full`): the sim on 4 seeds for 18 months, asserting ranges set once Phase 2 settles. For example: under 25★ at month 4, Market Square open around month 6, Riverside around month 12, cash under a cap at month 12, no more than 2 quiet months in a row, every bench busy at every month end. The sim's policy has to obey the research rule too (`tools/sim.mjs` fills benches only when it has spare cash today). Print a short table so balance changes show as a diff in review.
+**4. Pacing bands** (in `test:full`): the sim on 4 seeds for 30 months, with two player styles. **Strong**: ★★★ designs and research that matches what the street's clients want. **Weak**: 1★ designs (par plus an unneeded extra) and cheapest-first research. Assert each street opens after 6–8 months for the strong player and 10–12 for the weak one, never under 6 or over 12, and that the 12-month fallback only ever triggers for the weak player. Also: cash under a cap at month 12, no more than 2 quiet months in a row, every bench busy at every month end. Both sim policies have to obey the research rule too (`tools/sim.mjs` fills benches only when it has spare cash today). Print a short table so balance changes show as a diff in review.
 
 **5. Browser checks** (extend `tools/bot.py`)
 - Text sweep: fail on "undefined", "NaN", "[object" or "£-" on any screen the bot visits.
@@ -330,6 +335,7 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 | Brief, result and hint text as pure data in `game/briefs.js` | 1 | Wording can be tested; ends "undefined"-style bugs (B2, B5) |
 | `makeContract` in explicit steps; `c.lesson` on every job | 1 | Required twists can't be evicted (B3); the surveyor and tests can check lessons (D3) |
 | Balance numbers in `content/balance.js`; `simulate()` overrides | 2 | Tuning becomes data edits; sweeps without code changes |
+| Street standing (stars from every job on a street, plus mastery stars) and per-street entry lists in `game/` and `content/`; the 12-month fallback | 2 | Each street takes 6–12 months, set by skill and research picks |
 | `benchesFilled(S)` in `game/`; bench queues, monthly payments, `S.mastered` and refinement levels in the save (`SAVE_VERSION` bump, owned techs migrate as mastered) | 2 | Research never stops; mastery gates landmarks; one rule the page, sim and bot all share |
 | One `TECH` record per tech (text, lesson, calls, lesson goal, kind, levels, what it opens); docs tables generated from it | 2 | Ends three hand-synced sources and the drifting design page |
 | Survey worker pool, pre-surveying, chain time cap | 3 | Survey waits |
@@ -345,7 +351,7 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 
 Decided by the owner, October 2026:
 
-1. **Pacing:** reach every street in 6–12 months of play. Market Square around month 6, Riverside around month 12. The research tree runs on to about months 30–36.
+1. **Pacing:** each street takes 6–12 months. The range comes from how well the player plays and which research they pick. Market Square opens between months 6 and 12, Riverside between 12 and 24; the research tree runs to about months 30–36.
 2. **Money:** monthly research costs, refinements, the Research lab and advertising. No rushing research and no landmark buy-ins.
 3. **Research payment:** monthly while a project runs.
 4. **Mastery:** gates landmarks and deeper nodes.
