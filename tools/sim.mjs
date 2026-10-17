@@ -15,7 +15,8 @@ import { TECH } from '../src/content/tech.js';
 import { PREMISES, STAFF } from '../src/content/company.js';
 import { MONTHS } from '../src/game/contracts.js';
 
-export async function simulate({ months = 24, seed = 1, log = () => {} } = {}) {
+// onMonth(S, row) is called after each month ends, with the save as it stands for the next one.
+export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth = () => {} } = {}) {
   const S = freshState(seed);
   const tally = { jobs: 0, parFails: [], falseAlarms: 0, unsurveyable: 0, skipped: 0, months: [] };
   for (let m = 0; m < months; m++) {
@@ -25,7 +26,9 @@ export async function simulate({ months = 24, seed = 1, log = () => {} } = {}) {
       if ((p.status !== 'open' && p.status !== 'callback' && p.status !== 'checking') || !p.contract) continue;
       let c = p.contract;
       if (!c.solved) {
-        c = await generateSolved(c, techOf(S), S.recent || []);
+        // a survey that can't produce a fair job (or throws): the page draws a fresh tender, and so does this
+        const job = { name: p.name, kind: c.kind, tier: c.tier, month: c.month, seed: c.seed, opts: c.opts };
+        try { c = await generateSolved(c, techOf(S), S.recent || []); } catch (err) { c = null; tally.failed = [...(tally.failed || []), { ...job, error: String(err && err.message || err) }]; }
         if (!c) { p.contract = null; tally.unsurveyable++; continue; }
         if (p.status === 'checking') { if (settleCheck(S, p, c) === 'coped') { tally.coped = (tally.coped || 0) + 1; continue; } tally.calls = (tally.calls || 0) + 1; }
         else if (p.status === 'callback' && c.existing && c.par.cost === 0) { p.status = 'fitted'; p.contract = null; p.reason = null; tally.falseAlarms++; continue; }
@@ -61,6 +64,7 @@ export async function simulate({ months = 24, seed = 1, log = () => {} } = {}) {
     tally.asked = (tally.asked || 0) + (rpt.enquiry.fresh ? 1 : 0); tally.won = (tally.won || 0) + rpt.enquiry.won.length; tally.lapsed = (tally.lapsed || 0) + rpt.enquiry.lapsed.length;
     const row = { month: label, cash: S.cash, rep: rep(S), jobs: S.jobs, fitted: S.plots.filter(p => p.status === 'fitted').length, net: rpt.net, calls: rpt.calls.length };
     tally.months.push(row);
+    onMonth(S, row);
     log(`${row.month.padEnd(9)} cash ${String(Math.round(row.cash)).padStart(8)}  rep ${String(row.rep).padStart(3)}★  jobs ${String(row.jobs).padStart(3)}  fitted ${String(row.fitted).padStart(2)}  net ${String(row.net).padStart(7)}  callbacks ${row.calls}`);
   }
   return { S, tally };
@@ -73,6 +77,8 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
   const { S, tally } = await simulate({ months: nums[0] || 24, seed: nums[1] || 1, log: quiet ? () => {} : console.log });
   console.log(`\ninside jobs: ${JSON.stringify(tally.inside || {})}`);
   console.log(`enquiries: ${tally.asked || 0} asked · ${tally.won || 0} ready in time · ${tally.lapsed || 0} lapsed · ${tally.quiet || 0} months with nothing on the table`);
+  for (const f of tally.failed || []) console.log(`SURVEY FAILED: ${f.name} (${f.kind}) tier ${f.tier} month ${f.month} seed ${f.seed}: ${f.error} ${JSON.stringify(f.opts)}`);
   console.log(`\n${tally.jobs} jobs · rep ${rep(S)}★ · cash ${Math.round(S.cash)} · ${tally.coped || 0} clients coped with street changes · ${tally.calls || 0} called back · ${tally.falseAlarms} false alarms · ${tally.unsurveyable} unsurveyable · ${tally.skipped} skipped · ${((Date.now() - t0) / 1000).toFixed(0)}s`);
-  if (tally.parFails.length) { console.log('PAR FAILURES (the surveyor\'s own design did not pass):\n  ' + tally.parFails.join('\n  ')); process.exit(1); }
+  if (tally.parFails.length) console.log('PAR FAILURES (the surveyor\'s own design did not pass):\n  ' + tally.parFails.join('\n  '));
+  if (tally.parFails.length || (tally.failed || []).length) process.exit(1);
 }

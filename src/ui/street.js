@@ -42,8 +42,11 @@ export function renderStreet() {
   $('sCash').textContent = kmoney(S.cash);
   $('sRep').textContent = rep(S) + '★';
   $('sMonth').textContent = `${MONTHS[S.month % 12]} ${String(S.year).slice(2)}`;
-  const inc = monthlyIncome(S);
-  $('incomeLine').textContent = inc ? `${money(inc)} a month in maintenance` : S.plots.some(p => p.status === 'fitted') ? 'No maintenance coming in' : 'No contracts fitted yet';
+  // one street open: the firm's maintenance. More than one: this street's, and the firm's in all
+  const all = monthlyIncome(S), here = monthlyIncome(S, S.street || 'high');
+  $('incomeLine').textContent = !S.marketOpen
+    ? (all ? `${money(all)} a month in maintenance` : S.plots.some(p => p.status === 'fitted') ? 'No maintenance coming in' : 'No contracts fitted yet')
+    : `${here ? `${money(here)} a month from here` : 'Nothing from this street yet'} · ${money(all)} in all`;
   $('cal').innerHTML = [0, 1, 2].map(k => {
     const m = S.month + k, ev = eventOf(m), ch = (S.changes || []).find(x => x.month === m);
     // a street change coming: what, and where (the clients there will have their doors checked)

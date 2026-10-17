@@ -13,7 +13,8 @@
     "test:full": "GOLDEN=full node --test test/*.test.js",
     "sim": "node tools/sim.mjs",
     "bot": "python3 tools/bot.py",
-    "record-golden": "node tools/record-golden.mjs"
+    "record-golden": "node tools/record-golden.mjs",
+    "balance": "node tools/balance.mjs"
   },
   "engines": {
     "node": ">=20"

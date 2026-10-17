@@ -21,7 +21,8 @@ export const loyalty = p => 1 + 0.05 * Math.min(3, p.coped || 0);   // each stre
 export const upkeep = (S, p) => Math.round((p.fee * 0.007 * p.stars + 100) * (S.staff && S.staff.engineer ? 1.4 : 1) * (p.green ? 1.15 : 1) * (p.cert ? 1.1 : 1) * loyalty(p) * wearFactor(p) / 50) * 50;
 // a client calling about new research (a paradox callback) is still happy and still pays
 export const paying = p => p.status === 'fitted' || p.status === 'checking' || (p.status === 'callback' && p.reason === 'paradox');
-export const monthlyIncome = S => S.plots.filter(paying).reduce((a, p) => a + upkeep(S, p), 0);
+// maintenance coming in each month: the whole firm's, or one street's
+export const monthlyIncome = (S, street) => S.plots.filter(p => paying(p) && (!street || streetOf(p) === street)).reduce((a, p) => a + upkeep(S, p), 0);
 // doors wear with traffic: revolving doors and gates fastest, swing doors slowest
 export const WEAR = { revolve: 0.1, slider: 0.08, swing: 0.06, gates: 0.1 };
 export function wearRate(S, p) {

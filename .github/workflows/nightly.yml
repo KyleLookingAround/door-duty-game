@@ -1,0 +1,60 @@
+# Nightly: the slow checks that don't fit in every push. Every golden survey and a 6-month game, the balance
+# report (variety and pacing over several seeds, next to the saved baseline: the game as it stood after the last
+# accepted phase), and the browser bot for a year.
+name: Nightly
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run test:full
+
+  balance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Balance report against the baseline
+        run: npm run balance -- --compare test/fixtures/balance-baseline.json --out balance.json | tee balance.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: balance-report
+          path: |
+            balance.txt
+            balance.json
+
+  bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install -r tools/requirements.txt
+          python -m playwright install --with-deps chromium
+      - name: Play the built page for a year
+        working-directory: ${{ runner.temp }}
+        run: python3 ${{ github.workspace }}/tools/bot.py 36

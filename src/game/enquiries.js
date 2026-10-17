@@ -4,7 +4,7 @@
 // for the months when nothing is on the table.
 import { TECH } from '../content/tech.js';
 import { PREMISES } from '../content/company.js';
-import { PARADOX_CALLS } from '../content/paradoxes.js';
+import { PARADOX_CALLS, callFits } from '../content/paradoxes.js';
 import { prem, rep, rivalActive, missingNeeds } from './economy.js';
 import { random, randomInt } from './state.js';
 import { kmoney } from '../util/format.js';
@@ -46,7 +46,7 @@ export function settleEnquiries(S, quiet) {
     for (const t of TECH) {
       if (!canResearch(S, t) || S.plots.some(p => p.enquiry && p.enquiry.tech === t.key) || t.price > S.cash + 40000) continue;
       (PARADOX_CALLS[t.key] || []).forEach((def, j) => {
-        for (const p of S.plots) if (p.status === 'fitted' && !p.broken && !p.enquiry && (p.askAfter || 0) <= S.month && def.kinds.includes(p.kind)) opts.push({ t, j, p, def });
+        for (const p of S.plots) if (p.status === 'fitted' && !p.broken && !p.enquiry && (p.askAfter || 0) <= S.month && callFits(def, p)) opts.push({ t, j, p, def });
       });
     }
     if (opts.length) {
@@ -76,7 +76,7 @@ export function advice(S) {
       if (t) return { tab: 'research', text: `Research ${t.name}: ${miss.length > 1 ? `${p.name} needs it (and ${miss.length - 1} more) before they'll talk` : `${p.name} will talk to you once you have it`}${short(t)}.` };
     }
     // research a client you've fitted would call about
-    const calls = TECH.filter(t => canResearch(S, t)).map(t => ({ t, who: (PARADOX_CALLS[t.key] || []).flatMap(d => S.plots.filter(p => p.status === 'fitted' && d.kinds.includes(p.kind)))[0] })).filter(x => x.who).sort((a, b) => a.t.price - b.t.price);
+    const calls = TECH.filter(t => canResearch(S, t)).map(t => ({ t, who: (PARADOX_CALLS[t.key] || []).flatMap(d => S.plots.filter(p => p.status === 'fitted' && callFits(d, p)))[0] })).filter(x => x.who).sort((a, b) => a.t.price - b.t.price);
     if (calls.length) { const { t, who } = calls[0]; return { tab: 'research', text: `Research ${t.name} (${kmoney(t.price)}): clients like ${who.name} would call with work for it${short(t)}.` }; }
   }
   const next = PREMISES[(S.premises || 0) + 1];

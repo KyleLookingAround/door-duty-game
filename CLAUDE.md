@@ -13,8 +13,13 @@ npm run watch        # rebuild on change
 npm test             # fast suite (~2 min): content checks, save/month determinism, grading, a spread of golden surveys
 npm run test:full    # every golden survey plus a 6-month headless game (~10 min)
 npm run sim -- 24 1  # headless game: 24 months, seed 1, prints the firm's books month by month
-npm run bot -- 12    # browser smoke test (Playwright, Python): plays dist/index.html for 12 months; add --dev for src/
-npm run record-golden  # re-record test/fixtures/surveyor-golden.json after a deliberate rules change
+npm run bot -- 9     # browser smoke test (Playwright for Python, pinned in tools/requirements.txt): plays dist/index.html
+                     # for 9 rounds (about 3 months); exits 1 on script errors, broken text, a wrong cost or a failed par
+                     # design. --dev plays src/ instead. CI runs it on every push.
+npm run balance      # balance report: answer variety and pacing over 5 seeds (~30 min on 4 cores; --quick ~6 min);
+                     # --compare test/fixtures/balance-baseline.json to see it next to the baseline. Runs nightly in CI.
+npm run record-golden  # re-record test/fixtures/surveyor-golden.json after a deliberate rules change; prints which
+                       # cases changed (--dry to only print). Put the summary in the commit message.
 ```
 
 ## Layout
@@ -32,6 +37,8 @@ src/
     changes.js           street changes: the causes of ordinary callbacks
   game/                  rules, pure functions over the save S. No DOM.
     contracts.js         makeContract, the surveyor (generateSolved / solveContract), runHeadless, prices
+    designs.js           new and copied designs (always deep copies), defaultSlot
+    briefs.js            brief wording that depends on the job: job labels, why a client called, stage twists
     stagejobs.js         inside jobs: makeStageContract, solveStage (the surveyor for stages), runStage, result rows
     economy.js           fees, upkeep, wear, insurance, reputation, unlock checks
     jobs.js              grade a result, signOff, and the firm's decisions (research, hire, premises, service)
@@ -49,9 +56,11 @@ src/
     coach.js survey.js dom.js
   worker.js              the survey worker: runs generateSolved off the main thread
   shell.html             markup and CSS; the build fills <!--CORE--> and <!--APP-->
-tools/  build.mjs sim.mjs bot.py record-golden.mjs
-test/   *.test.js, fixtures/surveyor-golden.json
+tools/  build.mjs sim.mjs bot.py (requirements.txt) record-golden.mjs balance.mjs
+test/   *.test.js, fixtures/surveyor-golden.json, fixtures/balance-baseline.json (after the last phase), balance-before-phase0.json
+.github/workflows/  pages.yml (test, build, bot, deploy on main), nightly.yml (full tests, balance, a year of bot)
 docs/game-loop.html      the design page: the game loop, systems and roadmap
+docs/PLAN.md             the build plan: verified findings, phases, testing and architecture changes
 ```
 
 ## House rules (the bundler enforces 1 and 2)
@@ -63,6 +72,8 @@ docs/game-loop.html      the design page: the game loop, systems and roadmap
 5. **The surveyor is pinned by the golden test.** If a change alters which jobs are generated or how they solve, that's a rules change: re-record the fixture on purpose and say so in the commit.
 6. **Plots are saved by position.** Only append to `BUILDINGS`; bump `SAVE_VERSION` and add a step to `migrate()` when the save's shape changes.
 7. Player-facing text is British English, plain and short.
+8. **Rules and wording that depend on the job live in `game/` or `content/`, not `ui/`**, so tests can check them: design copies (`designs.js`), why a client called and twist wording (`briefs.js`), hints (`hintFor` in `jobs.js`), star rules (`STARS` in `guides.js`). `ui/` renders what they return.
+9. **Text must be true of the job in front of the player.** A hint names only hardware the job allows and the firm owns; a research call or enquiry only comes from a client its words fit (`fits` in `content/paradoxes.js`).
 
 ## Inside jobs (stages) and paradoxes
 
@@ -82,7 +93,7 @@ Door jobs are about the frontage. Inside jobs are about what happens behind it, 
 
 Rules: a stage must work fed (`sim.fed`, people come from `admit`) as well as on its own, because chained levels (`chain.js`) hand each stage's finished people to the next. Check the paradox numerically before wiring it up: `test/stages.test.js` asserts each one holds on average over several seeds.
 
-Clients get inside jobs three ways: a paradox callback when research finishes (`content/paradoxes.js`, see `endMonth`), a building whose `jobs` list is all inside work (Riverside), or a normal callback about an inside setup they already have (`p.inside`). A building can rename and retune a stage for itself (`tune: { queue: { name: 'Bag check', rate, params } }`) and set what's already there (`inside: { queue: { desks: 3 } }`).
+Clients get inside jobs three ways: a paradox callback when research finishes (`content/paradoxes.js`, see `endMonth`), a building whose `jobs` list is all inside work (Riverside), or a normal callback about an inside setup they already have (`p.inside`). A building can rename and retune a stage for itself (`tune: { queue: { name: 'Bag check', rate, params } }`), reword its twists (`tune: { queue: { twists: { payday: { label, text } } } }`, as the arena does) and set what's already there (`inside: { queue: { desks: 3 } }`).
 
 ## Callbacks
 
@@ -90,7 +101,7 @@ Ordinary callbacks are caused, not random. Each month a **street change** (`cont
 
 **Enquiries** keep research pulling: now and then (always, in a month with nothing on the table) a fitted client asks for work that needs a tech you could research now (`settleEnquiries`, from `PARADOX_CALLS`). `p.enquiry = { tech, j, by, text, bonus }`. If the tech is in by `by`, they call with that job and `signOff` pays the bonus (30% of the research price); if not, they stop waiting: to the rival once it's active, otherwise a step of loyalty. `advice(S)` suggests the one thing that would bring in work; the month report and the empty ledger show it.
 
-Other callbacks: paradox calls when research finishes (`content/paradoxes.js`), failed inspections, and the rival's botched work coming back. A new firm starts in May; first visits are warm in the warm months and there is no heatwave in the first summer, so temperature arrives in the autumn.
+Other callbacks: paradox calls when research finishes (`content/paradoxes.js`), failed inspections, and the rival's botched work coming back. A research call's problem travels as `opts.need` (from `p.callTwist`): `makeContract` puts it in before any random twist, and the surveyor's retries never drop it. A new firm starts in May; first visits are warm in the warm months and there is no heatwave in the first summer, so temperature arrives in the autumn.
 
 ## Adding a building
 
@@ -99,6 +110,9 @@ Other callbacks: paradox calls when research finishes (`content/paradoxes.js`), 
 3. `npm test` (the content test checks fields and builds the site at every width), then look at it: `npm run dev`.
 
 ## Known issues / TODO
+
+The build plan is `docs/PLAN.md`: what's next, the tests each phase must pass, and the decisions already made.
+- `designSig` uses a door type's first letter, so swing and sliding doors share `s`: the anti-repeat rule can't tell them apart (Phase 1).
 
 - Real callbacks (inspections, the rival, paradox calls) still escalate if the doors already cope (generateSolvedInner); street-change checks don't, by design.
 - A chained level's survey takes 5 to 20 seconds (it improves the route one change at a time, not every combination).

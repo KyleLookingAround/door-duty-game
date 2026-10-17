@@ -33,7 +33,7 @@ export function refreshPlots(S) {
         // a callback about an inside job, a chained level, or the doors (with the paradox's twist, if any)
         const key = p.callChain ? 'chain:' + p.callChain.join('+') : p.callStage;
         const existing = key && p.inside && p.inside[key];
-        opts = { callback: p.reason, existing: key ? existing || undefined : p.install, extra: p.callTwist ? [p.callTwist] : [] };
+        opts = { callback: p.reason, existing: key ? existing || undefined : p.install, need: p.callTwist ? [p.callTwist] : [] };
         // a street change being checked: no escalating it until the old setup fails; the check is honest
         if (p.status === 'checking') { opts.check = true; opts.plain = true; }
         if (p.callChain) Object.assign(opts, { stage: 'chain', chain: p.callChain });

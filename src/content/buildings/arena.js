@@ -8,7 +8,26 @@ export default {
   jobs: [{ chain: ['queue', 'escalator', 'bottleneck'] }, { stage: 'bottleneck' }],
   inside: { queue: { desks: 4 }, escalator: { count: 2, rule: 'walk' }, bottleneck: { openings: 4 } },
   // the arena's versions of each stage: a quick bag check at many desks, mid-height escalators, a sell-out crowd
-  tune: { queue: { name: 'Bag check', about: 'Security check every bag at a row of desks. Most are quick; a few people need searching.', rate: 2.9, params: { service: 2.4, slow: 0.08, max: 12 } }, escalator: { params: { length: 16, walkers: 0.3, crush: 45 } }, bottleneck: { params: { through: 1.75 } } },
+  tune: {
+    queue: {
+      name: 'Bag check', about: 'Security check every bag at a row of desks. Most are quick; a few people need searching.', rate: 2.9, params: { service: 2.4, slow: 0.08, max: 12 },
+      // the bank's queue twists, in concert words (same effects)
+      twists: {
+        payday: { label: 'Late doors', text: 'The doors open late and everyone arrives at once: a third more fans at the desks.' },
+        mortgages: { label: 'Strict search', text: 'Security are searching properly tonight: nearly one fan in four takes three times as long.' },
+        pensions: { label: 'Classic act', text: 'A band from the seventies: a third of the fans are older and take their time.' },
+      },
+    },
+    escalator: {
+      params: { length: 16, walkers: 0.3, crush: 45 },
+      twists: {
+        rush: { label: 'Last-minute rush', text: 'Most fans turn up just before the show: a quarter more people than usual.' },
+        seniors: { label: 'Older fans', text: 'A quarter of the crowd won\'t walk up whatever the rule says.' },
+        shoppers: { label: 'Coats and merch', text: 'Fans with coats and merchandise bags stand still on the steps.' },
+      },
+    },
+    bottleneck: { params: { through: 1.75 } },
+  },
   site() {},
   floor: { base: '#26232b', kind: 'tiles', size: 1.0, line: 'rgba(0,0,0,.3)' },
   look: { w: 280, h: 176, base: '#3d3550', trim: '#e2d8f0', sign: 'APOLLO ARENA', labelTop: 30, hoarding: 'SOLD OUT · OPENING NIGHT' },
