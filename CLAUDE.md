@@ -57,7 +57,7 @@ src/
   worker.js              the survey worker: runs generateSolved off the main thread
   shell.html             markup and CSS; the build fills <!--CORE--> and <!--APP-->
 tools/  build.mjs sim.mjs bot.py (requirements.txt) record-golden.mjs balance.mjs
-test/   *.test.js, fixtures/surveyor-golden.json, fixtures/balance-baseline.json
+test/   *.test.js, fixtures/surveyor-golden.json, fixtures/balance-baseline.json (after the last phase), balance-before-phase0.json
 .github/workflows/  pages.yml (test, build, bot, deploy on main), nightly.yml (full tests, balance, a year of bot)
 docs/game-loop.html      the design page: the game loop, systems and roadmap
 docs/PLAN.md             the build plan: verified findings, phases, testing and architecture changes

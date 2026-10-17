@@ -1,5 +1,6 @@
 # Nightly: the slow checks that don't fit in every push. Every golden survey and a 6-month game, the balance
-# report (variety and pacing over several seeds, next to the saved baseline), and the browser bot for a year.
+# report (variety and pacing over several seeds, next to the saved baseline: the game as it stood after the last
+# accepted phase), and the browser bot for a year.
 name: Nightly
 
 on:

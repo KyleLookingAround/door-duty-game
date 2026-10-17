@@ -1,0 +1,520 @@
+{
+ "when": "2026-10-17",
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "months": 24,
+ "sample": [
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11
+ ],
+ "variety": [
+  {
+   "i": 0,
+   "name": "May",
+   "jobs": 60,
+   "answers": 6,
+   "top": "Wi+Wo",
+   "topShare": 0.38,
+   "revolving": 0.25,
+   "ranked": [
+    [
+     "Wi+Wo",
+     23
+    ],
+    [
+     "L",
+     20
+    ],
+    [
+     "L+R",
+     5
+    ],
+    [
+     "R+R+R",
+     5
+    ],
+    [
+     "L+R+R",
+     5
+    ]
+   ]
+  },
+  {
+   "i": 1,
+   "name": "Jun",
+   "jobs": 60,
+   "answers": 6,
+   "top": "Wi+Wo",
+   "topShare": 0.42,
+   "revolving": 0.25,
+   "ranked": [
+    [
+     "Wi+Wo",
+     25
+    ],
+    [
+     "L",
+     20
+    ],
+    [
+     "R+Wi+Wo",
+     5
+    ],
+    [
+     "L+L+R",
+     5
+    ],
+    [
+     "R+R+R",
+     4
+    ]
+   ]
+  },
+  {
+   "i": 2,
+   "name": "Jul",
+   "jobs": 60,
+   "answers": 6,
+   "top": "Wi+Wo",
+   "topShare": 0.37,
+   "revolving": 0.25,
+   "ranked": [
+    [
+     "Wi+Wo",
+     22
+    ],
+    [
+     "L",
+     21
+    ],
+    [
+     "R+Wi+Wo",
+     5
+    ],
+    [
+     "R+R+R",
+     5
+    ],
+    [
+     "L+L+R",
+     5
+    ]
+   ]
+  },
+  {
+   "i": 3,
+   "name": "Aug",
+   "jobs": 60,
+   "answers": 8,
+   "top": "Wi+Wo",
+   "topShare": 0.37,
+   "revolving": 0.25,
+   "ranked": [
+    [
+     "Wi+Wo",
+     22
+    ],
+    [
+     "L",
+     20
+    ],
+    [
+     "R+Wi+Wo",
+     5
+    ],
+    [
+     "L+L+R",
+     5
+    ],
+    [
+     "R+R+R",
+     3
+    ]
+   ]
+  },
+  {
+   "i": 4,
+   "name": "Sep",
+   "jobs": 60,
+   "answers": 8,
+   "top": "Wi+Wo",
+   "topShare": 0.4,
+   "revolving": 0.23,
+   "ranked": [
+    [
+     "Wi+Wo",
+     24
+    ],
+    [
+     "L",
+     20
+    ],
+    [
+     "L+R",
+     5
+    ],
+    [
+     "L+R+R",
+     4
+    ],
+    [
+     "R+R+R",
+     3
+    ]
+   ]
+  },
+  {
+   "i": 5,
+   "name": "Oct",
+   "jobs": 60,
+   "answers": 7,
+   "top": "R+R",
+   "topShare": 0.33,
+   "revolving": 0.78,
+   "ranked": [
+    [
+     "R+R",
+     20
+    ],
+    [
+     "R",
+     11
+    ],
+    [
+     "L+R+R",
+     9
+    ],
+    [
+     "L",
+     8
+    ],
+    [
+     "Wi+Wo",
+     5
+    ]
+   ]
+  },
+  {
+   "i": 6,
+   "name": "Nov",
+   "jobs": 60,
+   "answers": 8,
+   "top": "R+R",
+   "topShare": 0.25,
+   "revolving": 0.65,
+   "ranked": [
+    [
+     "R+R",
+     15
+    ],
+    [
+     "L",
+     14
+    ],
+    [
+     "R",
+     8
+    ],
+    [
+     "L+R+R",
+     7
+    ],
+    [
+     "L+R",
+     6
+    ]
+   ]
+  },
+  {
+   "i": 7,
+   "name": "Dec",
+   "jobs": 60,
+   "answers": 8,
+   "top": "R+R",
+   "topShare": 0.3,
+   "revolving": 0.65,
+   "ranked": [
+    [
+     "R+R",
+     18
+    ],
+    [
+     "L",
+     14
+    ],
+    [
+     "L+R+R",
+     8
+    ],
+    [
+     "Wi+Wo",
+     5
+    ],
+    [
+     "L+R",
+     5
+    ]
+   ]
+  },
+  {
+   "i": 8,
+   "name": "Jan",
+   "jobs": 60,
+   "answers": 8,
+   "top": "R+R",
+   "topShare": 0.28,
+   "revolving": 0.65,
+   "ranked": [
+    [
+     "R+R",
+     17
+    ],
+    [
+     "L",
+     14
+    ],
+    [
+     "L+R+R",
+     8
+    ],
+    [
+     "R",
+     8
+    ],
+    [
+     "Wi+Wo",
+     5
+    ]
+   ]
+  },
+  {
+   "i": 9,
+   "name": "Feb",
+   "jobs": 60,
+   "answers": 8,
+   "top": "R+R",
+   "topShare": 0.32,
+   "revolving": 0.65,
+   "ranked": [
+    [
+     "R+R",
+     19
+    ],
+    [
+     "L",
+     14
+    ],
+    [
+     "L+R+R",
+     8
+    ],
+    [
+     "Wi+Wo",
+     5
+    ],
+    [
+     "L+R",
+     5
+    ]
+   ]
+  },
+  {
+   "i": 10,
+   "name": "Mar",
+   "jobs": 60,
+   "answers": 8,
+   "top": "L",
+   "topShare": 0.48,
+   "revolving": 0.38,
+   "ranked": [
+    [
+     "L",
+     29
+    ],
+    [
+     "R+R",
+     8
+    ],
+    [
+     "L+R",
+     6
+    ],
+    [
+     "Wi+Wo",
+     5
+    ],
+    [
+     "L+R+R",
+     5
+    ]
+   ]
+  },
+  {
+   "i": 11,
+   "name": "Apr",
+   "jobs": 60,
+   "answers": 6,
+   "top": "L",
+   "topShare": 0.6,
+   "revolving": 0.25,
+   "ranked": [
+    [
+     "L",
+     36
+    ],
+    [
+     "Wi+Wo",
+     5
+    ],
+    [
+     "R+R",
+     5
+    ],
+    [
+     "L+R",
+     5
+    ],
+    [
+     "L+R+R",
+     5
+    ]
+   ]
+  }
+ ],
+ "pacing": [
+  {
+   "seed": 1,
+   "months": 24,
+   "marketAt": 3,
+   "riversideAt": 4,
+   "rep4": 32,
+   "rep12": 35,
+   "rep24": 41,
+   "cash12": 232800,
+   "cash24": 649605,
+   "jobsPerMonth": 2.5,
+   "idleBenchMonths": 6,
+   "quiet": 1,
+   "parFails": 0,
+   "failedSurveys": 0
+  },
+  {
+   "seed": 2,
+   "months": 24,
+   "marketAt": 3,
+   "riversideAt": 4,
+   "rep4": 33,
+   "rep12": 35,
+   "rep24": 45,
+   "cash12": 215205,
+   "cash24": 417615,
+   "jobsPerMonth": 2.1,
+   "idleBenchMonths": 5,
+   "quiet": 2,
+   "parFails": 0,
+   "failedSurveys": 0
+  },
+  {
+   "seed": 3,
+   "months": 24,
+   "marketAt": 3,
+   "riversideAt": 4,
+   "rep4": 31,
+   "rep12": 36,
+   "rep24": 42,
+   "cash12": 391010,
+   "cash24": 772450,
+   "jobsPerMonth": 2.5,
+   "idleBenchMonths": 8,
+   "quiet": 1,
+   "parFails": 0,
+   "failedSurveys": 0
+  },
+  {
+   "seed": 4,
+   "months": 24,
+   "marketAt": 3,
+   "riversideAt": 4,
+   "rep4": 35,
+   "rep12": 36,
+   "rep24": 42,
+   "cash12": 177485,
+   "cash24": 257500,
+   "jobsPerMonth": 2,
+   "idleBenchMonths": 6,
+   "quiet": 1,
+   "parFails": 0,
+   "failedSurveys": 0
+  },
+  {
+   "seed": 5,
+   "months": 24,
+   "marketAt": 3,
+   "riversideAt": 4,
+   "rep4": 33,
+   "rep12": 36,
+   "rep24": 41,
+   "cash12": 285935,
+   "cash24": 705950,
+   "jobsPerMonth": 2.3,
+   "idleBenchMonths": 7,
+   "quiet": 2,
+   "parFails": 0,
+   "failedSurveys": 1
+  }
+ ],
+ "failed": [
+  {
+   "game": 5,
+   "name": "The Roxy",
+   "kind": "cinema",
+   "tier": 7,
+   "month": 13,
+   "seed": 85023,
+   "opts": {
+    "callback": "paradox",
+    "existing": [
+     {
+      "type": "swing",
+      "curtain": false,
+      "flow": "in",
+      "vestibule": false
+     },
+     {
+      "type": "swing",
+      "curtain": false,
+      "flow": "out",
+      "vestibule": false
+     }
+    ],
+    "extra": [
+     "drill"
+    ],
+    "tech": {
+     "mouth": true,
+     "padded": true,
+     "barriers": true,
+     "doorman": false,
+     "pillars": true
+    },
+    "event": "storm"
+   },
+   "error": "survey failed"
+  }
+ ]
+}

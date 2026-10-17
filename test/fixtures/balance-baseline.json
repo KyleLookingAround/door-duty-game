@@ -151,30 +151,30 @@
    "i": 4,
    "name": "Sep",
    "jobs": 60,
-   "answers": 8,
-   "top": "Wi+Wo",
-   "topShare": 0.4,
-   "revolving": 0.23,
+   "answers": 5,
+   "top": "L",
+   "topShare": 0.42,
+   "revolving": 0.17,
    "ranked": [
+    [
+     "L",
+     25
+    ],
     [
      "Wi+Wo",
      24
-    ],
-    [
-     "L",
-     20
     ],
     [
      "L+R",
      5
     ],
     [
-     "L+R+R",
-     4
+     "L+L+R",
+     5
     ],
     [
-     "R+R+R",
-     3
+     "W",
+     1
     ]
    ]
   },
@@ -182,29 +182,29 @@
    "i": 5,
    "name": "Oct",
    "jobs": 60,
-   "answers": 7,
-   "top": "R+R",
-   "topShare": 0.33,
-   "revolving": 0.78,
+   "answers": 6,
+   "top": "L",
+   "topShare": 0.63,
+   "revolving": 0.25,
    "ranked": [
     [
-     "R+R",
-     20
-    ],
-    [
-     "R",
-     11
-    ],
-    [
-     "L+R+R",
-     9
-    ],
-    [
      "L",
-     8
+     38
     ],
     [
      "Wi+Wo",
+     5
+    ],
+    [
+     "R+R",
+     5
+    ],
+    [
+     "L+R",
+     5
+    ],
+    [
+     "L+R+R",
      5
     ]
    ]
@@ -212,161 +212,6 @@
   {
    "i": 6,
    "name": "Nov",
-   "jobs": 60,
-   "answers": 8,
-   "top": "R+R",
-   "topShare": 0.25,
-   "revolving": 0.65,
-   "ranked": [
-    [
-     "R+R",
-     15
-    ],
-    [
-     "L",
-     14
-    ],
-    [
-     "R",
-     8
-    ],
-    [
-     "L+R+R",
-     7
-    ],
-    [
-     "L+R",
-     6
-    ]
-   ]
-  },
-  {
-   "i": 7,
-   "name": "Dec",
-   "jobs": 60,
-   "answers": 8,
-   "top": "R+R",
-   "topShare": 0.3,
-   "revolving": 0.65,
-   "ranked": [
-    [
-     "R+R",
-     18
-    ],
-    [
-     "L",
-     14
-    ],
-    [
-     "L+R+R",
-     8
-    ],
-    [
-     "Wi+Wo",
-     5
-    ],
-    [
-     "L+R",
-     5
-    ]
-   ]
-  },
-  {
-   "i": 8,
-   "name": "Jan",
-   "jobs": 60,
-   "answers": 8,
-   "top": "R+R",
-   "topShare": 0.28,
-   "revolving": 0.65,
-   "ranked": [
-    [
-     "R+R",
-     17
-    ],
-    [
-     "L",
-     14
-    ],
-    [
-     "L+R+R",
-     8
-    ],
-    [
-     "R",
-     8
-    ],
-    [
-     "Wi+Wo",
-     5
-    ]
-   ]
-  },
-  {
-   "i": 9,
-   "name": "Feb",
-   "jobs": 60,
-   "answers": 8,
-   "top": "R+R",
-   "topShare": 0.32,
-   "revolving": 0.65,
-   "ranked": [
-    [
-     "R+R",
-     19
-    ],
-    [
-     "L",
-     14
-    ],
-    [
-     "L+R+R",
-     8
-    ],
-    [
-     "Wi+Wo",
-     5
-    ],
-    [
-     "L+R",
-     5
-    ]
-   ]
-  },
-  {
-   "i": 10,
-   "name": "Mar",
-   "jobs": 60,
-   "answers": 8,
-   "top": "L",
-   "topShare": 0.48,
-   "revolving": 0.38,
-   "ranked": [
-    [
-     "L",
-     29
-    ],
-    [
-     "R+R",
-     8
-    ],
-    [
-     "L+R",
-     6
-    ],
-    [
-     "Wi+Wo",
-     5
-    ],
-    [
-     "L+R+R",
-     5
-    ]
-   ]
-  },
-  {
-   "i": 11,
-   "name": "Apr",
    "jobs": 60,
    "answers": 6,
    "top": "L",
@@ -394,6 +239,161 @@
      5
     ]
    ]
+  },
+  {
+   "i": 7,
+   "name": "Dec",
+   "jobs": 60,
+   "answers": 6,
+   "top": "L",
+   "topShare": 0.6,
+   "revolving": 0.25,
+   "ranked": [
+    [
+     "L",
+     36
+    ],
+    [
+     "Wi+Wo",
+     5
+    ],
+    [
+     "R+R",
+     5
+    ],
+    [
+     "L+R",
+     5
+    ],
+    [
+     "L+R+R",
+     5
+    ]
+   ]
+  },
+  {
+   "i": 8,
+   "name": "Jan",
+   "jobs": 60,
+   "answers": 7,
+   "top": "L",
+   "topShare": 0.58,
+   "revolving": 0.25,
+   "ranked": [
+    [
+     "L",
+     35
+    ],
+    [
+     "Wi+Wo",
+     5
+    ],
+    [
+     "W",
+     5
+    ],
+    [
+     "L+R",
+     5
+    ],
+    [
+     "L+R+R",
+     5
+    ]
+   ]
+  },
+  {
+   "i": 9,
+   "name": "Feb",
+   "jobs": 60,
+   "answers": 7,
+   "top": "L",
+   "topShare": 0.6,
+   "revolving": 0.25,
+   "ranked": [
+    [
+     "L",
+     36
+    ],
+    [
+     "Wi+Wo",
+     5
+    ],
+    [
+     "L+R",
+     5
+    ],
+    [
+     "L+R+R",
+     5
+    ],
+    [
+     "W",
+     4
+    ]
+   ]
+  },
+  {
+   "i": 10,
+   "name": "Mar",
+   "jobs": 60,
+   "answers": 7,
+   "top": "L",
+   "topShare": 0.6,
+   "revolving": 0.25,
+   "ranked": [
+    [
+     "L",
+     36
+    ],
+    [
+     "Wi+Wo",
+     5
+    ],
+    [
+     "L+R",
+     5
+    ],
+    [
+     "L+R+R",
+     5
+    ],
+    [
+     "W",
+     4
+    ]
+   ]
+  },
+  {
+   "i": 11,
+   "name": "Apr",
+   "jobs": 60,
+   "answers": 7,
+   "top": "L",
+   "topShare": 0.6,
+   "revolving": 0.25,
+   "ranked": [
+    [
+     "L",
+     36
+    ],
+    [
+     "Wi+Wo",
+     5
+    ],
+    [
+     "L+R",
+     5
+    ],
+    [
+     "L+R+R",
+     5
+    ],
+    [
+     "W",
+     4
+    ]
+   ]
   }
  ],
  "pacing": [
@@ -402,14 +402,14 @@
    "months": 24,
    "marketAt": 3,
    "riversideAt": 4,
-   "rep4": 32,
-   "rep12": 35,
-   "rep24": 41,
-   "cash12": 232800,
-   "cash24": 649605,
-   "jobsPerMonth": 2.5,
-   "idleBenchMonths": 6,
-   "quiet": 1,
+   "rep4": 33,
+   "rep12": 36,
+   "rep24": 45,
+   "cash12": 78590,
+   "cash24": 254555,
+   "jobsPerMonth": 2,
+   "idleBenchMonths": 4,
+   "quiet": 0,
    "parFails": 0,
    "failedSurveys": 0
   },
@@ -419,13 +419,13 @@
    "marketAt": 3,
    "riversideAt": 4,
    "rep4": 33,
-   "rep12": 35,
-   "rep24": 45,
-   "cash12": 215205,
-   "cash24": 417615,
-   "jobsPerMonth": 2.1,
-   "idleBenchMonths": 5,
-   "quiet": 2,
+   "rep12": 36,
+   "rep24": 41,
+   "cash12": 21670,
+   "cash24": 372395,
+   "jobsPerMonth": 1.9,
+   "idleBenchMonths": 7,
+   "quiet": 1,
    "parFails": 0,
    "failedSurveys": 0
   },
@@ -436,12 +436,12 @@
    "riversideAt": 4,
    "rep4": 31,
    "rep12": 36,
-   "rep24": 42,
-   "cash12": 391010,
-   "cash24": 772450,
-   "jobsPerMonth": 2.5,
-   "idleBenchMonths": 8,
-   "quiet": 1,
+   "rep24": 48,
+   "cash12": 115080,
+   "cash24": 594195,
+   "jobsPerMonth": 2.3,
+   "idleBenchMonths": 6,
+   "quiet": 2,
    "parFails": 0,
    "failedSurveys": 0
   },
@@ -452,11 +452,11 @@
    "riversideAt": 4,
    "rep4": 35,
    "rep12": 36,
-   "rep24": 42,
-   "cash12": 177485,
-   "cash24": 257500,
-   "jobsPerMonth": 2,
-   "idleBenchMonths": 6,
+   "rep24": 45,
+   "cash12": 145715,
+   "cash24": 543025,
+   "jobsPerMonth": 2.3,
+   "idleBenchMonths": 8,
    "quiet": 1,
    "parFails": 0,
    "failedSurveys": 0
@@ -468,53 +468,15 @@
    "riversideAt": 4,
    "rep4": 33,
    "rep12": 36,
-   "rep24": 41,
-   "cash12": 285935,
-   "cash24": 705950,
-   "jobsPerMonth": 2.3,
-   "idleBenchMonths": 7,
+   "rep24": 44,
+   "cash12": 14730,
+   "cash24": 424025,
+   "jobsPerMonth": 2,
+   "idleBenchMonths": 11,
    "quiet": 2,
    "parFails": 0,
-   "failedSurveys": 1
+   "failedSurveys": 0
   }
  ],
- "failed": [
-  {
-   "game": 5,
-   "name": "The Roxy",
-   "kind": "cinema",
-   "tier": 7,
-   "month": 13,
-   "seed": 85023,
-   "opts": {
-    "callback": "paradox",
-    "existing": [
-     {
-      "type": "swing",
-      "curtain": false,
-      "flow": "in",
-      "vestibule": false
-     },
-     {
-      "type": "swing",
-      "curtain": false,
-      "flow": "out",
-      "vestibule": false
-     }
-    ],
-    "extra": [
-     "drill"
-    ],
-    "tech": {
-     "mouth": true,
-     "padded": true,
-     "barriers": true,
-     "doorman": false,
-     "pillars": true
-    },
-    "event": "storm"
-   },
-   "error": "survey failed"
-  }
- ]
+ "failed": []
 }

@@ -60,7 +60,11 @@ How to use this page: work the phases in order. Each phase lists the work, the a
 
 ### Phase 0: fixes (one session)
 
-**Status: done, October 2026.** B1–B5 are fixed, each with a test (`test/designs.test.js`, `test/text.test.js`, `test/calls.test.js`). The tests went from 62 to 76 passing. Every fixed screen was checked in the built page. The bot runs in CI, the PR concurrency bug is fixed, and the baseline is in `test/fixtures/balance-baseline.json`. The golden re-record (item 6) turned out not to be needed: `record-golden --dry` showed none of the 69 cases changed, because the fixture has no research calls or inside jobs. Phase 1 adds them.
+**Status: done, October 2026.** B1–B5 are fixed, each with a test (`test/designs.test.js`, `test/text.test.js`, `test/calls.test.js`). The tests went from 62 to 76 passing. Every fixed screen was checked in the built page. The bot runs in CI and the PR concurrency bug is fixed. The first full balance run also found a survey crash on slow fire drills; that's fixed too.
+
+Two balance reports are saved. `test/fixtures/balance-before-phase0.json` is the game before any change. `test/fixtures/balance-baseline.json` is the game after Phase 0, and it's what later phases compare against.
+
+They differ in one important way. With research calls and enquiries now true of the client, a summer of swing doors makes air curtains the first thing clients ask for. Before, there were padded-wing calls from clients with no revolving door. So the sim researches curtains early, and from September a slider with an air curtain answers about 60% of first visits (revolving doors: 65–78% of winter jobs before, 25% now). Summer is unchanged (two one-way swing doors, 37–42%). The fix is right; it shows D1 is a whole-year problem, and Phase 1 has to handle it. The golden re-record (item 6) turned out not to be needed: `record-golden --dry` showed none of the 69 cases changed, because the fixture has no research calls or inside jobs. Phase 1 adds them.
 
 **Work**
 1. B1: deep-copy designs. *Architecture:* move the design model into `game/` (`newDesign(c)`, a deep `cloneDesign` using `structuredClone`, `designCost`); the workshop only calls them.
@@ -84,7 +88,7 @@ How to use this page: work the phases in order. Each phase lists the work, the a
 **Work**
 1. D2: the anti-repeat rule covers first visits too, so two clients in a row can't share an answer. Fix `designSig` first: it uses a door type's first letter (`contracts.js:49`), so swing and sliding doors both read `s` and the rule can't tell them apart. `tools/balance.mjs` already uses its own unambiguous shape (`W`, `L`, `R`, `G`).
    - Add golden cases for research calls and inside jobs (including a chained level). Today's 69 cases have none, so Phase 0's changes to them didn't show in the golden test at all.
-2. D1: summer pressures that defeat the cheap pair some of the time: surges with a go-round limit, crosswinds on corner plots, heat, bikes. Revolving doors appear before October.
+2. D1: summer pressures that defeat the cheap pair some of the time: surges with a go-round limit, crosswinds on corner plots, heat, bikes. Revolving doors appear before October. Winter needs the same treatment: since Phase 0, a slider with an air curtain answers about 60% of first visits from September (see the Phase 0 status).
 3. D3: every research call grades its lesson: a go-round limit for big cores, an older-guest goal for sensors, a time goal for pillars on fire drills. Watch the other goals too: Halden's big-core call (now with its surge) asks for only 8 people through against a rush of 321 a minute, so its throughput goal means nothing.
 4. D3: the surveyor rejects a par that ignores the lesson, and regenerates the job.
 5. D4: vary the Galleria (more routes, budgets that let widening compete, a wider twist pool), and check every Riverside level varies across seeds.
