@@ -92,12 +92,19 @@ How to use this page: work the phases in order. Each phase lists the work, the a
 **Work**
 1. D5: spread reputation over about 12 months instead of 4. Options: raise the Market Square thresholds, award stars more slowly, or let stars fade while a callback waits.
 2. D6: give money a use. Options: pay to rush research, a third bench or a research lab premises, landmark buy-ins or opening-night preparation, advertising that brings tenders in quiet months.
+3. **Research never stops.** Every bench must always have a project. Today a bench can sit idle indefinitely, and the only nudge is the advice line (`game/enquiries.js:62`). The rule needs four parts so it can never lock the player in:
+   - **The rule.** End the Month needs every bench busy; with one free, the button reads "Choose research" and opens the Research tab. The check lives in `game/` (`benchesFilled(S)`), so the page, the sim and the bot share it.
+   - **A queue per bench.** Line up the next projects, and when one finishes the next starts (paid as it starts). One decision every few months, not every month.
+   - **A project that's always available.** A *market study*: free, one month, any bench, and it brings in a tender or an enquiry. The rule holds even when you're overdrawn (overdrawn firms can start only this) or can't afford anything else, and it fills quiet months with work.
+   - **No end to the tree.** After the 23 techs, repeatable *refinements* with rising prices: hardware discounts, faster surveys, crew speed, more maintenance. This is also the long-term use for money (D6).
 
-*Architecture:* move prices, star thresholds, wages, rent and research times into `content/balance.js`; let `simulate()` take overrides so values can be tried without code edits.
+   Knock-on effects: research starts from month 1, so the tree finishes sooner. Re-check the pacing bands after this. Research calls also arrive steadily, which helps D5's flat stretch. Option to decide: pay research monthly instead of up front, so it's an ongoing cost like wages.
 
-**Tests that must pass:** the pacing bands (layer 4) on 4 seeds.
+*Architecture:* move prices, star thresholds, wages, rent and research times into `content/balance.js`; let `simulate()` take overrides so values can be tried without code edits. The research queue and refinement levels are new save data: bump `SAVE_VERSION` and add a `migrate()` step that starts with empty queues.
 
-**Done when** the sim shows steady reputation growth for about a year and cash stays meaningful at month 12.
+**Tests that must pass:** the pacing bands (layer 4) on 4 seeds; the research-rule tests (layer 1).
+
+**Done when** the sim shows steady reputation growth for about a year, cash stays meaningful at month 12, and no bench is ever idle at month end on any seed.
 
 ### Phase 3: UX pass
 
@@ -153,6 +160,7 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 - The ★ wording matches the grading rule (one shared constant).
 - Every hint names only hardware the job allows.
 - The Arena's twists come from a concert list.
+- Research rule (Phase 2): a month can't end with a free bench; a queued project starts when the one before finishes; the market study is always available, including when overdrawn or the tree is done; refinements keep appearing after the 23 techs; an old save migrates with empty queues.
 
 **2. Golden surveys** (unchanged): the pin on the surveyor. Re-record on purpose after Phase 0 and each Phase 1 change, and say so in the commit.
 
@@ -161,7 +169,7 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 - Each research call: par uses the tech; the client's design before the call fails the lesson goal; a design without the tech can't pass.
 - Each Riverside level varies across seeds.
 
-**4. Pacing bands** (in `test:full`): the sim on 4 seeds for 18 months, asserting ranges set once Phase 2 settles. For example: under 25★ at month 4, Market Square open by month 6–9, cash under a cap at month 12, no more than 2 quiet months in a row. Print a short table so balance changes show as a diff in review.
+**4. Pacing bands** (in `test:full`): the sim on 4 seeds for 18 months, asserting ranges set once Phase 2 settles. For example: under 25★ at month 4, Market Square open by month 6–9, cash under a cap at month 12, no more than 2 quiet months in a row, every bench busy at every month end. The sim's policy has to obey the research rule too (`tools/sim.mjs` fills benches only when it has spare cash today). Print a short table so balance changes show as a diff in review.
 
 **5. Browser checks** (extend `tools/bot.py`)
 - Text sweep: fail on "undefined", "NaN", "[object" or "£-" on any screen the bot visits.
@@ -194,6 +202,7 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 | Brief, result and hint text as pure data in `game/briefs.js` | 1 | Wording can be tested; ends "undefined"-style bugs (B2, B5) |
 | `makeContract` in explicit steps; `c.lesson` on every job | 1 | Required twists can't be evicted (B3); the surveyor and tests can check lessons (D3) |
 | Balance numbers in `content/balance.js`; `simulate()` overrides | 2 | Tuning becomes data edits; sweeps without code changes |
+| `benchesFilled(S)` in `game/`; research queues and refinement levels in the save (`SAVE_VERSION` bump) | 2 | Research never stops, by one rule the page, sim and bot all share |
 | Survey worker pool, pre-surveying, chain time cap | 3 | Survey waits |
 | One canvas-fitting function for `canvas.js` and `stageart.js` | 3 | Clipped frontages and plans |
 | Pinned Playwright, bot in CI | 0–3 | The page itself gets tested |
@@ -206,7 +215,8 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 ## 6. Decisions for the owner
 
 1. **Pacing target.** How long should reaching every street take: about 12 months of play, or longer?
-2. **Money sinks.** Which of: rushing research, a third bench, landmark buy-ins, advertising?
+2. **Money sinks.** Refinements after the tree are decided (Phase 2, research never stops). Which others: rushing research, a third bench, landmark buy-ins, advertising?
+5. **Research payment.** Up front, as now, or monthly while a project runs?
 3. **Bot language.** Keep Python with a pinned version, or move to Node's Playwright as a dev-only dependency?
 4. **Summer.** Keep the warm start, but with pressures that beat the cheap pair (as planned), or start the firm in autumn?
 
