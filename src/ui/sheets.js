@@ -1,14 +1,15 @@
 import { BUILDING, KINDS } from '../content/buildings/index.js';
 import { PREMISES, STAFF } from '../content/company.js';
 import { EVENTS, eventOf } from '../content/events.js';
-import { BASICS } from '../content/guides.js';
+import { BASICS, STARS, STARS_INSIDE } from '../content/guides.js';
 import { BRANCHES, LESSONS, TECH } from '../content/tech.js';
-import { CALLBACKS, RIVAL } from '../content/town.js';
+import { RIVAL } from '../content/town.js';
 import { TWISTS } from '../content/twists.js';
-import { STAGES, STAGE_TWISTS, stageName, stageAbout } from '../engine/stages/index.js';
+import { STAGES, stageName, stageAbout } from '../engine/stages/index.js';
 import { MONTHS, candidates } from '../game/contracts.js';
 import { charge, costMult, feeOf, insurance, monthlyIncome, overheads, prem, rep, rivalActive, serviceCost, techName, techOf, upkeep, loyalty } from '../game/economy.js';
 import { advice, hasWork } from '../game/enquiries.js';
+import { callText, isResearchCall, jobLabel, stageTwist } from '../game/briefs.js';
 import { fire, hire, movePremises, service, startResearch } from '../game/jobs.js';
 import { CLAIM_EXCESS, INSPECTION_FINE, endMonth, changeWhere } from '../game/month.js';
 import { CHANGE, changeText } from '../content/changes.js';
@@ -45,7 +46,7 @@ function enquiryNote(p) {
 export async function openBrief(i, fromWorkshop) {
   const p = S.plots[i], k = KINDS[p.kind];
   if (!p.contract.solved) {
-    sheet(`<div class="eyebrow">${p.status === 'callback' ? 'Callback' : 'Tender'} · ${k.label}</div><h3>${p.name}</h3>
+    sheet(`<div class="eyebrow">${jobLabel(p)} · ${k.label}</div><h3>${p.name}</h3>
       <p>The surveyor is modelling the site: ${p.contract.stage ? 'trying different setups with a simulated crowd' : `trying ${candidates(p.contract, techOf(S)).length} layouts in a 40-second rush hour`} to set a fair target and price. If the best answer is one you've used recently, they'll ask the client for a new wrinkle.</p>
       <div class="progress"><i id="survey"></i></div><p class="note" id="surveyNote"></p>`);
     const entry = surveys.get(p.contract.seed);
@@ -70,9 +71,9 @@ export async function openBrief(i, fromWorkshop) {
   if (mix.wheel) guest.push(`${Math.round(mix.wheel * 100)}% wheelchairs`);
   if (mix.pram) guest.push(`${Math.round(mix.pram * 100)}% prams and trolleys`);
   if (mix.bike) guest.push(`${Math.round(mix.bike * 100)}% cyclists`);
-  sheet(`<div class="eyebrow">${p.status === 'callback' ? 'Callback' : 'Tender'} · ${k.label} · tier ${c.tier + 1}</div>
+  sheet(`<div class="eyebrow">${jobLabel(p)} · ${k.label} · tier ${c.tier + 1}</div>
     <h3>${p.name}</h3>${enquiryNote(p)}
-    ${p.status === 'callback' ? `<p>${p.change && CHANGE[p.change] ? `<strong style="color:var(--text)">${CHANGE[p.change].label}.</strong> ` : ''}${CALLBACKS[p.reason]}. Your existing doors stay; you only pay for new hardware.</p>${beforeLine(c)}` : ''}
+    ${p.status === 'callback' ? `<p>${!isResearchCall(p) && p.change && CHANGE[p.change] ? `<strong style="color:var(--text)">${CHANGE[p.change].label}.</strong> ` : ''}${callText(p, false)}</p>${beforeLine(c)}` : ''}
     ${BUILDING[p.kind].brief ? BUILDING[p.kind].brief(c) : ''}
     ${c.opts && c.opts.callback === 'botched' ? '<p class="note"><strong style="color:var(--brass)">Rescue job.</strong> Put right what Brassworks fitted, and the client pays 30% more margin.</p>' : ''}
     ${c.event ? (() => { const ev = Object.values(EVENTS).find(e => e.key === c.event); return `<p><strong style="color:var(--brass)">${ev.label}.</strong> ${ev.text} Seasonal work: 25% more margin.</p>`; })() : ''}
@@ -104,7 +105,7 @@ export async function openBrief(i, fromWorkshop) {
       ${c.rules && c.rules.fixed ? `<li><span>Fixed by the client</span><span>bay ${(+Object.keys(c.rules.fixed)[0]) + 1}</span></li>` : ''}
       <li><span>Surveyor's par: the cheapest pass they found</span><span>${money(c.par.cost)}</span></li>
     </ul>
-    <p class="note">★ pass · ★★ at or under par · ★★★ under par with no bumps or safety stops.${costMult(S) < 1 ? ` Prices shown are list prices; you pay ${Math.round(costMult(S) * 100)}% of them.` : ''}</p>
+    <p class="note">${STARS}.${costMult(S) < 1 ? ` Prices shown are list prices; you pay ${Math.round(costMult(S) * 100)}% of them.` : ''}</p>
     <div class="legend"><span><i style="background:var(--frost)"></i>arriving</span><span><i style="background:var(--rose)"></i>leaving</span><span><i style="background:#fff;border:3px solid var(--frost);box-sizing:border-box"></i>older</span><span><i style="background:var(--frost);border-radius:3px"></i>wheelchair</span><span><i style="background:#b48cf0"></i>pram</span><span><i style="background:#d4a94f;border-radius:2px;height:3px;width:14px;vertical-align:3px"></i>bike</span><span><i style="background:#9b7a4a;border-radius:2px"></i>suitcase</span><span><i style="background:#6b7280"></i>standing still</span></div>
     ${fromWorkshop ? '<button class="go" type="button" id="bBack">Back to the workshop</button>'
       : '<div style="display:flex;gap:8px"><button class="ghost" type="button" id="bClose">Not now</button><button class="go" type="button" id="bTake">Take the job</button></div>'}`);
@@ -119,13 +120,13 @@ function briefStage(p, c, i, fromWorkshop) {
   const k = KINDS[p.kind], g = c.goals, st = STAGES[c.stage];
   const parts = c.chain ? STAGES.chain.partsOf(c) : [{ st, sub: c }];
   const mix = c.crowd.mix || {};
-  sheet(`<div class="eyebrow">${p.status === 'callback' ? 'Callback' : 'Tender'} · ${k.label} · inside job · tier ${c.tier + 1}</div>
+  sheet(`<div class="eyebrow">${jobLabel(p)} · ${k.label} · inside job · tier ${c.tier + 1}</div>
     <h3>${p.name}</h3>${enquiryNote(p)}
-    ${p.status === 'callback' && c.paradox ? `<p>${p.callText || 'They\'ve heard about your new research and want it put to work.'}</p>` : p.status === 'callback' ? `<p>${CALLBACKS[p.reason] || 'Something has changed'}. What you set up last time stays; you only pay for changes.</p>` : ''}
+    ${p.status === 'callback' ? `<p>${callText(p, true)}</p>` : ''}
     ${c.chain ? `<p><strong style="color:var(--brass)">${c.chain.length} stages, one crowd.</strong> Everyone goes through ${parts.map(x => stageName(c, x.st.key).toLowerCase()).join(', then ')}. Speed up one stage and the queue moves on to the next.</p>` : ''}
     ${parts.map(({ st: ps }) => `<p><strong style="color:var(--text)">${stageName(c, ps.key)}.</strong> ${stageAbout(c, ps.key)}</p>`).join('')}
     ${c.event ? (() => { const ev = Object.values(EVENTS).find(e => e.key === c.event); return `<p><strong style="color:var(--brass)">${ev.label}.</strong> A busier day than usual. Seasonal work: 25% more margin.</p>`; })() : ''}
-    ${c.twists.map(t => `<p><strong style="color:var(--text)">${twistLabel(t)}.</strong> ${STAGE_TWISTS[t] ? STAGE_TWISTS[t].text : ''}</p>`).join('')}
+    ${c.twists.map(t => { const tw = stageTwist(c, t); return `<p><strong style="color:var(--text)">${tw.label}.</strong> ${tw.text}</p>`; }).join('')}
     ${beforeLineStage(c)}
     <div class="facts">
       <div class="fact"><span>They pay you</span><b>${kmoney(feeOf(S, c))}</b></div>
@@ -142,7 +143,7 @@ function briefStage(p, c, i, fromWorkshop) {
       ${st.bumps ? `<li><span>${st.bumpLabel || 'Bumps'}</span><span>≤ ${g.bumps}</span></li>` : ''}
       <li><span>Surveyor's par: the cheapest pass they found</span><span>${money(c.par.cost)}</span></li>
     </ul>
-    <p class="note">★ pass · ★★ at or under par · ★★★ under par with no bumps.</p>
+    <p class="note">${STARS_INSIDE}.</p>
     ${fromWorkshop ? '<button class="go" type="button" id="bBack">Back to the job</button>'
       : '<div style="display:flex;gap:8px"><button class="ghost" type="button" id="bClose">Not now</button><button class="go" type="button" id="bTake">Take the job</button></div>'}`);
   if (fromWorkshop) { $('bBack').onclick = closeSheet; return; }

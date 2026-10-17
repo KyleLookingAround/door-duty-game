@@ -4,7 +4,8 @@ import { $, onSheetClosed } from './dom.js';
 import { S, save } from './store.js';
 import { COACH, NEXT } from '../content/guides.js';
 
-export const coachEl = { id: null, target: null };
+// ctx: what the screen knows that a tip's text can use (the workshop sets the job's banned doors)
+export const coachEl = { id: null, target: null, ctx: {} };
 export function tutOn() { S.tut = S.tut || { done: {} }; return !S.tut.off; }
 // target: an element, or a function that finds it (so the tip survives the page redrawing)
 export function coach(id, target) {
@@ -13,7 +14,8 @@ export function coach(id, target) {
   const el = find();
   if (!el || !el.getClientRects().length) return;
   coachEl.id = id; coachEl.target = el; coachEl.find = find;
-  $('coachTitle').textContent = COACH[id][0]; $('coachText').textContent = COACH[id][1];
+  const text = COACH[id][1];
+  $('coachTitle').textContent = COACH[id][0]; $('coachText').textContent = typeof text === 'function' ? text(coachEl.ctx) : text;
   $('coach').hidden = false; placeCoach();
 }
 export function coachDone(skipAll) {

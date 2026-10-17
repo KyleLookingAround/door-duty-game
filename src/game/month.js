@@ -2,7 +2,7 @@
 // Pure: mutates the save and returns a report for the screen to show.
 import { STAFF } from '../content/company.js';
 import { eventOf } from '../content/events.js';
-import { PARADOX_CALLS } from '../content/paradoxes.js';
+import { PARADOX_CALLS, callFits } from '../content/paradoxes.js';
 import { CHANGES, CHANGE } from '../content/changes.js';
 import { STREETS } from '../content/town.js';
 import { makeContract, runHeadless } from './contracts.js';
@@ -123,7 +123,7 @@ export function endMonth(S) {
   S.pendingCalls = S.pendingCalls.filter(([k, j]) => {
     const def = PARADOX_CALLS[k] && PARADOX_CALLS[k][j];
     if (!def) return false;
-    const pool = S.plots.filter(p => p.status === 'fitted' && !p.broken && !p.enquiry && def.kinds.includes(p.kind));
+    const pool = S.plots.filter(p => p.status === 'fitted' && !p.broken && !p.enquiry && callFits(def, p));
     if (!pool.length) return true;
     const p = pool[randomInt(S, pool.length)];
     p.status = 'callback'; p.reason = 'paradox'; p.contract = null; p.tier++;

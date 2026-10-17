@@ -7,6 +7,8 @@ import { STAGES, stageName } from '../engine/stages/index.js';
 import { techName } from '../game/economy.js';
 import { charge, feeOf, techOf } from '../game/economy.js';
 import { grade, signOff } from '../game/jobs.js';
+import { cloneDesign, defaultSlot, newDesign } from '../game/designs.js';
+import { stageTwist } from '../game/briefs.js';
 import { cv, cw, scale, sizeCanvas } from './canvas.js';
 import { coach, coachDone, coachEl } from './coach.js';
 import { $, TYPE_LABEL, closeSheet, guard, guarded, sheet, toast } from './dom.js';
@@ -15,21 +17,13 @@ import { S, save } from './store.js';
 import { renderStreet } from './street.js';
 import { twistLabel } from './survey.js';
 import { kmoney, money } from '../util/format.js';
-// a door design is a list of bays; an inside job's is one object of settings
-const cloneDesign = d => Array.isArray(d) ? d.map(s => ({ ...s })) : { ...d };
 export let W = null; // { plot, contract, design, sel, world, mode:'design'|'test'|'result', passed, lastResult }
-export function defaultSlot(type) {
-  if (type === 'revolve') return { type, wings: 4, mouth: 40, core: 0.15, rpm: 4, padded: false, flow: 'both' };
-  if (type === 'swing') return { type, curtain: false, flow: 'both' };
-  if (type === 'slider') return { type, curtain: false, flow: 'both', button: false };
-  if (type === 'gates') return { type, flow: 'both', wide: false };
-  return { type: 'wall' };
-}
 export function openWorkshop(i) {
   guard();
   const p = S.plots[i], c = p.contract;
-  const design = c.stage ? { ...c.existing } : (c.existing ? c.existing.map(s => ({ ...s })) : Array.from({ length: c.slots }, () => defaultSlot('wall')));
+  const design = newDesign(c);
   W = { plot: p, contract: c, design, start: cloneDesign(design), sel: Math.floor((c.slots - 1) / 2), mode: 'design', passed: false };
+  coachEl.ctx = { forbid: (c.rules && c.rules.forbid) || [] };
   $('slots').hidden = !!c.stage;
   disarmReset();
   showSpeed();
@@ -48,7 +42,7 @@ function renderStrip() {
     if (c.paradox) chips.push(['Paradox job', 'brass']);
     if (c.event) chips.push([Object.values(EVENTS).find(e => e.key === c.event).label, 'brass']);
     chips.push([c.chain ? c.chain.map(k => stageName(c, k)).join(' → ') : stageName(c, c.stage), '']);
-    for (const t of c.twists) chips.push([twistLabel(t), '']);
+    for (const t of c.twists) chips.push([stageTwist(c, t).label, '']);
     chips.push([`${c.metric === 'mean' ? 'Average' : '9 in 10'} ≤ ${g.wait}s`, 'hot']);
     $('wsStrip').innerHTML = chips.map(([t, cls]) => `<span class="tag ${cls}">${t}</span>`).join('') + '<span class="tag more">Full brief ›</span>';
     return;

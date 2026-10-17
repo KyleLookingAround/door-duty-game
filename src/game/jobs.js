@@ -7,6 +7,42 @@ import { PREMISES, STAFF } from '../content/company.js';
 import { money } from '../util/format.js';
 import { feeOf, charge, prem, rep, serviceCost } from './economy.js';
 
+// "a, b or c"
+const orList = a => a.length > 1 ? `${a.slice(0, -1).join(', ')} or ${a[a.length - 1]}` : a[0] || '';
+const upFirst = t => t.charAt(0).toUpperCase() + t.slice(1);
+// What went wrong and what to try. Only names hardware this job allows and the firm has: a hint about
+// wings is no use when the client has banned revolving doors.
+function hintFor(S, c, design, r, rows) {
+  const g = c.goals, tech = S.unlocks || {}, has = t => design.some(s => s.type === t);
+  const revOk = !((c.rules && c.rules.forbid) || []).includes('revolve');
+  const rev = has('revolve'), open = has('swing') || has('slider');
+  const twoWaySwing = design.some(s => s.type === 'swing' && (s.flow || 'both') === 'both' && !s.lanes);
+  if (!rows[0][3]) return `Not enough got through. ${upFirst(orList(['more doors', ...(rev ? ['faster wings'] : []), ...(rev && tech.mouth ? ['wider mouths'] : [])]))}.`;
+  if (!rows[1][3]) {
+    const fix = [];
+    if (rev) fix.push(`slow the wings so the tips stay under the safe speed${tech.padded && !design.some(s => s.padded) ? ' (or pad their edges)' : ''}`);
+    if (twoWaySwing) fix.push(`give swing doors a direction${tech.barriers ? ' or split them with lane barriers' : ''}`);
+    if (!fix.length) fix.push('more doors spread the crowd so fewer people collide');
+    return `Too many bumps. ${upFirst(orList(fix))}.`;
+  }
+  if (g.wait != null && r.wait > g.wait) return 'The queues at the gates are too long. Each lane takes one person at a time, so point more lanes the busy way (Auto lanes follow the rush), and gate-line staff help people tap through faster.';
+  if (g.maxTemp != null && r.maxTemp > g.maxTemp) {
+    const fix = [...(revOk ? ['revolving doors seal'] : []), ...(open && tech.curtain ? ['air curtains help'] : [])];
+    return `The lobby got too hot. Every open door lets the heat in, just as it lets the cold in during winter. ${fix.length ? upFirst(fix.join('; ')) : 'Fewer open doors keep it cooler'}.`;
+  }
+  if (g.minTemp != null && r.minTemp < g.minTemp) {
+    const fix = [...(revOk ? ['revolving doors with enough wings seal'] : []), ...(open && tech.curtain ? ['air curtains help'] : []), ...(open && tech.vestibule ? ['a draught lobby helps more'] : [])];
+    const what = fix.length ? fix.join('; ') : 'fewer open doors keep it warmer';
+    return `The lobby got too cold. ${open ? `Swing and sliding doors leak; ${what}` : upFirst(what)}.`;
+  }
+  if (g.access && r.accessFail) return `Wheelchairs and prams need a sliding door they can reach${tech.wide && revOk ? ', or a wide drum with 3 wings or fewer' : ''}${c.site && c.site.rampBays ? ` in a bay with the ramp (bay ${c.site.rampBays.map(i => i + 1).join(', ')})` : ''}.`;
+  if (g.bikes && r.bikeFail) return 'Cyclists can\'t wheel a bike through a revolving door. Give them a swing or sliding door that isn\'t push-button only.';
+  if (violatesRules(c, design)) return 'The client\'s rules forbid one of your doors. Swap it out.';
+  if (c.drill && !(r.evac != null && r.evac <= g.evac)) return `The lobby took too long to empty. More or wider exits help${tech.pillars ? ', and a pillar just inside a busy exit stops the crowd jamming in the doorway' : ''}.`;
+  if (g.laps != null && r.laps > g.laps) return `People near the slow hub are missing their exit and riding round again. ${tech.core ? 'A bigger core keeps them on the fast outer ring.' : 'Big-core drums would keep them on the fast outer ring (Company › Research).'}${tech.doorman ? ' A doorman gets riders out on time.' : ''}`;
+  return 'Over budget.';
+}
+
 // Grade a rush-hour result against the brief. r: world stats plus minTemp, maxTemp, wait.
 export function grade(S, c, design, r) {
   const g = c.goals;
@@ -30,16 +66,7 @@ export function grade(S, c, design, r) {
   const pass = rows.every(x => x[3] !== false);
   let stars = 0;
   if (pass) { stars = 1; if (cost <= c.par.cost) { stars = 2; if (r.bumps === 0 && r.stops === 0) stars = 3; } }
-  const hint = pass ? '' : !rows[0][3] ? 'Not enough got through. More doors, faster wings, or wider mouths.'
-    : !rows[1][3] ? 'Too many bumps. Slow the wings so the tips stay under the safe speed, or give swing doors a direction.'
-    : (g.wait != null && r.wait > g.wait) ? 'The queues at the gates are too long. Each lane takes one person at a time, so point more lanes the busy way (Auto lanes follow the rush), and gate-line staff help people tap through faster.'
-    : (g.maxTemp != null && r.maxTemp > g.maxTemp) ? 'The lobby got too hot. Every open door lets the heat in, just as it lets the cold in during winter. Revolving doors seal; air curtains help.'
-    : (g.minTemp != null && r.minTemp < g.minTemp) ? 'The lobby got too cold. Swing and sliding doors leak; revolving doors with enough wings seal.'
-    : (g.access && r.accessFail) ? `Wheelchairs and prams need a sliding door they can reach${S.unlocks.wide ? ', or a wide drum with 3 wings or fewer' : ''}${c.site && c.site.rampBays ? ` in a bay with the ramp (bay ${c.site.rampBays.map(i => i + 1).join(', ')})` : ''}.`
-    : (g.bikes && r.bikeFail) ? 'Cyclists can\'t wheel a bike through a revolving door. Give them a swing or sliding door that isn\'t push-button only.'
-    : violatesRules(c, design) ? 'The client\'s rules forbid one of your doors. Swap it out.'
-    : (c.drill && !(r.evac != null && r.evac <= g.evac)) ? 'The lobby took too long to empty. More or wider exits help, and a pillar just inside a busy exit stops the crowd jamming in the doorway.'
-    : (g.laps != null && r.laps > g.laps) ? 'People near the slow hub are missing their exit and riding round again. A bigger core keeps them on the fast outer ring.' : 'Over budget.';
+  const hint = pass ? '' : hintFor(S, c, design, r, rows);
   const green = pass && isGreen(c, r);
   return { rows, pass, stars, hint, cost, profit: feeOf(S, c) - charge(S, cost), green };
 }

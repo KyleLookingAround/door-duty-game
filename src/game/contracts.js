@@ -80,6 +80,7 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   let crowdIn = k.in * scale, crowdOut = k.out * scale;
   const c = { kind: kindKey, tier, month, seed, first, rules: {}, wind: 0, budgetCap: null, solved: false };
   const goals = { bumps: 0, minTemp: null, access: false, laps: null };
+  const need = opts.first ? [] : opts.need || [];
 
   // pick twists: the hook for a first visit, otherwise the callback reason plus random draws
   let twists = [];
@@ -87,6 +88,8 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   else {
     const CB = { busier: 'surge', older: 'fragile', cold: 'cold', safety: 'fragile', access: 'stepfree' };
     if (opts.callback && CB[opts.callback] && !opts.check && !(k.station && opts.callback === 'cold')) twists.push(CB[opts.callback]);
+    // a research call's own problem (opts.need) comes before any random draw, so the draws fit around it
+    for (const t of need) if (!twists.includes(t)) twists.push(t);
     const n = tier >= 3 ? 2 : 1;
     // a new firm's first warm months stay warm: no cold snaps or gales until the autumn
     const firstSummer = month < 12 && SEASON_T[month % 12] >= 12;
@@ -101,8 +104,10 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
     if (tech.pillars && !k.station && !k.towers && !twists.includes('drill') && rng() < 0.2) twists.push('drill');
     if (special.length && !k.station && !k.towers && rng() < 0.25) {
       const [a, b] = special[Math.floor(rng() * special.length)];
-      twists = twists.filter(t => !clashes([a, b], t, tech) && t !== a && t !== b);
-      twists.push(a, b);
+      if (!need.some(t => clashes([a, b], t, tech))) {
+        twists = twists.filter(t => !clashes([a, b], t, tech) && t !== a && t !== b);
+        twists.push(a, b);
+      }
     }
   }
   for (const t of (opts.extra || [])) if (!twists.includes(t) && !clashes(twists, t, tech)) twists.push(t);
@@ -110,13 +115,13 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   if (opts.existing) twists = twists.filter(t => t !== 'listed' && t !== 'narrow' && !(t === 'tight' && opts.existing.some(s => s.type === 'revolve')));
   // cyclists need an open door: buildings that insist on a very warm lobby can't take them without draught lobbies
   if (k.comfort >= 18 && !tech.vestibule) twists = twists.filter(t => t !== 'bikes');
-  // last-resort plain job: just the callback reason, nothing extra
-  if (opts.plain) twists = opts.callback && !opts.check ? twists.slice(0, 1) : [];
+  // last-resort plain job: just the callback reason and what a research call is about, nothing extra
+  if (opts.plain) twists = [...new Set([...(opts.callback && !opts.check ? twists.slice(0, 1) : []), ...need])];
   // narrow + listed or narrow + stepfree is impossible on one bay
   if (twists.includes('narrow') && (twists.includes('listed') || twists.includes('stepfree')) ) twists = twists.filter(t => t !== 'narrow');
 
   if (twists.length > 3) {
-    const keep = [];
+    const keep = [...need];
     if (opts.callback) keep.push(twists[0]);
     for (const [a, b, ok] of CONFLICTS) if (ok && twists.includes(a) && twists.includes(b) && keep.length <= 1) keep.push(a, b);
     for (const t of twists) if (keep.length < 3 && !keep.includes(t)) keep.push(t);
