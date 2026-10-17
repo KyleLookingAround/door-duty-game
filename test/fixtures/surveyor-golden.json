@@ -2039,5 +2039,457 @@
   "relaxed": false,
   "slots": 3,
   "temp": 9
+ },
+ {
+  "case": {
+   "k": "store",
+   "tn": "mid",
+   "month": 0,
+   "ev": "sales",
+   "cb": "paradox",
+   "need": "surge",
+   "existing": [
+    {
+     "type": "revolve",
+     "wings": 4,
+     "mouth": 45,
+     "core": 0.15,
+     "rpm": 6.5,
+     "flow": "both"
+    },
+    {
+     "type": "wall"
+    },
+    {
+     "type": "wall"
+    },
+    {
+     "type": "revolve",
+     "wings": 4,
+     "mouth": 45,
+     "core": 0.15,
+     "rpm": 6.5,
+     "flow": "both"
+    }
+   ],
+   "seed": 4001
+  },
+  "twists": [
+   "surge",
+   "nofire",
+   "stepfree"
+  ],
+  "goals": {
+   "bumps": 11,
+   "minTemp": 16,
+   "access": true,
+   "laps": 1,
+   "through": 104
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 16500,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 4,
+  "temp": 1
+ },
+ {
+  "case": {
+   "k": "bank",
+   "tn": "mid",
+   "month": 1,
+   "ev": null,
+   "cb": "paradox",
+   "need": "wind",
+   "existing": [
+    {
+     "type": "revolve",
+     "wings": 4,
+     "mouth": 45,
+     "core": 0.15,
+     "rpm": 6.5,
+     "flow": "both"
+    },
+    {
+     "type": "swing",
+     "curtain": false,
+     "flow": "in"
+    }
+   ],
+   "seed": 4002
+  },
+  "twists": [
+   "wind",
+   "nofire",
+   "cold"
+  ],
+  "goals": {
+   "bumps": 5,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "through": 55
+  },
+  "par": "r4N,r4N",
+  "cost": 13500,
+  "fee": 20000,
+  "budget": 23500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": -7
+ },
+ {
+  "case": {
+   "k": "pharmacy",
+   "tn": "late",
+   "month": 2,
+   "ev": null,
+   "cb": "paradox",
+   "need": "fragile",
+   "existing": [
+    {
+     "type": "revolve",
+     "wings": 4,
+     "mouth": 45,
+     "core": 0.15,
+     "rpm": 6.5,
+     "flow": "both"
+    },
+    {
+     "type": "wall"
+    }
+   ],
+   "seed": 4003
+  },
+  "twists": [
+   "fragile",
+   "rain"
+  ],
+  "goals": {
+   "bumps": 0,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "through": 49
+  },
+  "par": "s",
+  "cost": 9500,
+  "fee": 15000,
+  "budget": 17500,
+  "relaxed": false,
+  "slots": 2,
+  "temp": 7
+ },
+ {
+  "case": {
+   "k": "library",
+   "tn": "mid",
+   "month": 11,
+   "ev": "xmas",
+   "cb": "paradox",
+   "need": "cold",
+   "existing": [
+    {
+     "type": "swing",
+     "curtain": false,
+     "flow": "in"
+    },
+    {
+     "type": "wall"
+    },
+    {
+     "type": "swing",
+     "curtain": false,
+     "flow": "out"
+    }
+   ],
+   "seed": 4004
+  },
+  "twists": [
+   "cold",
+   "nofire",
+   "wind"
+  ],
+  "goals": {
+   "bumps": 4,
+   "minTemp": 16,
+   "access": false,
+   "laps": null,
+   "through": 51
+  },
+  "par": "r4N,r4N,r4N",
+  "cost": 40500,
+  "fee": 59000,
+  "budget": 64000,
+  "relaxed": false,
+  "slots": 3,
+  "temp": -5
+ },
+ {
+  "case": {
+   "k": "museum",
+   "tn": "late",
+   "month": 7,
+   "ev": null,
+   "cb": "paradox",
+   "need": "drill",
+   "existing": [
+    {
+     "type": "revolve",
+     "wings": 4,
+     "mouth": 45,
+     "core": 0.15,
+     "rpm": 6.5,
+     "flow": "both"
+    },
+    {
+     "type": "revolve",
+     "wings": 4,
+     "mouth": 45,
+     "core": 0.15,
+     "rpm": 6.5,
+     "flow": "both"
+    },
+    {
+     "type": "revolve",
+     "wings": 4,
+     "mouth": 45,
+     "core": 0.15,
+     "rpm": 6.5,
+     "flow": "both"
+    }
+   ],
+   "seed": 4005
+  },
+  "twists": [
+   "drill",
+   "surge"
+  ],
+  "goals": {
+   "bumps": 5,
+   "minTemp": 19,
+   "access": false,
+   "laps": 1,
+   "evac": 12,
+   "through": 76
+  },
+  "par": "s,s",
+  "cost": 19000,
+  "fee": 32000,
+  "budget": 31500,
+  "relaxed": false,
+  "slots": 3,
+  "temp": 15
+ },
+ {
+  "case": {
+   "k": "bank",
+   "tn": "inside",
+   "month": 3,
+   "ev": null,
+   "stage": "queue",
+   "seed": 4101
+  },
+  "twists": [
+   "pensions"
+  ],
+  "goals": {
+   "through": 27,
+   "wait": 25,
+   "bumps": 0,
+   "minTemp": null,
+   "maxTemp": null,
+   "access": false,
+   "laps": null
+  },
+  "par": "q5S",
+  "cost": 10800,
+  "fee": 17300,
+  "budget": 19500,
+  "relaxed": false,
+  "slots": 0,
+  "temp": 18
+ },
+ {
+  "case": {
+   "k": "store",
+   "tn": "inside",
+   "month": 11,
+   "ev": "xmas",
+   "stage": "escalator",
+   "seed": 4102
+  },
+  "twists": [
+   "seniors"
+  ],
+  "goals": {
+   "through": 93,
+   "wait": 17,
+   "bumps": 1,
+   "minTemp": null,
+   "maxTemp": null,
+   "access": false,
+   "laps": null
+  },
+  "par": "e2W",
+  "cost": 31500,
+  "fee": 47000,
+  "budget": 50500,
+  "relaxed": false,
+  "slots": 0,
+  "temp": 18
+ },
+ {
+  "case": {
+   "k": "office",
+   "tn": "inside",
+   "month": 9,
+   "ev": null,
+   "stage": "lifts",
+   "seed": 4103
+  },
+  "twists": [
+   "visitors"
+  ],
+  "goals": {
+   "through": 100,
+   "wait": 82,
+   "bumps": 0,
+   "minTemp": null,
+   "maxTemp": null,
+   "access": false,
+   "laps": null
+  },
+  "par": "l4Z",
+  "cost": 4000,
+  "fee": 10500,
+  "budget": 9000,
+  "relaxed": false,
+  "slots": 0,
+  "temp": 18
+ },
+ {
+  "case": {
+   "k": "townhall",
+   "tn": "inside",
+   "month": 5,
+   "ev": null,
+   "stage": "paternoster",
+   "seed": 4104
+  },
+  "twists": [
+   "council"
+  ],
+  "goals": {
+   "through": 33,
+   "wait": 161,
+   "bumps": 2,
+   "minTemp": null,
+   "maxTemp": null,
+   "access": false,
+   "laps": null
+  },
+  "par": "p20W",
+  "cost": 9000,
+  "fee": 15500,
+  "budget": 16500,
+  "relaxed": false,
+  "slots": 0,
+  "temp": 18
+ },
+ {
+  "case": {
+   "k": "galleria",
+   "tn": "inside",
+   "month": 6,
+   "ev": null,
+   "stage": "braess",
+   "seed": 4105
+  },
+  "twists": [
+   "sale"
+  ],
+  "goals": {
+   "through": 198,
+   "wait": 97,
+   "bumps": 0,
+   "minTemp": null,
+   "maxTemp": null,
+   "access": false,
+   "laps": null
+  },
+  "par": "bC",
+  "cost": 1500,
+  "fee": 8000,
+  "budget": 7000,
+  "relaxed": false,
+  "slots": 0,
+  "temp": 18
+ },
+ {
+  "case": {
+   "k": "skyport",
+   "tn": "inside",
+   "month": 7,
+   "ev": null,
+   "chain": [
+    "walkway",
+    "carousel"
+   ],
+   "seed": 4106
+  },
+  "twists": [
+   "chute"
+  ],
+  "goals": {
+   "through": 168,
+   "wait": 229,
+   "bumps": 6,
+   "minTemp": null,
+   "maxTemp": null,
+   "access": false,
+   "laps": null
+  },
+  "par": "w0|c1L",
+  "cost": 600,
+  "fee": 7100,
+  "budget": 7000,
+  "relaxed": false,
+  "slots": 0,
+  "temp": 18
+ },
+ {
+  "case": {
+   "k": "arena",
+   "tn": "inside",
+   "month": 3,
+   "ev": null,
+   "chain": [
+    "queue",
+    "escalator",
+    "bottleneck"
+   ],
+   "seed": 4107
+  },
+  "twists": [
+   "mortgages"
+  ],
+  "goals": {
+   "through": 292,
+   "wait": 87,
+   "bumps": 3,
+   "minTemp": null,
+   "maxTemp": null,
+   "access": false,
+   "laps": null
+  },
+  "par": "q9L|e2W|o5",
+  "cost": 33000,
+  "fee": 52000,
+  "budget": 52500,
+  "relaxed": false,
+  "slots": 0,
+  "temp": 18
  }
 ]
