@@ -37,7 +37,7 @@ async function runTask(t) {
         rows.push({ cash: Math.round(row.cash), rep: row.rep, jobs: row.jobs, market: !!S.marketOpen, riverside: !!S.riversideOpen, research: S.research.length });
       },
     });
-    return { seed: t.seed, starts, rows, rep: rep(S), parFails: tally.parFails, quiet: tally.quiet || 0, unlocks: Object.keys(S.unlocks).length };
+    return { seed: t.seed, starts, rows, rep: rep(S), parFails: tally.parFails, failed: tally.failed || [], quiet: tally.quiet || 0, unlocks: Object.keys(S.unlocks).length };
   }
   if (t.type === 'survey') {
     const { makeContract, generateSolved } = await import('../src/game/contracts.js');
@@ -99,7 +99,7 @@ export function summarise(sims, surveys, months) {
       cash12: at(12, r => r.cash), cash24: at(24, r => r.cash),
       jobsPerMonth: +(s.rows[s.rows.length - 1].jobs / s.rows.length).toFixed(1),
       idleBenchMonths: s.rows.filter(r => r.research === 0).length,
-      quiet: s.quiet, parFails: s.parFails.length,
+      quiet: s.quiet, parFails: s.parFails.length, failedSurveys: s.failed.length,
     };
   });
   return { variety, pacing };
@@ -127,6 +127,7 @@ export function printReport(rep, base) {
   line('Months with an idle bench', f(P, 'idleBenchMonths'), B && f(B, 'idleBenchMonths'));
   line('Months with nothing on', f(P, 'quiet'), B && f(B, 'quiet'));
   line('Par failures', f(P, 'parFails'), B && f(B, 'parFails'));
+  line('Surveys that failed', f(P, 'failedSurveys'), B && f(B, 'failedSurveys'));
 }
 
 if (isMainThread && process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())) {
@@ -145,10 +146,12 @@ if (isMainThread && process.argv[1] && import.meta.url.endsWith(process.argv[1].
   const surveys = await pool(tasks, n, tick('surveys'));
   process.stderr.write('\n');
 
-  const report = { when: new Date().toISOString().slice(0, 10), seeds, months, sample, ...summarise(sims, surveys, sample) };
+  const report = { when: new Date().toISOString().slice(0, 10), seeds, months, sample, ...summarise(sims, surveys, sample), failed: sims.flatMap(s => s.failed.map(f => ({ game: s.seed, ...f }))) };
   const base = opt('--compare') ? JSON.parse(readFileSync(opt('--compare'))) : null;
   printReport(report, base);
   console.log(`\n${seeds.length} seeds · ${months} months · ${tasks.length * KINDS.length} first visits surveyed · ${((Date.now() - t0) / 1000).toFixed(0)}s on ${n} threads`);
+  for (const x of report.failed) console.log(`SURVEY FAILED (game seed ${x.game}): ${x.name} tier ${x.tier} month ${x.month} contract seed ${x.seed}: ${x.error}`);
   if (opt('--out')) { writeFileSync(opt('--out'), JSON.stringify(report, null, 1) + '\n'); console.log(`wrote ${opt('--out')}`); }
-  if (report.pacing.some(p => p.parFails)) { console.log('PAR FAILURES: the surveyor\'s own design did not pass (run npm run sim for details)'); process.exit(1); }
+  if (report.pacing.some(p => p.parFails)) console.log('PAR FAILURES: the surveyor\'s own design did not pass (npm run sim -- <months> <seed> for details)');
+  if (report.pacing.some(p => p.parFails || p.failedSurveys)) process.exit(1);
 }

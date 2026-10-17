@@ -403,10 +403,15 @@ export async function solveContract(contract, unlocks, onProgress) {
   }
   // fire drill: the target is a little slower than the best evacuation found among otherwise-passing designs
   if (contract.drill) {
-    const bestEvac = Math.min(...ok.map(x => x.r.evac));
+    const evac = x => x.r.evac == null ? Infinity : x.r.evac;   // null: the lobby never cleared
+    const bestEvac = Math.min(...ok.map(evac));
     if (bestEvac >= 99) contract.relaxed = true;
     contract.goals.evac = Math.ceil(Math.min(bestEvac, 34) * 1.15 + 0.5);
-    ok = ok.filter(x => x.r.evac <= contract.goals.evac);
+    const quick = ok.filter(x => evac(x) <= contract.goals.evac);
+    // nothing clears the lobby in time: an unfair drill. Keep the quickest design so the job stays solvable
+    // (its target is what that design manages) and flag it so it gets rerolled
+    if (quick.length) ok = quick;
+    else { contract.relaxed = true; ok = [ok.slice().sort((a, b) => evac(a) - evac(b))[0]]; if (evac(ok[0]) < 99) contract.goals.evac = Math.ceil(evac(ok[0]) * 1.15 + 0.5); }
   }
   const topThrough = Math.max(...ok.map(x => x.r.through));
   // a contract where even the best design moves a trickle is pointless: treat it as unfair
