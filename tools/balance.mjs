@@ -11,16 +11,12 @@
 import { Worker, isMainThread, parentPort } from 'node:worker_threads';
 import { availableParallelism } from 'node:os';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { shape } from './sim.mjs';
+export { shape };
 
 // the everyday door clients (landmarks and Riverside's inside work are left out)
 const KINDS = ['cafe', 'pharmacy', 'bank', 'office', 'hotel', 'library', 'store', 'townhall', 'museum', 'cinema', 'gym', 'clinic'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-// The answer's shape, ignoring fine settings: R revolving, W swing, L sliding, G gates, plus i/o for one-way.
-export function shape(slots) {
-  const code = { revolve: 'R', swing: 'W', slider: 'L', gates: 'G' };
-  return slots.filter(s => s.type !== 'wall').map(s => code[s.type] + (s.flow && s.flow !== 'both' && s.flow !== 'auto' ? s.flow[0] : '')).sort().join('+') || 'none';
-}
 
 // ---- worker: one task at a time ----
 async function runTask(t) {
@@ -37,7 +33,7 @@ async function runTask(t) {
         rows.push({ cash: Math.round(row.cash), rep: row.rep, jobs: row.jobs, market: !!S.marketOpen, riverside: !!S.riversideOpen, research: S.research.length });
       },
     });
-    return { seed: t.seed, starts, rows, rep: rep(S), parFails: tally.parFails, failed: tally.failed || [], waiting: tally.waiting || 0, repeats: tally.repeats || 0, jobs: tally.jobs, quiet: tally.quiet || 0, unlocks: Object.keys(S.unlocks).length };
+    return { seed: t.seed, starts, rows, rep: rep(S), parFails: tally.parFails, failed: tally.failed || [], waiting: tally.waiting || 0, repeats: tally.repeats || 0, jobs: tally.jobs, played: tally.played || [], quiet: tally.quiet || 0, unlocks: Object.keys(S.unlocks).length };
   }
   if (t.type === 'survey') {
     const { makeContract, generateSolved } = await import('../src/game/contracts.js');
@@ -110,6 +106,11 @@ export function summarise(sims, surveys, months) {
       ranked: ranked.slice(0, 5),
     };
   });
+  // the jobs actually played: the most common answer in summer (May-Sep) and the rest of the year
+  const played = sims.flatMap(s => s.played);
+  const top = xs => { const n = {}; for (const x of xs) n[x.shape] = (n[x.shape] || 0) + 1; const r = Object.entries(n).sort((a, b) => b[1] - a[1])[0]; return r ? { top: r[0], share: +(r[1] / xs.length).toFixed(2), jobs: xs.length } : null; };
+  const warm = m => [4, 5, 6, 7, 8].includes(m % 12);
+  const playedTop = { summer: top(played.filter(x => warm(x.m))), winter: top(played.filter(x => !warm(x.m))) };
   // pacing: per seed
   const pacing = sims.map(s => {
     const opened = key => { const j = s.rows.findIndex(r => r[key]); return j < 0 ? null : j + 1; };
@@ -123,7 +124,7 @@ export function summarise(sims, surveys, months) {
       quiet: s.quiet, waiting: s.waiting, repeatShare: s.jobs ? +(s.repeats / s.jobs).toFixed(2) : 0, parFails: s.parFails.length, failedSurveys: s.failed.length,
     };
   });
-  return { variety, pacing };
+  return { variety, pacing, playedTop };
 }
 
 export function printReport(rep, base) {
@@ -134,6 +135,9 @@ export function printReport(rep, base) {
     const b = base && base.variety.find(x => x.i === v.i);
     console.log(`  ${String(v.i + 1).padStart(2)} ${v.name.padEnd(9)} ${String(v.jobs).padStart(5)}  ${String(v.answers).padStart(7)}  ${v.top.padEnd(16)} ${String(Math.round(v.topShare * 100)).padStart(4)}%  ${String(Math.round(v.revolving * 100)).padStart(8)}%${b ? `   (baseline ${Math.round(b.topShare * 100)}% ${b.top}, ${b.answers} answers)` : ''}`);
   }
+  const pt = (k, x) => x ? `${x.top} in ${Math.round(x.share * 100)}% of ${x.jobs} jobs` : '–';
+  console.log('\nJobs actually played: the most common answer');
+  for (const k of ['summer', 'winter']) console.log(`  ${(k === 'summer' ? 'May to September' : 'October to April').padEnd(30)} ${pt(k, rep.playedTop && rep.playedTop[k]).padStart(28)}${base ? `   (baseline ${pt(k, base.playedTop && base.playedTop[k])})` : ''}`);
   console.log('\nPacing (month of play; spread over seeds)');
   const P = rep.pacing, B = base ? base.pacing : null;
   const f = (xs, key, fmt) => spread(xs.map(x => x[key]), fmt);

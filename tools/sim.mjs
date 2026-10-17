@@ -16,6 +16,12 @@ import { PREMISES, STAFF } from '../src/content/company.js';
 import { MONTHS } from '../src/game/contracts.js';
 
 // onMonth(S, row) is called after each month ends, with the save as it stands for the next one.
+// A door answer's shape, ignoring fine settings: R revolving, W swing, L sliding, G gates, plus i/o for one-way.
+export function shape(slots) {
+  const code = { revolve: 'R', swing: 'W', slider: 'L', gates: 'G' };
+  return slots.filter(s => s.type !== 'wall').map(s => code[s.type] + (s.flow && s.flow !== 'both' && s.flow !== 'auto' ? s.flow[0] : '')).sort().join('+') || 'none';
+}
+
 export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth = () => {} } = {}) {
   const S = freshState(seed);
   const tally = { jobs: 0, parFails: [], falseAlarms: 0, unsurveyable: 0, skipped: 0, months: [] };
@@ -46,6 +52,7 @@ export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth 
       const g = grade(S, c, c.par.slots, r);
       if (!g.pass) { tally.parFails.push(`${MONTHS[S.month % 12]} ${S.year} ${p.name}: ${g.hint}`); continue; }
       if ((S.recent || []).includes(designSig(c.par.slots))) tally.repeats = (tally.repeats || 0) + 1;   // the same answer as a recent job
+      if (Array.isArray(c.par.slots)) (tally.played = tally.played || []).push({ m: S.month, shape: shape(c.par.slots) });
       signOff(S, p, c, c.par.slots, g.stars, r);
       tally.jobs++;
       if (c.stage) { tally.inside = tally.inside || {}; const k = c.chain ? 'chain:' + c.chain.join('+') : c.stage; tally.inside[k] = (tally.inside[k] || 0) + 1; }

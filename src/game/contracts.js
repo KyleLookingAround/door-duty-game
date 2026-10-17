@@ -470,6 +470,18 @@ export async function solveContract(contract, unlocks, onProgress) {
 }
 
 
+// Twists that break a given answer, strongest first. Swing doors meet the fire officer (no swing doors); open
+// doors alone meet a listed revolving door to work around; revolving doors meet a budget with no room for
+// one, cyclists or step-free access. In a new firm's first summer there's no cold or gale to lean on.
+export function answerBreakers(sig, firstSummer) {
+  const types = new Set(sig.split(',').filter(Boolean).map(t => t[0]));
+  const out = [];
+  if (types.has('s')) out.push('nofire');
+  if (!types.has('r')) out.push('listed', ...(firstSummer ? ['surge', 'stepfree', 'bikes'] : ['wind', 'cold', 'surge']));
+  else out.push('tight', 'bikes', 'stepfree', 'fragile', 'surge', 'wind');
+  return out;
+}
+
 // Make a contract and solve it, retrying when the result would be a bad puzzle:
 //  - unfair: nothing passes without watering the goals down -> reroll the twists
 //  - free: the existing doors already pass (a callback you fix for £0) -> add a counter-twist
@@ -521,17 +533,15 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
       // unfair combination: same building and callback reason, fresh random twists
       c = makeContract(c.kind, c.tier, c.month, c.seed + 101 * (attempt + 1), { ...opts, extra: [] }); c.job = job;
     } else {
-      const gapOnly = !c.par.sig.includes('r');
       const banned = c.existing ? ['listed', 'narrow'] : [];
-      // a new firm's first summer stays warm (see makeContract): no cold or gales, so the cheap open doors
-      // are beaten with a surge, step-free access or cyclists instead
+      // a new firm's first summer stays warm (see makeContract): no cold or gales
       const firstSummer = c.month < 12 && SEASON_T[c.month % 12] >= 12;
-      const counters = gapOnly ? (firstSummer ? ['surge', 'stepfree', 'bikes'] : ['cold', 'wind']) : ['surge', 'fragile', 'tight', 'stepfree', 'wind'];
       const ct = (c.opts && c.opts.tech) || unlocks, allowed = t => !c.twists.includes(t) && !banned.includes(t) && !(firstSummer && (t === 'cold' || t === 'wind')) && !clashes(c.twists, t, ct) && (!TWIST_REQ[t] || TWIST_REQ[t](ct));
-      let pool = counters.filter(allowed);
-      if (!pool.length) pool = TWIST_POOL.filter(allowed);
-      if (!pool.length) break;
-      opts.extra = [...(opts.extra || []), pool[Math.floor(makeRng(c.seed + attempt)() * pool.length)]];
+      // the twist that breaks this particular answer, strongest first
+      const pool = answerBreakers(c.par.sig, firstSummer).filter(allowed);
+      const rest = TWIST_POOL.filter(allowed);
+      if (!pool.length && !rest.length) break;
+      opts.extra = [...(opts.extra || []), pool.length ? pool[0] : rest[Math.floor(makeRng(c.seed + attempt)() * rest.length)]];
       c = makeContract(c.kind, c.tier, c.month, c.seed, opts); c.job = job;
     }
     c.novelty = true;
