@@ -215,7 +215,8 @@ function renderStageEditor() {
   for (const o of st.options(sub, u)) {
     if (o.tech && !u[o.tech]) { later.push(o.label.toLowerCase()); continue; }
     if (o.kind === 'stepper') {
-      html += `<div class="row"><span class="lbl">${o.label}</span><div class="stepper"><button type="button" data-step="${o.key}" data-by="-1" ${locked || d[o.key] <= o.min ? 'disabled' : ''} aria-label="Fewer">−</button><div class="dots">${Array.from({ length: o.max }, (_, i) => `<i class="${i < d[o.key] ? 'on' : ''}"></i>`).join('')}</div><button type="button" data-step="${o.key}" data-by="1" ${locked || d[o.key] >= o.max ? 'disabled' : ''} aria-label="More">+</button></div><output>${d[o.key]}</output></div>`;
+      const max = o.maxOf ? o.maxOf(d) : o.max;
+      html += `<div class="row"><span class="lbl">${o.label}</span><div class="stepper"><button type="button" data-step="${o.key}" data-by="-1" ${locked || d[o.key] <= o.min ? 'disabled' : ''} aria-label="Fewer">−</button><div class="dots">${Array.from({ length: o.max }, (_, i) => `<i class="${i < d[o.key] ? 'on' : ''}"></i>`).join('')}</div><button type="button" data-step="${o.key}" data-by="1" ${locked || d[o.key] >= max ? 'disabled' : ''} aria-label="More">+</button></div><output>${d[o.key]}</output></div>`;
     } else if (o.kind === 'seg') {
       const ch = o.choices.filter(x => !x[2] || u[x[2]]);
       for (const x of o.choices) if (x[2] && !u[x[2]]) later.push(`${x[1].toLowerCase()} (${techName(x[2])})`);
@@ -232,7 +233,9 @@ function renderStageEditor() {
   const ed = $('editor');
   ed.innerHTML = html;
   ed.querySelectorAll('[data-part]').forEach(b => b.onclick = () => { W.part = +b.dataset.part; renderEditor(); });
-  ed.querySelectorAll('[data-step]').forEach(b => b.onclick = () => { const o = st.options(sub, u).find(x => x.key === b.dataset.step); d[o.key] = Math.max(o.min, Math.min(o.max, d[o.key] + +b.dataset.by)); designDirty(); renderEditor(); });
+  // a stepper's limit can depend on another (no more escalators running down than there are): clamp them all
+  const clampSteps = () => { for (const o of st.options(sub, u)) if (o.kind === 'stepper') d[o.key] = Math.max(o.min, Math.min(o.maxOf ? o.maxOf(d) : o.max, d[o.key] || 0)); };
+  ed.querySelectorAll('[data-step]').forEach(b => b.onclick = () => { d[b.dataset.step] = (d[b.dataset.step] || 0) + +b.dataset.by; clampSteps(); designDirty(); renderEditor(); });
   ed.querySelectorAll('[data-opt]').forEach(b => b.onclick = () => { const v = b.dataset.v; d[b.dataset.opt] = isNaN(+v) || v === '' ? v : +v; designDirty(); renderEditor(); });
   ed.querySelectorAll('[data-range]').forEach(el => { el.oninput = () => { d[el.dataset.range] = +el.value; const o = st.options(sub, u).find(x => x.key === el.dataset.range); el.nextElementSibling.textContent = o.fmt ? o.fmt(+el.value) : el.value; designDirty(); }; el.onchange = () => renderEditor(); });
   ed.querySelectorAll('[data-tog]').forEach(el => el.onchange = () => { d[el.dataset.tog] = el.checked; designDirty(); renderEditor(); });

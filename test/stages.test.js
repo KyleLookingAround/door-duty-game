@@ -60,6 +60,19 @@ test('paradox: standing on both sides beats walk-left on a deep escalator, not o
   const [s2, w2] = compare('escalator', { count: 1, rule: 'stand' }, { count: 1, rule: 'walk' }, { kind: 'store' });
   assert.ok(mean(w2.map(r => r.wait)) < mean(s2.map(r => r.wait)), 'short: walking wins');
 });
+test('escalators: turn one round for the evening peak; a fast escalator trips older travellers', () => {
+  const evening = seed => makeContract('station', 2, 3, 200 + seed, { stage: 'escalator', tech: ALL, extra: ['evening'] });
+  const allUp = [], oneDown = [];
+  for (let s = 0; s < 4; s++) { const c = evening(s); allUp.push(runStage(c, { stage: 'escalator', count: 2, down: 0, rule: 'stand', speed: 'std' }, ALL)); oneDown.push(runStage(c, { stage: 'escalator', count: 2, down: 1, rule: 'stand', speed: 'std' }, ALL)); }
+  assert.ok(mean(oneDown.map(r => r.wait)) < mean(allUp.map(r => r.wait)), 'everyone going down was stuck on the stairs');
+  const seniors = makeContract('station', 2, 3, 210, { stage: 'escalator', tech: ALL, extra: ['seniors'] });
+  const fast = runStage(seniors, { stage: 'escalator', count: 2, down: 0, rule: 'stand', speed: 'fast' }, ALL), std = runStage(seniors, { stage: 'escalator', count: 2, down: 0, rule: 'stand', speed: 'std' }, ALL);
+  assert.ok(fast.bumps > std.bumps, `stumbles on the fast escalator: ${fast.bumps} against ${std.bumps}`);
+  // a research call is about the rule alone: nobody going down, no speed to change
+  const call = makeContract('store', 4, 3, 5, { stage: 'escalator', tech: ALL, callback: 'paradox' });
+  assert.equal(call.params.down, 0);
+  assert.ok(STAGES.escalator.candidates(call, ALL).every(d => d.speed === 'std' && !d.down));
+});
 test('paradox: zoned lifts beat the same lifts stopping everywhere', () => {
   const [zoned, all] = compare('lifts', { count: 6, mode: 'zoned' }, { count: 6, mode: 'all' });
   assert.ok(mean(zoned.map(r => r.wait)) < mean(all.map(r => r.wait)));

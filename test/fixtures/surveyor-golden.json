@@ -2315,21 +2315,21 @@
    "seed": 4102
   },
   "twists": [
-   "seniors"
+   "shoppers"
   ],
   "goals": {
-   "through": 93,
-   "wait": 17,
+   "through": 131,
+   "wait": 23,
    "bumps": 1,
    "minTemp": null,
    "maxTemp": null,
    "access": false,
    "laps": null
   },
-  "par": "e2W",
-  "cost": 31500,
-  "fee": 47000,
-  "budget": 50500,
+  "par": "e1W",
+  "cost": 1500,
+  "fee": 9500,
+  "budget": 7000,
   "relaxed": false,
   "slots": 0,
   "temp": 18
@@ -2471,17 +2471,17 @@
   ],
   "goals": {
    "through": 292,
-   "wait": 87,
+   "wait": 93,
    "bumps": 3,
    "minTemp": null,
    "maxTemp": null,
    "access": false,
    "laps": null
   },
-  "par": "q9L|e2W|o5",
-  "cost": 33000,
-  "fee": 52000,
-  "budget": 52500,
+  "par": "q9L|e2WF|o4",
+  "cost": 27000,
+  "fee": 43500,
+  "budget": 43500,
   "relaxed": false,
   "slots": 0,
   "temp": 18

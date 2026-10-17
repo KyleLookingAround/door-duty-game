@@ -18,7 +18,7 @@ export function makeStageContract(kindKey, tier, month, seed, opts = {}) {
   const own = k => (B.inside && B.inside[k]) || {};
   if (!opts.existing) { if (c.existing.parts) c.existing.parts = c.existing.parts.map(p => ({ ...p, ...own(p.stage) })); else Object.assign(c.existing, own(st.key)); }
   // levels: the stage's own twists, more of them as the client's tier rises
-  const stTwists = st.twistsOf ? st.twistsOf(opts) : st.twists, pool = Object.keys(stTwists), twists = [];
+  const stTwists = st.twistsOf ? st.twistsOf(opts, kindKey) : st.twists, pool = Object.keys(stTwists), twists = [];
   if (opts.callback && st.callbackTwist && st.callbackTwist[opts.callback]) twists.push(st.callbackTwist[opts.callback]);
   // a paradox callback is about the paradox: at most one extra wrinkle
   const n = opts.callback === 'paradox' ? (tier >= 4 ? 1 : 0) : (tier >= 4 ? 2 : tier >= 1 ? 1 : 0) + (opts.callback ? 1 : 0);
@@ -85,8 +85,12 @@ export async function solveStage(contract, unlocks, onProgress, yieldStep) {
   contract.before = { through: r0.through, bumps: r0.bumps, wait: +r0.wait.toFixed(1) };
   // the hall as it stands must fall short: if it already passes, tighten the time to what spending can buy
   if (meets(g, r0)) {
-    const want = Math.floor(r0.wait * 0.8);
-    if (ok.some(x => x.cost > 0 && x.r.through >= g.through && x.r.wait <= want)) g.wait = Math.max(3, want);
+    // (aiming first at what the client could do without rebuilding: a cheap change beats a new escalator)
+    const want = Math.floor(r0.wait * 0.8), refs = st.reference ? st.reference(ok, contract) : ok;
+    const can = xs => xs.filter(x => x.cost > 0 && x.r.through >= g.through);
+    const cheap = can(refs).filter(x => x.r.wait + 1 < r0.wait);
+    if (cheap.length) g.wait = Math.max(3, Math.max(want, Math.ceil(Math.min(...cheap.map(x => x.r.wait)) + 1)));
+    else if (can(ok).some(x => x.r.wait <= want)) g.wait = Math.max(3, want);
   }
   let passing = ok.filter(x => meets(g, x.r)).sort((a, b) => a.cost - b.cost);
   if (!passing.length) { contract.relaxed = true; passing = [ok.slice().sort((a, b) => a.r.wait - b.r.wait)[0]]; g.wait = Math.ceil(passing[0].r.wait + 1); }

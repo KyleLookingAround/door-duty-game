@@ -17,4 +17,4 @@ STAGES.chain = makeChain(STAGES);
 export const stageName = (c, key) => (c.tunes && c.tunes[key] && c.tunes[key].name) || (c.tune && c.stage === key && c.tune.name) || STAGES[key].name;
 export const stageAbout = (c, key) => (c.tunes && c.tunes[key] && c.tunes[key].about) || STAGES[key].about || '';
 // every stage twist, for labels in lists and briefs
-export const STAGE_TWISTS = Object.assign({}, ...STAGE_LIST.map(s => s.twists));
+export const STAGE_TWISTS = Object.assign({}, ...STAGE_LIST.map(s => ({ ...s.twists, ...(s.turnTwists || {}) })));

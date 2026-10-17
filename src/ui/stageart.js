@@ -69,23 +69,37 @@ const ART = {
   },
 
   escalator(c, W, t, lw) {
-    const s = W.world, d = W.design, box = STAGES.escalator.box, FOOT = 3.4, TOP = -3.2;
+    const s = W.world, d = W.design, box = STAGES.escalator.box, FOOT = 3.4, TOP = -3.2, P = W.contract.params;
     floor(c, W.contract.kind, box.w, box.h);
     walls(c, lw, box.w, box.h, [[-3.5, box.h / 2, 3.5, box.h / 2]]);
     c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(-box.w / 2, -box.h / 2, box.w, TOP + box.h / 2 + 0.3);
     label(c, lw, 'UPPER FLOOR', 0, -box.h / 2 + 0.45, { size: 9 });
+    // the stairs, beside the escalators
+    const SX = 5.0;
+    c.fillStyle = '#3a3630'; c.fillRect(SX - 0.45, TOP, 0.9, FOOT - TOP);
+    c.strokeStyle = 'rgba(236,230,216,.16)'; c.lineWidth = 0.03;
+    for (let y = TOP + 0.2; y < FOOT; y += 0.3) { c.beginPath(); c.moveTo(SX - 0.42, y); c.lineTo(SX + 0.42, y); c.stroke(); }
+    label(c, lw, 'STAIRS', SX, FOOT + 0.55, { size: 7, color: 'rgba(236,230,216,.6)' });
+    const v = s.v || 0.5;
     for (const e of s.escs) {
+      const up = e.dir !== 'down';
       c.fillStyle = '#2b2f37'; c.fillRect(e.x - 0.75, TOP, 1.5, FOOT - TOP);
-      c.strokeStyle = '#9aa0aa'; c.lineWidth = 0.06; c.strokeRect(e.x - 0.75, TOP, 1.5, FOOT - TOP);
-      // the steps creep upward
+      c.strokeStyle = up ? '#9aa0aa' : '#c9a25a'; c.lineWidth = 0.06; c.strokeRect(e.x - 0.75, TOP, 1.5, FOOT - TOP);
+      // the steps creep the way it runs
       c.strokeStyle = 'rgba(236,230,216,.12)'; c.lineWidth = 0.03;
-      const off = (t * 0.5 * (FOOT - TOP) / W.contract.params.length * 4) % 0.4;
-      for (let y = FOOT - off; y > TOP; y -= 0.4) { c.beginPath(); c.moveTo(e.x - 0.7, y); c.lineTo(e.x + 0.7, y); c.stroke(); }
+      const off = (t * v * (FOOT - TOP) / P.length * 4) % 0.4;
+      for (let y = up ? FOOT - off : TOP + off; up ? y > TOP : y < FOOT; y += up ? -0.4 : 0.4) { c.beginPath(); c.moveTo(e.x - 0.7, y); c.lineTo(e.x + 0.7, y); c.stroke(); }
       c.strokeStyle = 'rgba(236,230,216,.25)'; c.beginPath(); c.moveTo(e.x, TOP); c.lineTo(e.x, FOOT); c.stroke();
-      if (d.rule === 'walk') { label(c, lw, 'WALK', e.x - 0.38, FOOT + 0.55, { size: 7, color: 'rgba(212,169,79,.85)' }); label(c, lw, 'STAND', e.x + 0.38, FOOT + 0.55, { size: 7, color: 'rgba(156,196,236,.85)' }); }
-      else label(c, lw, 'STAND BOTH SIDES', e.x, FOOT + 0.55, { size: 7, color: 'rgba(156,196,236,.85)' });
+      // an arrow down the middle, and the rule where people step on
+      const mid = (TOP + FOOT) / 2, a = up ? -1 : 1;
+      c.fillStyle = up ? 'rgba(156,196,236,.35)' : 'rgba(212,169,79,.4)';
+      c.beginPath(); c.moveTo(e.x, mid + a * 0.5); c.lineTo(e.x - 0.35, mid - a * 0.1); c.lineTo(e.x + 0.35, mid - a * 0.1); c.closePath(); c.fill();
+      const ry = up ? FOOT + 0.55 : TOP - 0.3;
+      if (d.rule === 'walk') { label(c, lw, 'WALK', e.x - 0.38, ry, { size: 7, color: 'rgba(212,169,79,.85)' }); label(c, lw, 'STAND', e.x + 0.38, ry, { size: 7, color: 'rgba(156,196,236,.85)' }); }
+      else label(c, lw, 'STAND BOTH SIDES', e.x, ry, { size: 7, color: 'rgba(156,196,236,.85)' });
+      label(c, lw, up ? 'UP' : 'DOWN', e.x, up ? TOP - 0.3 : FOOT + 0.55, { size: 7, color: up ? 'rgba(156,196,236,.85)' : 'rgba(212,169,79,.85)' });
     }
-    label(c, lw, `${Math.round(W.contract.params.length)} m escalator${s.escs.length > 1 ? 's' : ''}`, box.w / 2 - 0.3, TOP + 0.4, { size: 8, align: 'right' });
+    label(c, lw, `${Math.round(P.length)} m escalator${s.escs.length > 1 ? 's' : ''}${v > 0.5 ? ' · fast' : ''}`, -box.w / 2 + 0.3, TOP + 0.4, { size: 8, align: 'left' });
     for (const p of s.people) drawPerson(c, p);
     for (const e of W.fx || []) if (e.type === 'train') { const age = t - e.t0; if (age < 1.6) label(c, lw, 'TRAIN IN', 0, box.h / 2 - 0.5, { size: 12, color: `rgba(243,197,107,${1 - age / 1.6})` }); }
     fx(c, W, t);
