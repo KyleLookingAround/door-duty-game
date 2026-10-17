@@ -190,6 +190,7 @@ export function streetSVG() {
     o.push(`<g class="sbld ${st}" data-i="${p.i}" ${st === 'locked' || st === 'rival' ? '' : 'role="button" tabindex="0"'} aria-label="${scEsc(p.name)}">${a.svg}`);
     // what's going on here, floating above the roofline
     const lbl = st === 'open' ? ['TENDER' + (p.contract && p.contract.solved ? ' · ' + kmoney(feeOf(S, p.contract)) : ''), '#d4a94f', '#1d1608']
+      : st === 'callback' && p.reason === 'paradox' ? ['NEW WORK' + (p.contract && p.contract.solved ? ' · ' + kmoney(feeOf(S, p.contract)) : ''), '#d4a94f', '#1d1608']
       : st === 'callback' ? ['CALLBACK', '#ef5b4c', '#1a0a08']
       : st === 'rival' ? [`${RIVAL} · back in ${Math.max(1, (p.rivalUntil || 0) - S.month)} mo`, 'rgba(60,60,64,.9)', '#c8c2b6']
       : st === 'fitted' && p.broken ? ['BROKEN DOWN · tap to service', '#ef5b4c', '#1a0a08']

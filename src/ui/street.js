@@ -35,7 +35,7 @@ function laterList(list) {
 export function renderStreet() {
   const notes = refreshPlots(S);
   if (notes.includes('market')) setTimeout(() => toast('Market Square is open: five new clients, and a rival firm'), 600);
-  if (notes.includes('riverside')) setTimeout(() => toast('Riverside is open: an airport, a shopping centre and an arena, all inside work'), 600);
+  if (notes.includes('riverside')) setTimeout(() => toast('Riverside is open: three new clients, all inside work'), 600);
   $('sCash').textContent = kmoney(S.cash);
   $('sRep').textContent = rep(S) + '★';
   $('sMonth').textContent = `${MONTHS[S.month % 12]} ${String(S.year).slice(2)}`;
