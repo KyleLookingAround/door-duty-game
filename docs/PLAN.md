@@ -92,8 +92,8 @@ How to use this page: work the phases in order. Each phase lists the work, the a
 
 **Work**
 1. D5: spread reputation over about 12 months instead of 4. Options: raise the Market Square thresholds, award stars more slowly, or let stars fade while a callback waits.
-2. D6: give money a use. Options: pay to rush research, a third bench or a research lab premises, landmark buy-ins or opening-night preparation, advertising that brings tenders in quiet months.
-3. **The research rework** (section 4): research never stops, queues, the market study, mastery, refinements, the new branch layout, and paying monthly. The new content nodes come later, with the content they open.
+2. D6: give money a use. Planned: monthly research costs, refinements and the Research lab (section 4). Still to choose: rushing research, landmark buy-ins or opening-night preparation, advertising that brings tenders in quiet months.
+3. **The research rework** (section 4): research never stops, queues, the market study, mastery, refinements, the five-branch layout, paying monthly, and three new nodes (Crowd counters, Sales network, Research lab). Mastery needs `c.lesson` from Phase 1. The other new nodes come in Phases 1, 4 and 5, with what they open.
 
 *Architecture:* move prices, star thresholds, wages, rent and research times into `content/balance.js`; let `simulate()` take overrides so values can be tried without code edits. The research changes are in section 4.
 
@@ -110,7 +110,7 @@ How to use this page: work the phases in order. Each phase lists the work, the a
 4. D7: show locked buildings' research needs from the start.
 5. Inside-job wording ("Your setup"); hide counters that don't apply.
 6. Faster surveys. *Architecture:* a pool of `hardwareConcurrency − 1` survey workers, surveying the next likely job before it's opened, and a time cap on chain searches. Profile `engine/world.js` (700 lines) before tuning the surveyor.
-7. Bring `docs/game-loop.html` up to date.
+7. Bring the rest of `docs/game-loop.html` up to date (its tech and landmark tables are generated from `TECH` from Phase 2).
 
 **Tests that must pass:** layout checks at both sizes (layer 5); survey times within budget (layer 6).
 
@@ -120,7 +120,7 @@ How to use this page: work the phases in order. Each phase lists the work, the a
 
 Already on the design page as Later, plus two unbuilt landmarks. Each comes with its research node from section 4.3: Design office, Chain modelling, Child sensors, Wayfinding signs, Turnstiles and bag search, Security lanes.
 
-1. **Blueprint book:** save a design and reuse it on later jobs. More useful once Phase 1 makes answers vary. *Architecture:* new save data, so bump `SAVE_VERSION` to 4 with a `migrate()` step; store blueprints by job type and stage key, not by plot.
+1. **Blueprint book:** save a design and reuse it on later jobs. More useful once Phase 1 makes answers vary. *Architecture:* new save data, so bump `SAVE_VERSION` again (Phase 2 bumps it first) with a `migrate()` step; store blueprints by job type and stage key, not by plot.
 2. **Doors as a chain stage:** the Station's escalators feeding the gate line, the Skyport kerb into the terminal. *Architecture:* the biggest structural piece. A `DoorStage` adapter gives the door `World` the `StageSim` interface (`admit`, `finish`), so a frontage can feed a stage or be fed by one. Design it early: it changes where the World's arrivals come from.
 3. **New guests:** kids racing ahead, tourists riding the door round, phone zombies.
 4. **Landmarks:** the Stadium (pillars, gates, barriers) and the full airport chain (kerb, check-in, security, gate, bags).
@@ -288,7 +288,7 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 - The ★ wording matches the grading rule (one shared constant).
 - Every hint names only hardware the job allows.
 - The Arena's twists come from a concert list.
-- Research rule (Phase 2): a month can't end with a free bench; a queued project starts when the one before finishes; the market study is always available, including when overdrawn or the tree is done; refinements keep appearing after the 23 techs; an old save migrates with empty queues.
+- Research rules (Phase 2), listed in section 4.5: no free bench at month end, queues, monthly payments pausing when overdrawn, the market study always available, mastery only from a lesson job, refinements after the tree, and an old save migrating with empty queues and owned techs mastered.
 
 **2. Golden surveys** (unchanged): the pin on the surveyor. Re-record on purpose after Phase 0 and each Phase 1 change, and say so in the commit.
 
@@ -335,7 +335,7 @@ Nothing in CI opens the page; nothing checks text; nothing checks variety or bal
 | Survey worker pool, pre-surveying, chain time cap | 3 | Survey waits |
 | One canvas-fitting function for `canvas.js` and `stageart.js` | 3 | Clipped frontages and plans |
 | Pinned Playwright, bot in CI | 0–3 | The page itself gets tested |
-| `SAVE_VERSION` 4 for blueprints | 4 | New save data |
+| Another `SAVE_VERSION` bump for blueprints | 4 | New save data |
 | `DoorStage` adapter on `StageSim` | 4 | Doors inside chains |
 | Programmable doors as rule data | 5 | Deterministic and safe on a shared seed |
 
