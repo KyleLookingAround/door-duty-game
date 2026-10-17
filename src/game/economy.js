@@ -3,10 +3,12 @@ import { PREMISES, STAFF } from '../content/company.js';
 import { TECH } from '../content/tech.js';
 import { PARADOX_CALLS } from '../content/paradoxes.js';
 import { STREETS } from '../content/town.js';
+import { STREET_GATES, ADVERT } from '../content/balance.js';
 import { PLOTS, KINDS, buildSite } from '../content/buildings/index.js';
 
-// reputation: each client's best stars, plus a star for every tech the firm has mastered
-export const rep = S => S.plots.reduce((a, p) => a + p.stars, 0) + masteryStars(S);
+// reputation: the stars from every job the firm has signed (its standing on every street: repeat work and
+// callbacks count, so it keeps growing however you play), plus a star for every tech it has mastered
+export const rep = S => Object.values(S.standing || {}).reduce((a, n) => a + n, 0) + masteryStars(S);
 export const prem = S => PREMISES[S.premises || 0];
 // How many jobs the firm can sign off a month: the premises, plus research that adds crews' time.
 // Every sign-off counts (tenders, callbacks, research calls, inside jobs); a street-change check doesn't.
@@ -61,8 +63,34 @@ export const needsText = (S, p) => missingNeeds(S, p).map(k => neededLevel(p, k)
 
 // the town
 export const streetOf = p => (PLOTS[p.i] || {}).street || 'high';
-export const streetOpen = (S, k) => rep(S) >= (STREETS.find(x => x.key === k) || {}).rep;
+// Street standing: the stars from every job signed on a street (callbacks and research calls too). A street opens
+// on standing earned on the one before it, after enough months there, with some of its techs mastered
+// (STREET_GATES); once open, it stays open.
+export const standing = (S, k) => (S.standing || {})[k] || 0;
+export const monthsOn = (S, k) => k === 'high' ? S.month - 4 : S[k + 'OpenedAt'] != null ? S.month - S[k + 'OpenedAt'] : 0;
+export const gateMastered = (S, g) => g.list.filter(k => isMastered(S, k)).length;
+export function streetGate(S, k) {
+  const g = STREET_GATES[k];
+  if (!g) return null;
+  return { ...g, have: standing(S, g.from), months: monthsOn(S, g.from), needMonths: g.months, gotMastered: gateMastered(S, g) };
+}
+export const streetOpen = (S, k) => {
+  if (k === 'high' || S[k + 'Open']) return true;
+  const g = streetGate(S, k);
+  return !!g && (g.from === 'high' || streetOpen(S, g.from)) && g.have >= g.standing && g.months >= g.needMonths && g.gotMastered >= g.mastered;
+};
+// what still stands between the firm and a street, in words (for the street and the advice line)
+export function gateText(S, k) {
+  const g = streetGate(S, k), name = (STREETS.find(x => x.key === k) || {}).name, from = (STREETS.find(x => x.key === g.from) || {}).name;
+  const want = [];
+  if (g.have < g.standing) want.push(`${g.standing - g.have} more ★ of standing on ${from} (stars from every job you sign there)`);
+  if (g.gotMastered < g.mastered) want.push(`${g.mastered - g.gotMastered} more of these mastered: ${g.list.filter(x => !isMastered(S, x)).map(techName).join(', ')}`);
+  if (g.months < g.needMonths) want.push(`${g.needMonths - g.months} more month${g.needMonths - g.months === 1 ? '' : 's'} on ${from}`);
+  return want.length ? `${name} opens after ${want.join('; ')}.` : `${name} is open.`;
+}
 export const rivalActive = S => streetOpen(S, 'market');
+// what the next advert this month costs
+export const advertCost = S => Math.round((ADVERT.base + ADVERT.step * (S.adverts || 0)) * (S.unlocks.network ? ADVERT.network : 1) / 500) * 500;
 // what Brassworks leaves behind: cheap swing doors in every other bay, both ways
 export const rivalInstall = p => Array.from({ length: KINDS[p.kind].slots }, (_, i) => i % 2 === 0 ? { type: 'swing', curtain: false, flow: 'both' } : { type: 'wall' });
 export const tierOf = (S, p) => Math.min(7, Math.floor(S.jobs / 3) + (p.tier || 0));

@@ -14,7 +14,8 @@
     "sim": "node tools/sim.mjs",
     "bot": "python3 tools/bot.py",
     "record-golden": "node tools/record-golden.mjs",
-    "balance": "node tools/balance.mjs"
+    "balance": "node tools/balance.mjs",
+    "pacing": "node tools/pacing.mjs"
   },
   "engines": {
     "node": ">=20"

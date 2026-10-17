@@ -6,12 +6,12 @@
 //
 // usage: node tools/sim.mjs [months=24] [seed=1] [--quiet]
 import { freshState } from '../src/game/state.js';
-import { refreshPlots, settleCheck } from '../src/game/plots.js';
+import { falseAlarm, refreshPlots, settleCheck } from '../src/game/plots.js';
 import { generateSolved, runHeadless, designSig } from '../src/game/contracts.js';
-import { grade, signOff, service, hire, movePremises } from '../src/game/jobs.js';
+import { advertise, grade, signOff, service, hire, movePremises } from '../src/game/jobs.js';
 import { startResearch, canResearch, benchesFilled, instalment } from '../src/game/research.js';
 import { endMonth } from '../src/game/month.js';
-import { rep, prem, techOf, feeOf, charge, serviceCost, plotNeeds, jobsLeft, jobsPerMonth } from '../src/game/economy.js';
+import { advertCost, streetGate, rep, prem, techOf, feeOf, charge, serviceCost, plotNeeds, jobsLeft, jobsPerMonth } from '../src/game/economy.js';
 import { TECH } from '../src/content/tech.js';
 import { PREMISES, STAFF } from '../src/content/company.js';
 import { MONTHS } from '../src/game/contracts.js';
@@ -34,8 +34,13 @@ export function lazyDesigns(c) {
   return out;
 }
 
-export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth = () => {} } = {}) {
+// style: how well the firm plays (the pacing bands, npm run pacing):
+//   strong: the surveyor's par design (2-3★), and research the street's clients want first
+//   weak:   gets every job through but only just (1★), and researches the cheapest thing going
+//   poor:   turns down or fumbles a third of its jobs (1★ on the rest), and researches at random
+export async function simulate({ months = 24, seed = 1, style = 'strong', log = () => {}, onMonth = () => {} } = {}) {
   const S = freshState(seed);
+  const pick = () => { S.simRng = ((S.simRng || seed * 2654435761) * 1103515245 + 12345) >>> 0; return S.simRng / 4294967296; };   // the policy's own dice, apart from the game's
   const tally = { jobs: 0, parFails: [], falseAlarms: 0, unsurveyable: 0, skipped: 0, months: [] };
   for (let m = 0; m < months; m++) {
     refreshPlots(S);
@@ -54,14 +59,16 @@ export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth 
         try { c = await generateSolved(c, techOf(S), S.recent || []); } catch (err) { c = null; tally.failed = [...(tally.failed || []), { ...job, error: String(err && err.message || err) }]; }
         if (!c) { p.contract = null; tally.unsurveyable++; continue; }
         if (p.status === 'checking') { if (settleCheck(S, p, c) === 'coped') { tally.coped = (tally.coped || 0) + 1; continue; } tally.calls = (tally.calls || 0) + 1; }
-        else if (p.status === 'callback' && c.existing && c.par.cost === 0) { p.status = 'fitted'; p.contract = null; p.reason = null; tally.falseAlarms++; continue; }
+        else if (p.status === 'callback' && c.existing && c.par.cost === 0) { falseAlarm(S, p); tally.falseAlarms++; continue; }
         if (p.status === 'callback' && p.reason !== 'paradox' && c.opts && c.opts.callback) p.reason = c.opts.callback;
         p.contract = c;
       }
-      if (feeOf(S, c) - charge(S, c.par.cost) < 0 || S.cash < charge(S, c.par.cost)) { tally.skipped++; continue; }
+      if (feeOf(S, c) - charge(S, c.par.cost) < 0) { tally.skipped++; continue; }   // the page lets you take a job whatever your cash: the fee covers the hardware
       if (!jobsLeft(S)) { tally.waiting = (tally.waiting || 0) + 1; continue; }   // a check that became a callback, with the crews booked up
+      if (style === 'poor' && pick() < 0.33) { tally.fumbled = (tally.fumbled || 0) + 1; continue; }   // turned down, or failed the test
       const r = runHeadless(c, c.par.slots, techOf(S));
       const g = grade(S, c, c.par.slots, r);
+      if (style !== 'strong') g.stars = Math.min(g.stars, 1);
       if (!g.pass) { tally.parFails.push(`${MONTHS[S.month % 12]} ${S.year} ${p.name}: ${g.hint}`); continue; }
       if (lazyDesigns(c).some(d => grade(S, c, d, runHeadless(c, d, techOf(S))).pass)) tally.lazy = (tally.lazy || 0) + 1;   // a lazy answer would have done
       if ((S.recent || []).includes(designSig(c.par.slots))) tally.repeats = (tally.repeats || 0) + 1;   // the same answer as a recent job
@@ -72,14 +79,19 @@ export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth 
     }
     // run the firm: fix what's broken, research what clients are waiting on, grow when there's money
     for (const p of S.plots) if (p.broken && S.cash > serviceCost(p) + 5000) service(S, p);
-    const wanted = [...S.plots.filter(p => p.enquiry && !p.enquiry.ready).map(p => p.enquiry.tech), ...S.plots.filter(p => p.status === 'locked').flatMap(p => plotNeeds(p))].filter(k => !S.unlocks[k]);
+    // wanted: what clients are waiting for, what locked clients need, and what the next street's gate asks for
+    const gk = ['market', 'riverside'].find(k => !S[k + 'Open']), gate = gk && streetGate(S, gk);
+    const wanted = [...S.plots.filter(p => p.enquiry && !p.enquiry.ready).map(p => p.enquiry.tech), ...S.plots.filter(p => p.status === 'locked').flatMap(p => plotNeeds(p)), ...(gate ? gate.list : [])].filter(k => !S.unlocks[k]);
     // research never stops: keep every bench busy and one project queued, wanted research first, then the
     // cheapest; pay-as-you-go, so only take on what the month's instalments allow (otherwise a market study)
-    const order = [...TECH].sort((a, b) => (wanted.includes(b.key) - wanted.includes(a.key)) || a.price - b.price);
+    const order = style === 'poor' ? [...TECH].sort(() => pick() - 0.5) : style === 'weak' ? [...TECH].sort((a, b) => a.price - b.price)
+      : [...TECH].sort((a, b) => (wanted.includes(b.key) - wanted.includes(a.key)) || a.price - b.price);
     for (const t of order) {
       if (!canResearch(S, t) || S.cash < instalment(t, S) * 2 + 10000 || (S.queue || []).length >= 1) continue;
       startResearch(S, t.key);
     }
+    // a quiet month: a strong firm advertises for work
+    if (style === 'strong' && !S.plots.some(p => ['open', 'callback', 'checking'].includes(p.status)) && S.cash > advertCost(S) + 30000 && advertise(S)) tally.adverts = (tally.adverts || 0) + 1;
     const next = PREMISES[(S.premises || 0) + 1];
     if (next && S.cash > next.price + 40000) movePremises(S, (S.premises || 0) + 1);
     for (const s of STAFF) {
@@ -94,7 +106,7 @@ export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth 
     if (!S.plots.some(p => ['open', 'callback', 'checking'].includes(p.status))) tally.quiet = (tally.quiet || 0) + 1;
     tally.asked = (tally.asked || 0) + (rpt.enquiry.fresh ? 1 : 0); tally.won = (tally.won || 0) + rpt.enquiry.won.length; tally.lapsed = (tally.lapsed || 0) + rpt.enquiry.lapsed.length;
     tally.studies = (tally.studies || 0) + rpt.research.studies.length; tally.mastered = Object.keys(S.mastered || {}).length;
-    const row = { month: label, cash: S.cash, rep: rep(S), jobs: S.jobs, fitted: S.plots.filter(p => p.status === 'fitted').length, net: rpt.net, calls: rpt.calls.length };
+    const row = { month: label, cash: S.cash, rep: rep(S), jobs: S.jobs, fitted: S.plots.filter(p => p.status === 'fitted').length, net: rpt.net, calls: rpt.calls.length, market: !!S.marketOpen, riverside: !!S.riversideOpen, standing: { ...(S.standing || {}) }, mastered: Object.keys(S.mastered || {}).length };
     tally.months.push(row);
     onMonth(S, row);
     log(`${row.month.padEnd(9)} cash ${String(Math.round(row.cash)).padStart(8)}  rep ${String(row.rep).padStart(3)}★  jobs ${String(row.jobs).padStart(3)}  fitted ${String(row.fitted).padStart(2)}  net ${String(row.net).padStart(7)}  callbacks ${row.calls}`);
@@ -106,7 +118,8 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
   const nums = process.argv.slice(2).filter(a => /^\d+$/.test(a)).map(Number);
   const quiet = process.argv.includes('--quiet');
   const t0 = Date.now();
-  const { S, tally } = await simulate({ months: nums[0] || 24, seed: nums[1] || 1, log: quiet ? () => {} : console.log });
+  const style = (process.argv.find(a => a.startsWith('--style=')) || '--style=strong').slice(8);
+  const { S, tally } = await simulate({ months: nums[0] || 24, seed: nums[1] || 1, style, log: quiet ? () => {} : console.log });
   console.log(`\ninside jobs: ${JSON.stringify(tally.inside || {})}`);
   console.log(`jobs that waited for the crews: ${tally.waiting || 0} · jobs that repeated a recent answer: ${tally.repeats || 0} of ${tally.jobs} · a lazy answer passed ${tally.lazy || 0}`);
   console.log(`research: ${Object.keys(S.unlocks).length} owned, ${tally.mastered || 0} mastered, ${tally.studies || 0} market studies`);

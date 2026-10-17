@@ -6,7 +6,7 @@ import { changeWhere } from '../game/month.js';
 import { CALLBACKS, RIVAL, STREETS } from '../content/town.js';
 import { benchesFilled } from '../game/research.js';
 import { MONTHS } from '../game/contracts.js';
-import { feeOf, monthlyIncome, needsMet, needsText, rep, rivalActive, rivalInstall, streetOf, streetOpen, techName, upkeep } from '../game/economy.js';
+import { feeOf, gateText, monthlyIncome, needsMet, needsText, rep, rivalActive, rivalInstall, streetOf, streetOpen, techName, upkeep } from '../game/economy.js';
 import { advice } from '../game/enquiries.js';
 import { jobsLine } from '../game/briefs.js';
 import { refreshPlots } from '../game/plots.js';
@@ -31,8 +31,8 @@ function laterList(list) {
   const sorted = [...list].sort((a, b) => a.rep - b.rep);
   const nextAt = sorted.find(p => p.rep > r);
   return `<div class="later">${sorted.map(p => {
-    const research = r >= p.rep && !needsMet(S, p);
-    const req = research ? `Research ${needsText(S, p)}` : `${p.rep}★`;
+    const research = r >= p.rep && !needsMet(S, p), shut = !streetOpen(S, streetOf(p));
+    const req = shut ? `When ${streetOf(p) === 'market' ? 'Market Square' : 'Riverside'} opens` : research ? `Research ${needsText(S, p)}` : `${p.rep}★`;
     const k = KINDS[p.kind];
     return `<div><span><b>${p.name}</b>${sameWord(p.name, k.label) ? '' : ` · ${k.label}`}${streetOf(p) === 'market' ? ' · Market Square' : streetOf(p) === 'riverside' ? ' · Riverside' : ''}</span><span class="req${research || p === nextAt ? ' next' : ''}${research ? ' wide' : ''}">${req}</span></div>`;
   }).join('')}</div>`;
@@ -114,7 +114,7 @@ export function renderStreet() {
   $('street').innerHTML = live.map(row).join('') + (tip ? `<p class="note ledtip">${tip.text}${tip.tab ? ` <button class="ghost small" type="button" data-co="${tip.tab}">Open ${tip.tab}</button>` : ''}</p>` : '');
   $('street').querySelectorAll('[data-co]').forEach(b => b.onclick = guarded(() => openCompany(b.dataset.co)));
   $('ledgerRest').innerHTML = (fitted.length ? `<div class="eyebrow ledhead">Your clients · ${fitted.filter(p => p.status === 'fitted').length}</div>${fitted.map(row).join('')}` : '')
-    + (later.length ? `<div class="eyebrow ledhead">Not yet · you have ${rep(S)}★</div>${laterList(later)}` : '');
+    + (later.length ? `<div class="eyebrow ledhead">Not yet · you have ${rep(S)}★</div>${(() => { const k = ['market', 'riverside'].find(x => !streetOpen(S, x)); return k && (k === 'market' || streetOpen(S, 'market')) ? `<p class="note ledtip">${gateText(S, k)}</p>` : ''; })()}${laterList(later)}` : '');
   $('ledger').querySelectorAll('.plot').forEach(b => b.addEventListener('click', guarded(() => { const p = S.plots[+b.dataset.i]; if (p.status === 'fitted' || p.status === 'checking') openClient(p.i); else if (p.status === 'open' || p.status === 'callback') openBrief(p.i); })));
   save();
   for (const p of S.plots) if ((p.status === 'open' || p.status === 'callback' || p.status === 'checking') && p.contract && !p.contract.solved) survey(p);

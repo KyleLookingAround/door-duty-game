@@ -3,7 +3,7 @@ import { makeContract } from './contracts.js';
 import { BUILDING } from '../content/buildings/index.js';
 import { eventOf } from '../content/events.js';
 import { randomInt } from './state.js';
-import { rep, needsMet, streetOpen, rivalInstall, techOf, tierOf } from './economy.js';
+import { rep, needsMet, streetOf, streetOpen, rivalInstall, techOf, tierOf } from './economy.js';
 
 // A street-change check has been surveyed: if the client's setup still passes, it coped (and the client
 // remembers it); if not, they call you back with the job the surveyor drew up. Returns 'coped' or 'call'.
@@ -17,14 +17,22 @@ export function settleCheck(S, p, sc) {
   return 'call';
 }
 
+// A callback whose doors already cope: no job, and the maintenance fee resumes. If it was a research call, the
+// call goes back on the list for another client, so the research still gets its lesson job.
+export function falseAlarm(S, p) {
+  if (p.reason === 'paradox' && p.callTech) S.pendingCalls = [...(S.pendingCalls || []), [p.callTech, p.callIdx || 0, S.month - 2]];
+  p.status = 'fitted'; p.contract = null; p.reason = null;
+  p.callTech = null; p.callStage = null; p.callChain = null; p.callTwist = null; p.lessonTender = false;
+}
+
 // Returns what changed that the player should hear about (e.g. a new street opening).
 export function refreshPlots(S) {
   const notes = [];
   const r = rep(S);
-  if (!S.marketOpen && streetOpen(S, 'market')) { S.marketOpen = true; notes.push('market'); }
-  if (!S.riversideOpen && streetOpen(S, 'riverside')) { S.riversideOpen = true; notes.push('riverside'); }
+  if (!S.marketOpen && streetOpen(S, 'market')) { S.marketOpen = true; S.marketOpenedAt = S.month; notes.push('market'); }
+  if (!S.riversideOpen && streetOpen(S, 'riverside')) { S.riversideOpen = true; S.riversideOpenedAt = S.month; notes.push('riverside'); }
   for (const p of S.plots) {
-    if (p.status === 'locked' && r >= p.rep && needsMet(S, p)) p.status = 'open';
+    if (p.status === 'locked' && r >= p.rep && needsMet(S, p) && streetOpen(S, streetOf(p))) p.status = 'open';
     if (p.status === 'rival' && S.month >= (p.rivalUntil || 0)) { p.status = 'callback'; p.reason = 'botched'; p.install = rivalInstall(p); p.contract = null; p.callStage = null; p.callChain = null; p.callTwist = null; }
     if ((p.status === 'open' || p.status === 'callback' || p.status === 'checking') && !p.contract) {
       const B = BUILDING[p.kind];

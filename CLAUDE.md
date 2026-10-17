@@ -19,6 +19,8 @@ npm run bot -- 9     # browser smoke test (Playwright for Python, pinned in tool
                      # design. --dev plays src/ instead. CI runs it on every push.
 npm run balance      # balance report: answer variety and pacing over 5 seeds (~30 min on 4 cores; --quick ~6 min);
                      # --compare test/fixtures/balance-baseline.json to see it next to the baseline. Runs nightly in CI.
+npm run pacing       # pacing bands: strong, weak and poor sim players on 4 seeds × 30 months: when each street opens
+                     # (~20 min; --quick: 2 seeds × 18 months). Tune content/balance.js against it.
 npm run record-golden  # re-record test/fixtures/surveyor-golden.json after a deliberate rules change (~2 min); prints which
                        # cases changed (--dry to only print). Put the summary in the commit message.
 ```
@@ -31,7 +33,7 @@ src/
   engine/stages/         inside jobs: one small crowd model per paradox (queue, escalator, lifts, paternoster,
                          walkway, carousel, braess, bottleneck), common.js (StageSim base), chain.js (stages run
                          together as one crowd), index.js (STAGES registry)
-  content/               data: what the game is made of. Add things here first.
+  content/               data: what the game is made of. Add things here first. balance.js: street gates, adverts
     buildings/*.js       one file per client (see buildings/README.md); index.js fixes the save order
     twists.js tech.js company.js town.js events.js guides.js
     paradoxes.js         which finished research makes which fitted client call, and about what
@@ -108,6 +110,10 @@ Research never stops (`game/research.js`). Every bench needs a project before th
 A finished tech is owned (`S.unlocks`) and becomes mastered (`S.mastered`) when you sign off the job that teaches it (`masterFrom`: its research call, or a lesson tender). Research only the client that needs it could teach is mastered on finish (`needsMastery`). Landmarks (plots needing several techs) and tier-3 research want what they build on mastered; each mastery is a ★ in `rep`. A research call that waits two months for a fitted client becomes a lesson tender (`p.lessonTender`) at an open client of the right kind; the rival never bids on it.
 
 Five branches (`BRANCHES`): revolving doors, open doors, crowd science, inside work, the firm. Refinements (`kind: 'refine'`: brush seals, heat recovery, the supplier contract) have levels with rising prices; `S.unlocks[key]` holds the level, and heat recovery level 2 is heat pumps (Office Towers' `needLevels`). The Sales network needs 3 market studies behind it (`studies`) and doubles what each brings; the Research lab adds a bench.
+
+## Streets and money
+
+Reputation (`rep`) is the stars from every job the firm has signed plus a star per mastered tech, so it grows however you play. Each job's stars also count as standing on its street (`S.standing`). A street opens (`streetOpen`, `STREET_GATES` in `content/balance.js`) on standing on the street before it, after at least 6 months there, with a few techs from a short list mastered; once open it stays open (`S.marketOpen`, `S.marketOpenedAt`). Clients on a street that isn't open don't talk to you. `gateText` says what's missing (the street's "Not yet" list and the advice line). Advertising (`advertise` in `jobs.js`) buys work this month, dearer each time; the Sales network makes it cheaper. The sim plays in three styles (`simulate({ style })`: strong, weak, poor) and `npm run pacing` reports when each opens the streets.
 
 ## Callbacks
 

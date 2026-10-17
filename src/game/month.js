@@ -9,7 +9,7 @@ import { makeContract, runHeadless } from './contracts.js';
 import { random, randomInt } from './state.js';
 import { settleEnquiries, hasWork } from './enquiries.js';
 import { researchMonth } from './research.js';
-import { monthlyIncome, needsMastery, prem, insurance, wearRate, rivalActive, stepFreeOk, techOf, tierOf, streetOf, streetOpen } from './economy.js';
+import { monthlyIncome, needsMastery, techName, prem, insurance, wearRate, rivalActive, stepFreeOk, techOf, tierOf, streetOf, streetOpen } from './economy.js';
 
 export const CLAIM_EXCESS = 1200, INSPECTION_FINE = 2500;
 
@@ -98,7 +98,7 @@ export function endMonth(S) {
     } catch (e) { insp = null; }
   }
   S.month++; if (S.month % 12 === 0) S.year++;
-  S.monthJobs = 0;   // a new month: the crews are free again
+  S.monthJobs = 0; S.adverts = 0;   // a new month: the crews are free again, and adverts are back to their first price
   // research: paid as it goes, never idle (see research.js)
   const research = researchMonth(S), done = research.done;
   // a move in progress: one month nearer; at the end of the last one, the firm is in
@@ -132,15 +132,25 @@ export function endMonth(S) {
     if (!pool.length) {
       if (S.month - (since ?? S.month) < 2 || !needsMastery(k) || (S.mastered || {})[k]) return true;
       const open = S.plots.filter(p => p.status === 'open' && !p.callTech && def.kinds.includes(p.kind));
-      if (!open.length) return true;
-      const p = open[randomInt(S, open.length)];
-      p.callTech = k; p.callText = def.text; p.callTwist = def.twist || null; p.callStage = def.stage || null; p.callChain = def.chain || null; p.lessonTender = true; p.contract = null;
-      lessonTenders.push(p);
+      if (open.length) {
+        const p = open[randomInt(S, open.length)];
+        p.callTech = k; p.callIdx = j; p.callText = def.text; p.callTwist = def.twist || null; p.callStage = def.stage || null; p.callChain = def.chain || null; p.lessonTender = true; p.contract = null;
+        lessonTenders.push(p);
+        return false;
+      }
+      // nobody new to ask: a fitted client of the right kind hears about it and wants it, in plain words
+      // (what the call's own text says may not be true of them)
+      const any = S.plots.filter(p => p.status === 'fitted' && !p.broken && !p.enquiry && def.kinds.includes(p.kind) && (def.stage || def.chain || p.install));
+      if (!any.length) return true;
+      const p = any[randomInt(S, any.length)];
+      p.status = 'callback'; p.reason = 'paradox'; p.contract = null; p.tier++;
+      p.callText = `They've heard about your ${techName(k).toLowerCase()} and want to see what it can do for them.`; p.callTech = k; p.callIdx = j; p.callTwist = def.twist || null; p.callStage = def.stage || null; p.callChain = def.chain || null;
+      paradox.push(p);
       return false;
     }
     const p = pool[randomInt(S, pool.length)];
     p.status = 'callback'; p.reason = 'paradox'; p.contract = null; p.tier++;
-    p.callText = def.text; p.callTech = k; p.callTwist = def.twist || null; p.callStage = def.stage || null; p.callChain = def.chain || null;
+    p.callText = def.text; p.callTech = k; p.callIdx = j; p.callTwist = def.twist || null; p.callStage = def.stage || null; p.callChain = def.chain || null;
     paradox.push(p);
     return false;
   });

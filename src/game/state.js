@@ -2,14 +2,14 @@
 import { PLOTS } from '../content/buildings/index.js';
 
 export const SAVE_KEY = 'doorduty-tycoon-v2';
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 const newPlot = (p, i) => ({ ...p, i, status: 'locked', contract: null, install: null, stars: 0, fee: 0, tier: 0 });
 
 export function freshState(seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0) {
   return {
     version: SAVE_VERSION, upg: 1, seed: seed || 1, rng: seed || 1,
-    cash: 20000, month: 4, year: 2026, jobs: 0, monthJobs: 0, moving: null, unlocks: {}, log: [], recent: [], premises: 0, research: [], queue: [], mastered: {}, staff: {},
+    cash: 20000, month: 4, year: 2026, jobs: 0, monthJobs: 0, moving: null, unlocks: {}, log: [], recent: [], premises: 0, research: [], queue: [], mastered: {}, standing: {}, adverts: 0, staff: {},
     plots: PLOTS.map(newPlot),
   };
 }
@@ -38,6 +38,10 @@ export function migrate(S) {
   if (S.unlocks.heat2) S.unlocks.heat = Math.max(+S.unlocks.heat || 0, 2);
   S.research = S.research.filter(r => r.key !== 'heat2'); S.queue = (S.queue || []).filter(r => r.key !== 'heat2');
   S.queue = S.queue || []; S.mastered = S.mastered || {};
+  // v8: street standing: an older save starts from each street's best stars, and streets already open stay open
+  if (!S.standing) { S.standing = {}; for (const p of S.plots) { const st = p.street || 'high'; S.standing[st] = (S.standing[st] || 0) + (p.stars || 0); } }
+  if (S.marketOpen && S.marketOpenedAt == null) S.marketOpenedAt = S.month;
+  if (S.riversideOpen && S.riversideOpenedAt == null) S.riversideOpenedAt = S.month;
   S.version = SAVE_VERSION;
   return S;
 }

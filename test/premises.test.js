@@ -11,7 +11,7 @@ import { endMonth } from '../src/game/month.js';
 import { movingText } from '../src/game/briefs.js';
 import { TECH } from '../src/content/tech.js';
 
-const rich = seed => { const S = freshState(seed); S.cash = 500000; S.plots[0].stars = 20; return S; };
+const rich = seed => { const S = freshState(seed); S.cash = 500000; S.standing = { high: 20 }; return S; };
 
 test('a move takes months, and the firm works from the old premises until it is done', () => {
   assert.deepEqual(PREMISES.map(p => p.moveMonths || 0), [0, 1, 2]);

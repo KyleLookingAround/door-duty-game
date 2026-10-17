@@ -7,10 +7,10 @@ import { RIVAL } from '../content/town.js';
 import { TWISTS } from '../content/twists.js';
 import { STAGES, stageName, stageAbout } from '../engine/stages/index.js';
 import { MONTHS, candidates } from '../game/contracts.js';
-import { charge, costMult, feeOf, insurance, isMastered, jobsLeft, jobsPerMonth, monthlyIncome, overheads, prem, rep, rivalActive, serviceCost, techName, techOf, upkeep, loyalty } from '../game/economy.js';
+import { advertCost, charge, costMult, feeOf, insurance, isMastered, jobsLeft, jobsPerMonth, monthlyIncome, overheads, prem, rep, rivalActive, serviceCost, techName, techOf, upkeep, loyalty } from '../game/economy.js';
 import { advice, hasWork } from '../game/enquiries.js';
 import { bookedText, callText, isResearchCall, jobLabel, movingText, stageTwist } from '../game/briefs.js';
-import { fire, hire, movePremises, service } from '../game/jobs.js';
+import { advertise, fire, hire, movePremises, service } from '../game/jobs.js';
 import { benches, freeBenches, benchesFilled, instalment, levelOf, nextLevel, researchOut, startResearch, techOrStudy, unqueue } from '../game/research.js';
 import { CLAIM_EXCESS, INSPECTION_FINE, endMonth, changeWhere } from '../game/month.js';
 import { CHANGE, changeText } from '../content/changes.js';
@@ -191,6 +191,7 @@ export function openCompany(tab) {
     const wanted = TECH.filter(t => !S.unlocks[t.key] && S.plots.some(p => p.enquiry && p.enquiry.tech === t.key && !p.enquiry.ready));
     body = `<p>Research never stops: every bench needs a project before the month can end. Projects are paid month by month, and finish at a month end. A finished tech is <b>owned</b>; sign off the job that teaches it and it's <b>mastered</b>, which earns a ★ and is what landmarks ask for.${broke ? ' <span class="hot">Overdrawn: paid projects wait, and the bench runs a market study.</span>' : ''}</p>
       <div class="branch"><div class="eyebrow">Benches</div>${benchRows}</div>${queueRows}
+      <div class="branch"><div class="eyebrow">Bring in work now</div><div class="node avail"><div><b>Advertise</b><p>An advert in the local paper: a client wanting more, or one asking for new research, this month. Each advert this month costs more${S.unlocks.network ? '; your sales network makes them cheaper' : ''}.</p></div><div style="display:grid;gap:4px;justify-items:end"><button class="go" type="button" id="coAd" ${S.cash < advertCost(S) ? 'disabled' : ''}>${kmoney(advertCost(S))}</button>${S.cash < advertCost(S) ? `<span class="why">Need ${kmoney(advertCost(S) - S.cash)} more</span>` : ''}</div></div></div>
       ${wanted.length ? `<p class="note"><b>Wanted:</b> ${wanted.map(t => t.name).join(', ')}.</p>` : ''}` +
       BRANCHES.map(([b, label]) => { const nodes = TECH.filter(t => t.branch === b).map(t => {
         // a refinement shows its level and offers the next one; it reads as owned only at the top level
@@ -260,6 +261,12 @@ export function openCompany(tab) {
     save(); renderStreet(); keepScroll(() => openCompany());
     toast(how === 'queued' ? `${t.name} queued: it starts when a bench comes free` : `Started ${t.name} · ready in ${t.months} month${t.months > 1 ? 's' : ''}`);
   });
+  if ($('coAd')) $('coAd').onclick = () => {
+    const got = advertise(S);
+    if (!got) { toast('Nobody to reach yet: fit a few clients first', true); return; }
+    save(); renderStreet(); keepScroll(() => openCompany());
+    toast(got.kind === 'enquiry' ? `${got.p.name} answered your advert: they want ${techName(got.p.enquiry.tech)}` : `${got.p.name} answered your advert: they want more`);
+  };
   sh.querySelectorAll('[data-unq]').forEach(b => b.onclick = () => { unqueue(S, b.dataset.unq); save(); keepScroll(() => openCompany()); });
   sh.querySelectorAll('[data-hire]').forEach(b => b.onclick = () => { hire(S, b.dataset.hire); save(); renderStreet(); keepScroll(() => openCompany()); toast(`${STAFF.find(s => s.key === b.dataset.hire).name} hired`); });
   sh.querySelectorAll('[data-fire]').forEach(b => b.onclick = () => { fire(S, b.dataset.fire); save(); renderStreet(); keepScroll(() => openCompany()); });

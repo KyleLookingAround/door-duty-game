@@ -3,7 +3,7 @@
 import { $, toast } from './dom.js';
 import { S, save } from './store.js';
 import { generateSolved, GATE } from '../game/contracts.js';
-import { refreshPlots, settleCheck } from '../game/plots.js';
+import { falseAlarm, refreshPlots, settleCheck } from '../game/plots.js';
 import { techOf } from '../game/economy.js';
 import { TWISTS } from '../content/twists.js';
 import { CALLBACKS } from '../content/town.js';
@@ -53,7 +53,7 @@ export function survey(p) {
       }
       if (p.status === 'callback' && sc.existing && sc.par.cost === 0) {
         // the doors you fitted already cope: no job, and the maintenance fee resumes
-        p.status = 'fitted'; p.contract = null; p.reason = null; save();
+        falseAlarm(S, p); save();
         toast(`${p.name}: false alarm. Your doors coped.`);
         surveyHooks.changed();
         return null;

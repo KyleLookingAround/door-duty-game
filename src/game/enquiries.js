@@ -5,7 +5,7 @@
 import { TECH } from '../content/tech.js';
 import { PREMISES } from '../content/company.js';
 import { PARADOX_CALLS, callFits } from '../content/paradoxes.js';
-import { prem, rep, rivalActive, missingNeeds } from './economy.js';
+import { prem, rep, rivalActive, missingNeeds, gateText, streetGate, streetOpen } from './economy.js';
 import { random, randomInt } from './state.js';
 import { canResearch, freeBenches, researchingOrQueued } from './research.js';
 import { kmoney } from '../util/format.js';
@@ -28,7 +28,7 @@ export function settleEnquiries(S, quiet) {
       e.ready = true;
       if (p.status !== 'fitted' || p.broken) continue;   // busy with something else: they call once it's sorted
       p.status = 'callback'; p.reason = 'paradox'; p.contract = null; p.tier++;
-      p.callText = e.text; p.callTech = e.tech; p.callTwist = def.twist || null; p.callStage = def.stage || null; p.callChain = def.chain || null;
+      p.callText = e.text; p.callTech = e.tech; p.callIdx = e.j; p.callTwist = def.twist || null; p.callStage = def.stage || null; p.callChain = def.chain || null;
       won.push(p);
     } else if (S.month > e.by) {
       p.enquiry = null; p.askAfter = S.month + 6;   // they won't ask again for a while
@@ -60,7 +60,8 @@ export function settleEnquiries(S, quiet) {
 // What would bring in work? One suggestion: { text, tab } (tab: the Company tab to open, if any), or null.
 export function advice(S) {
   const P = prem(S), free = freeBenches(S), r = rep(S);
-  const short = t => S.cash < t.price ? `, and you need ${kmoney(t.price - S.cash)} more for it` : '';
+  // research is paid month by month, so the only money that stops it is being overdrawn
+  const short = () => S.cash < 0 ? ', once you\'re back in the black' : '';
   // an enquiry waiting on research you haven't started
   const asked = S.plots.find(p => p.enquiry && !p.enquiry.ready && !researchingOrQueued(S, p.enquiry.tech));
   if (asked && free > 0) {
@@ -82,6 +83,12 @@ export function advice(S) {
   const bigger = next && !S.moving && (free <= 0 || TECH.some(t => !S.unlocks[t.key] && t.tier > P.tier));
   if (bigger && r >= (next.rep || 0)) return { tab: 'premises', text: `${S.cash >= next.price ? 'Move' : `Save ${kmoney(next.price - S.cash)} more and move`} to the ${next.name.toLowerCase()}: ${free <= 0 ? 'more research benches' : `tier ${next.tier} research`} brings in new kinds of work.` };
   if (free <= 0 && S.research.length) { const x = S.research[0], t = TECH.find(y => y.key === x.key); return { tab: 'research', text: `${t.name} finishes in ${x.left} month${x.left > 1 ? 's' : ''}. New research brings clients calling.` }; }
+  // the next street: what still stands in the way
+  const nextStreet = ['market', 'riverside'].find(k => !streetOpen(S, k));
+  if (nextStreet) {
+    const g = streetGate(S, nextStreet);
+    if (g && (g.from === 'high' || streetOpen(S, g.from))) return { tab: g.gotMastered < g.mastered ? 'research' : null, text: gateText(S, nextStreet) };
+  }
   const nextPlot = S.plots.filter(p => p.status === 'locked' && p.rep > r).sort((a, b) => a.rep - b.rep)[0];
   if (nextPlot) return { tab: null, text: `${nextPlot.name} will talk at ${nextPlot.rep}★ (you have ${r}★). Callbacks done well earn stars too.` };
   return null;

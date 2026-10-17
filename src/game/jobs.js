@@ -5,8 +5,8 @@ import { STAGES, stageName } from '../engine/stages/index.js';
 import { TECH } from '../content/tech.js';
 import { PREMISES, STAFF } from '../content/company.js';
 import { money } from '../util/format.js';
-import { feeOf, charge, prem, rep, serviceCost } from './economy.js';
-import { masterFrom } from './research.js';
+import { advertCost, feeOf, charge, prem, rep, serviceCost, standing, streetOf } from './economy.js';
+import { masterFrom, studyResult } from './research.js';
 
 // "a, b or c"
 const orList = a => a.length > 1 ? `${a.slice(0, -1).join(', ')} or ${a[a.length - 1]}` : a[0] || '';
@@ -114,11 +114,21 @@ export function signOff(S, p, c, design, stars, r) {
   p.green = c.stage ? p.green : isGreen(c, r);
   p.callStage = null; p.callTwist = null; p.callChain = null; p.callTech = null; p.lessonTender = false;
   S.jobs++; S.monthJobs = (S.monthJobs || 0) + 1;
+  S.standing = { ...(S.standing || {}), [streetOf(p)]: standing(S, streetOf(p)) + stars };   // every job's stars count on its street
   S.recent = [...(S.recent || []), designSig(design)].slice(-4);
   return { profit: profit + bonus, bonus, lockedBefore, mastered };
 }
 
 // the firm's decisions; each returns false if it isn't allowed right now (research: see research.js)
+// advertise: pay to bring in work this month (each advert in a month costs more). Returns what it brought, or false.
+export function advertise(S) {
+  const cost = advertCost(S);
+  if (S.cash < cost) return false;
+  const got = studyResult(S);
+  if (got.kind === 'none') return false;   // nobody to reach yet: nothing charged
+  S.cash -= cost; S.adverts = (S.adverts || 0) + 1;
+  return { ...got, cost };
+}
 export function hire(S, key) { S.staff[key] = true; return true; }
 export function fire(S, key) { S.staff[key] = false; return true; }
 export function movePremises(S, i) {

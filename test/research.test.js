@@ -64,7 +64,7 @@ test('mastery comes only from signing off the job that teaches it', () => {
   const out = signOff(S, p, { ...fakeJob, lesson: 'core' }, [{ type: 'wall' }], 1, { bumps: 0 });
   assert.equal(out.mastered, 'core');
   assert.ok(isMastered(S, 'core'));
-  assert.equal(rep(S), stars + 1, 'mastery earns a star');
+  assert.equal(rep(S), stars + 2, 'the job\'s star, and a star for mastering it');
   // research only the client that needs it could teach is mastered as soon as it's owned
   assert.ok(!needsMastery('permits'));
   S.research = [{ key: 'permits', left: 1, owe: 0 }]; researchMonth(S);
