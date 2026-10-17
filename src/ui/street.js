@@ -7,6 +7,7 @@ import { CALLBACKS, RIVAL, STREETS } from '../content/town.js';
 import { MONTHS } from '../game/contracts.js';
 import { feeOf, monthlyIncome, needsMet, needsText, rep, rivalActive, rivalInstall, streetOf, streetOpen, techName, upkeep } from '../game/economy.js';
 import { advice } from '../game/enquiries.js';
+import { jobsLine } from '../game/briefs.js';
 import { refreshPlots } from '../game/plots.js';
 import { coach, coachDone, coachEl } from './coach.js';
 import { $, guarded, toast } from './dom.js';
@@ -105,7 +106,7 @@ export function renderStreet() {
   };
   const fitted = S.plots.filter(p => p.status === 'fitted' || p.status === 'checking' || p.status === 'rival');
   const later = S.plots.filter(p => p.status === 'locked' && (streetOf(p) === 'high' || streetOpen(S, 'market') || p.rep <= rep(S) + 4));
-  $('streetHead').textContent = live.length ? `On the table · ${live.length}` : 'Nothing on the table this month';
+  $('streetHead').textContent = live.length ? `On the table · ${live.length} · ${jobsLine(S)}` : 'Nothing on the table this month';
   const tip = live.length ? null : advice(S);
   $('street').innerHTML = live.map(row).join('') + (tip ? `<p class="note ledtip">${tip.text}${tip.tab ? ` <button class="ghost small" type="button" data-co="${tip.tab}">Open ${tip.tab}</button>` : ''}</p>` : '');
   $('street').querySelectorAll('[data-co]').forEach(b => b.onclick = guarded(() => openCompany(b.dataset.co)));

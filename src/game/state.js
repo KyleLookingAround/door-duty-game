@@ -2,14 +2,14 @@
 import { PLOTS } from '../content/buildings/index.js';
 
 export const SAVE_KEY = 'doorduty-tycoon-v2';
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 const newPlot = (p, i) => ({ ...p, i, status: 'locked', contract: null, install: null, stars: 0, fee: 0, tier: 0 });
 
 export function freshState(seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0) {
   return {
     version: SAVE_VERSION, upg: 1, seed: seed || 1, rng: seed || 1,
-    cash: 20000, month: 4, year: 2026, jobs: 0, unlocks: {}, log: [], recent: [], premises: 0, research: [], staff: {},
+    cash: 20000, month: 4, year: 2026, jobs: 0, monthJobs: 0, unlocks: {}, log: [], recent: [], premises: 0, research: [], staff: {},
     plots: PLOTS.map(newPlot),
   };
 }
@@ -25,6 +25,8 @@ export function migrate(S) {
   for (let i = S.plots.length; i < PLOTS.length; i++) S.plots.push(newPlot(PLOTS[i], i));
   // v3: a seeded random stream, so the same save plays out the same way
   if (!S.seed) { S.seed = (Date.now() >>> 0) || 1; S.rng = S.seed; }
+  // v4: jobs signed off this month, against the crews' capacity (jobsPerMonth)
+  if (S.monthJobs == null) S.monthJobs = 0;
   S.version = SAVE_VERSION;
   return S;
 }

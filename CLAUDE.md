@@ -8,7 +8,7 @@ It ships as **one self-contained HTML page** (`dist/index.html`), deployed to Gi
 
 ```
 npm run dev          # serve the repo; open http://localhost:8080/src/shell.html (live modules, no build step)
-npm run build        # bundle to dist/index.html
+npm run build        # bundle to dist/index.html (fails on a name clash, a renamed import or a syntax error)
 npm run watch        # rebuild on change
 npm test             # fast suite (~45 s on 4 cores): content checks, save/month determinism, grading, a spread of golden surveys
 npm run test:full    # every golden survey plus a 6-month headless game (~3 min on 4 cores)
@@ -40,7 +40,7 @@ src/
     designs.js           new and copied designs (always deep copies), defaultSlot
     briefs.js            brief wording that depends on the job: job labels, why a client called, stage twists
     stagejobs.js         inside jobs: makeStageContract, solveStage (the surveyor for stages), runStage, result rows
-    economy.js           fees, upkeep, wear, insurance, reputation, unlock checks
+    economy.js           fees, upkeep, wear, insurance, reputation, unlock checks, jobs a month (jobsPerMonth: premises + research)
     jobs.js              grade a result, signOff, and the firm's decisions (research, hire, premises, service)
     month.js             endMonth(S) -> report; inspect
     enquiries.js         clients asking for research you haven't done (with a date), and advice(S) for quiet months

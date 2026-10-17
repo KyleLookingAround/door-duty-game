@@ -10,7 +10,7 @@ import { refreshPlots, settleCheck } from '../src/game/plots.js';
 import { generateSolved, runHeadless } from '../src/game/contracts.js';
 import { grade, signOff, startResearch, service, hire, movePremises } from '../src/game/jobs.js';
 import { endMonth } from '../src/game/month.js';
-import { rep, prem, techOf, feeOf, charge, serviceCost, plotNeeds } from '../src/game/economy.js';
+import { rep, prem, techOf, feeOf, charge, serviceCost, plotNeeds, jobsLeft, jobsPerMonth } from '../src/game/economy.js';
 import { TECH } from '../src/content/tech.js';
 import { PREMISES, STAFF } from '../src/content/company.js';
 import { MONTHS } from '../src/game/contracts.js';
@@ -21,9 +21,14 @@ export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth 
   const tally = { jobs: 0, parFails: [], falseAlarms: 0, unsurveyable: 0, skipped: 0, months: [] };
   for (let m = 0; m < months; m++) {
     refreshPlots(S);
-    // survey and do every job on the table, using the surveyor's par design
-    for (const p of S.plots) {
-      if ((p.status !== 'open' && p.status !== 'callback' && p.status !== 'checking') || !p.contract) continue;
+    // the work on the table, in the order a sensible firm takes it: street-change checks first (they aren't
+    // jobs), then callbacks (they pay nothing until fixed), research calls, then tenders. The crews can only
+    // sign off so many jobs a month (jobsPerMonth); what doesn't fit waits for next month. Each job is done
+    // with the surveyor's par design.
+    const rank = p => p.status === 'checking' ? 0 : p.status === 'callback' && p.reason !== 'paradox' ? 1 : p.status === 'callback' ? 2 : 3;
+    const work = S.plots.filter(p => (p.status === 'open' || p.status === 'callback' || p.status === 'checking') && p.contract).sort((a, b) => rank(a) - rank(b) || a.i - b.i);
+    for (const p of work) {
+      if (p.status !== 'checking' && !jobsLeft(S)) { tally.waiting = (tally.waiting || 0) + 1; continue; }
       let c = p.contract;
       if (!c.solved) {
         // a survey that can't produce a fair job (or throws): the page draws a fresh tender, and so does this
@@ -36,6 +41,7 @@ export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth 
         p.contract = c;
       }
       if (feeOf(S, c) - charge(S, c.par.cost) < 0 || S.cash < charge(S, c.par.cost)) { tally.skipped++; continue; }
+      if (!jobsLeft(S)) { tally.waiting = (tally.waiting || 0) + 1; continue; }   // a check that became a callback, with the crews booked up
       const r = runHeadless(c, c.par.slots, techOf(S));
       const g = grade(S, c, c.par.slots, r);
       if (!g.pass) { tally.parFails.push(`${MONTHS[S.month % 12]} ${S.year} ${p.name}: ${g.hint}`); continue; }
@@ -58,6 +64,7 @@ export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth 
       if (!S.staff[s.key] && hired < prem(S).staff && (!s.req || S.unlocks[s.req]) && S.cash > s.wage * 12 + 20000) hire(S, s.key);
     }
     const label = `${MONTHS[S.month % 12]} ${S.year}`;
+    if ((S.monthJobs || 0) > jobsPerMonth(S)) tally.overbooked = (tally.overbooked || 0) + 1;   // never: the crews' limit holds
     const rpt = endMonth(S);
     refreshPlots(S);
     if (!S.plots.some(p => ['open', 'callback', 'checking'].includes(p.status))) tally.quiet = (tally.quiet || 0) + 1;
@@ -76,6 +83,7 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
   const t0 = Date.now();
   const { S, tally } = await simulate({ months: nums[0] || 24, seed: nums[1] || 1, log: quiet ? () => {} : console.log });
   console.log(`\ninside jobs: ${JSON.stringify(tally.inside || {})}`);
+  console.log(`jobs that waited for the crews: ${tally.waiting || 0}`);
   console.log(`enquiries: ${tally.asked || 0} asked · ${tally.won || 0} ready in time · ${tally.lapsed || 0} lapsed · ${tally.quiet || 0} months with nothing on the table`);
   for (const f of tally.failed || []) console.log(`SURVEY FAILED: ${f.name} (${f.kind}) tier ${f.tier} month ${f.month} seed ${f.seed}: ${f.error} ${JSON.stringify(f.opts)}`);
   console.log(`\n${tally.jobs} jobs · rep ${rep(S)}★ · cash ${Math.round(S.cash)} · ${tally.coped || 0} clients coped with street changes · ${tally.calls || 0} called back · ${tally.falseAlarms} false alarms · ${tally.unsurveyable} unsurveyable · ${tally.skipped} skipped · ${((Date.now() - t0) / 1000).toFixed(0)}s`);

@@ -111,7 +111,7 @@ export function signOff(S, p, c, design, stars, r) {
   else { p.bumpRec = Math.max(p.bumpRec || 0, r.bumps); }
   p.green = c.stage ? p.green : isGreen(c, r);
   p.callStage = null; p.callTwist = null; p.callChain = null;
-  S.jobs++;
+  S.jobs++; S.monthJobs = (S.monthJobs || 0) + 1;
   S.recent = [...(S.recent || []), designSig(design)].slice(-4);
   return { profit: profit + bonus, bonus, lockedBefore };
 }

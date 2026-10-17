@@ -7,9 +7,9 @@ import { RIVAL } from '../content/town.js';
 import { TWISTS } from '../content/twists.js';
 import { STAGES, stageName, stageAbout } from '../engine/stages/index.js';
 import { MONTHS, candidates } from '../game/contracts.js';
-import { charge, costMult, feeOf, insurance, monthlyIncome, overheads, prem, rep, rivalActive, serviceCost, techName, techOf, upkeep, loyalty } from '../game/economy.js';
+import { charge, costMult, feeOf, insurance, jobsLeft, jobsPerMonth, monthlyIncome, overheads, prem, rep, rivalActive, serviceCost, techName, techOf, upkeep, loyalty } from '../game/economy.js';
 import { advice, hasWork } from '../game/enquiries.js';
-import { callText, isResearchCall, jobLabel, stageTwist } from '../game/briefs.js';
+import { bookedText, callText, isResearchCall, jobLabel, stageTwist } from '../game/briefs.js';
 import { fire, hire, movePremises, service, startResearch } from '../game/jobs.js';
 import { CLAIM_EXCESS, INSPECTION_FINE, endMonth, changeWhere } from '../game/month.js';
 import { CHANGE, changeText } from '../content/changes.js';
@@ -43,6 +43,8 @@ function enquiryNote(p) {
   const left = e.by - S.month, doing = S.research.find(r => r.key === e.tech);
   return `<p><strong style="color:var(--brass)">Enquiry.</strong> ${e.text} They need ${t.name} within ${left} month${left === 1 ? '' : 's'}${doing ? ` (yours finishes in ${doing.left})` : `, and it takes ${t.months} to research`}. Have it ready and the job is yours, with a ${kmoney(e.bonus)} bonus.${rivalActive(S) ? ` Leave it and they'll go to ${RIVAL}.` : ''}</p>`;
 }
+// a brief's buttons: Take is disabled when the crews have no jobs left this month, and says why
+const takeButtons = () => `${jobsLeft(S) ? '' : `<p class="note"><span class="hot">${bookedText(S)}</span></p>`}<div style="display:flex;gap:8px"><button class="ghost" type="button" id="bClose">Not now</button><button class="go" type="button" id="bTake" ${jobsLeft(S) ? '' : 'disabled'}>Take the job</button></div>`;
 export async function openBrief(i, fromWorkshop) {
   const p = S.plots[i], k = KINDS[p.kind];
   if (!p.contract.solved) {
@@ -108,7 +110,7 @@ export async function openBrief(i, fromWorkshop) {
     <p class="note">${STARS}.${costMult(S) < 1 ? ` Prices shown are list prices; you pay ${Math.round(costMult(S) * 100)}% of them.` : ''}</p>
     <div class="legend"><span><i style="background:var(--frost)"></i>arriving</span><span><i style="background:var(--rose)"></i>leaving</span><span><i style="background:#fff;border:3px solid var(--frost);box-sizing:border-box"></i>older</span><span><i style="background:var(--frost);border-radius:3px"></i>wheelchair</span><span><i style="background:#b48cf0"></i>pram</span><span><i style="background:#d4a94f;border-radius:2px;height:3px;width:14px;vertical-align:3px"></i>bike</span><span><i style="background:#9b7a4a;border-radius:2px"></i>suitcase</span><span><i style="background:#6b7280"></i>standing still</span></div>
     ${fromWorkshop ? '<button class="go" type="button" id="bBack">Back to the workshop</button>'
-      : '<div style="display:flex;gap:8px"><button class="ghost" type="button" id="bClose">Not now</button><button class="go" type="button" id="bTake">Take the job</button></div>'}`);
+      : takeButtons()}`);
   if (fromWorkshop) { $('bBack').onclick = closeSheet; return; }
   setTimeout(() => coach('brief', () => $('bTake')), 250);
   $('bClose').onclick = closeSheet;
@@ -145,7 +147,7 @@ function briefStage(p, c, i, fromWorkshop) {
     </ul>
     <p class="note">${STARS_INSIDE}.</p>
     ${fromWorkshop ? '<button class="go" type="button" id="bBack">Back to the job</button>'
-      : '<div style="display:flex;gap:8px"><button class="ghost" type="button" id="bClose">Not now</button><button class="go" type="button" id="bTake">Take the job</button></div>'}`);
+      : takeButtons()}`);
   if (fromWorkshop) { $('bBack').onclick = closeSheet; return; }
   $('bClose').onclick = closeSheet;
   $('bTake').onclick = () => { closeSheet(); openWorkshop(i); };
@@ -216,14 +218,14 @@ export function openCompany(tab) {
         return `<div class="node ${on ? 'owned' : needs ? 'locked' : 'avail'}"><div><b>${s.name} · ${money(s.wage)}/mo</b><p>${needs ? `Needs ${techName(s.req)}. ` : ''}${s.text}</p></div>${btn}</div>`;
       }).join('');
   } else {
-    body = `<p>Rent is due every month. Bigger premises unlock higher research tiers and room for more staff.</p>` +
+    body = `<p>Rent is due every month. Bigger premises unlock higher research tiers, room for more staff and more jobs a month. Right now your crews can take ${jobsPerMonth(S)} jobs a month.</p>` +
       PREMISES.map((p, i) => {
         const cur = i === (S.premises || 0), past = i < (S.premises || 0), next = i === (S.premises || 0) + 1;
         const repOk = rep(S) >= (p.rep || 0);
         const btn = cur ? '<span class="pill done">Current</span>' : past ? '<span class="pill lock">Outgrown</span>'
           : next ? (repOk ? `<div style="display:grid;gap:4px;justify-items:end"><button class="go" type="button" data-move="${i}" ${broke || S.cash < p.price ? 'disabled' : ''}>Move · ${kmoney(p.price)}</button>${S.cash < p.price ? `<span class="why">Need ${kmoney(p.price - S.cash)} more</span>` : ''}</div>` : `<span class="pill lock">${p.rep}★ rep</span>`)
           : '<span class="pill lock">Later</span>';
-        return `<div class="node ${cur ? 'owned' : next && repOk ? 'avail' : 'locked'}"><div><b>${p.name} · ${money(p.rent)}/mo rent</b><p>${p.text} Research tier ${p.tier}, ${p.labs} bench${p.labs > 1 ? 'es' : ''}, ${p.staff} staff.</p></div>${btn}</div>`;
+        return `<div class="node ${cur ? 'owned' : next && repOk ? 'avail' : 'locked'}"><div><b>${p.name} · ${money(p.rent)}/mo rent</b><p>${p.text} Research tier ${p.tier}, ${p.labs} bench${p.labs > 1 ? 'es' : ''}, ${p.staff} staff, ${p.jobs} jobs a month.</p></div>${btn}</div>`;
       }).join('');
   }
   sheet(`<div class="eyebrow">Company</div><h3>${P.name}</h3>

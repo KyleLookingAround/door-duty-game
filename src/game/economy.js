@@ -6,6 +6,10 @@ import { PLOTS, KINDS, buildSite } from '../content/buildings/index.js';
 
 export const rep = S => S.plots.reduce((a, p) => a + p.stars, 0);
 export const prem = S => PREMISES[S.premises || 0];
+// How many jobs the firm can sign off a month: the premises, plus research that adds crews' time.
+// Every sign-off counts (tenders, callbacks, research calls, inside jobs); a street-change check doesn't.
+export const jobsPerMonth = S => prem(S).jobs + TECH.filter(t => t.jobs && S.unlocks[t.key]).reduce((a, t) => a + t.jobs, 0);
+export const jobsLeft = S => Math.max(0, jobsPerMonth(S) - (S.monthJobs || 0));
 // the research the surveyor and the doors can use (a doorman needs the crew hired, not just the training)
 export const techOf = S => ({ ...S.unlocks, doorman: !!(S.unlocks.doorman && S.staff.doorman) });
 export const techName = k => (TECH.find(t => t.key === k) || {}).name || k;

@@ -93,6 +93,13 @@ They differ in one important way. With research calls and enquiries now true of 
 4. D3: the surveyor rejects a par that ignores the lesson, and regenerates the job.
 5. D4: vary the Galleria (more routes, budgets that let widening compete, a wider twist pool), and check every Riverside level varies across seeds.
 6. Grow the Open doors branch (section 4.3) so summer has research to reach for: door closers, automatic swing operators, telescopic sliders. Summer jobs then have more than one good answer, and the branch has more than its current two nodes.
+7. **Job capacity (owner's request).** The firm can only sign off so many jobs a month, set by its premises and some research. That turns "do every job" into a choice: what's worth this month's crews.
+   - **Premises:** lock-up garage 2 jobs a month, workshop 3, headquarters 4.
+   - **Research:** Site management (tier 1, £12k, 1 month) and Prefabricated door sets (tier 2, £30k, 2 months, needs Site management) each add one. Headquarters with both: 6. In the Phase 2 tree they belong to The firm.
+   - **What counts:** every sign-off: tenders, callbacks, research calls, inside jobs. A street-change check doesn't (no work is done).
+   - **When the crews are booked up,** "Take the job" is disabled and the brief says why and what would help (`bookedText`). The street shows the jobs left this month. What's left waits: tenders can go to the rival, and callbacks pay nothing until fixed.
+   - **Done (October 2026).** `jobsPerMonth` and `jobsLeft` in `economy.js`; `S.monthJobs` counted in `signOff`, reset in `endMonth`; save version 4. The sim takes checks, then callbacks, then research calls, then tenders, and never overbooks. The bot handles booked-up months. Tests in `test/capacity.test.js`.
+   - **Balance** (quick run, 2 seeds, against the 5-seed baseline): reputation at month 4 drops from 31–35 to 21–24, and Riverside opens at month 9 instead of 4. Market Square still opens at month 3: 2 jobs a month at 3★ still reaches 18★ by then. 18–22 jobs over the first year waited for a free crew. Variety didn't change. Capacity is also a Phase 2 pacing lever (6–12 months a street).
 
 *Architecture:* split `makeContract` (`contracts.js`, 534 lines) into explicit steps: required twists (call or lesson), then random twists that can't evict them, then goals, then the lesson goal. Give each job a lesson record, `c.lesson = { tech, goal, mustUse }`. Move brief, result and hint text into a pure `game/briefs.js` that returns data from `(S, p, c)`; `ui/sheets.js` only renders it.
 
@@ -136,6 +143,10 @@ This is the biggest phase, so it ships as two pull requests: **2a** is the resea
 4. D7: show locked buildings' research needs from the start.
 5. Inside-job wording ("Your setup"); hide counters that don't apply.
 6. Faster surveys. *Architecture:* a pool of `hardwareConcurrency − 1` survey workers, surveying the next likely job before it's opened, and a time cap on chain searches. Profile `engine/world.js` (700 lines) before tuning the surveyor.
+   - **Measured after Phase 0.** A 24-month headless game spends 524 of its 532 s in surveys. A survey's time is the crowd physics: person-to-person collisions 31% (already on a grid), revolving-door collisions 17%, steering 17%, the step 16%, garbage collection 6% (a bigger young heap didn't help).
+   - **Not worth it:** running a game's surveys side by side within a month would save at most about 40% (532 → 314 s on unlimited cores), because single surveys dominate. A chained level takes 20–65 s, and it also needs care to keep results identical.
+   - **Worth it:** cheaper single surveys. Cap the chained-level search (it improves the route one change at a time), drop candidates that can't be the answer, and tune the physics hot spots. Fewer candidates changes some jobs, so it's a deliberate golden re-record.
+   - **Already done (not Phase 3):** golden surveys, the golden re-record and the balance report run on every core; CI runs tests, bot and build side by side. `npm test` 120 → 43 s, `test:full` ~11 → 3 min, `record-golden` ~9 → 2 min.
 7. Accessibility: honour reduced motion in the rush hour and the street, check text contrast, label every control, and make the editor work from the keyboard.
 8. Bring the rest of `docs/game-loop.html` up to date (its tech and landmark tables are generated from `TECH` from Phase 2).
 
@@ -262,13 +273,15 @@ To stop the one-client techs paying off only once, each also gets a second home.
 |---|---|---|---|---|
 | **Market study** (new) | – | – | Always available, free, 1 month: a tender or an enquiry | 2 |
 | Door staff training | 2 | – | Doorman crew | as now, moved |
+| **Site management** (new) | 1 | – | One more job a month | 1 (done) |
+| **Prefabricated door sets** (new) | 2 | Site management | One more job a month | 1 (done) |
 | **Design office** (new) | 2 | – | The blueprint book | 4 |
 | **Sales network** (new) | 2 | Market study done 3 times | More tenders a month, enquiries wait a month longer, and advertising costs less | 2 |
 | **Research lab** (new) | 3 | HQ premises | A third bench: a big one-off use for money | 2 |
 
 Refinements: **Supplier contract** levels (hardware discount, capped), **Crew training** levels (fitting discount), **Service plans** levels (maintenance).
 
-**Totals.** 32 one-off nodes (19 of today's techs plus 13 new; the other 4 become refinements), plus the market study, roughly 75–85 bench-months. With 1 bench, then 2, then 3 with the lab, the tree finishes around months 30–36 of play. That's about when a typical player has spent their 6–12 months on Riverside, and mastery and refinements carry on after. The pacing bands decide the final numbers.
+**Totals.** 34 one-off nodes (19 of today's techs plus 15 new; the other 4 become refinements), plus the market study, roughly 75–85 bench-months. With 1 bench, then 2, then 3 with the lab, the tree finishes around months 30–36 of play. That's about when a typical player has spent their 6–12 months on Riverside, and mastery and refinements carry on after. The pacing bands decide the final numbers.
 
 ### 4.4 Architecture
 

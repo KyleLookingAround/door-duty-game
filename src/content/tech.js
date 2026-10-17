@@ -24,6 +24,9 @@ export const TECH = [
   { key: 'travelator', branch: 'crowd', tier: 3, price: 45000, months: 3, req: ['escalators'], name: 'Travelators', text: 'Moving walkways: fitting them, and knowing where they help.', opens: 'Skyport Terminal on Riverside' },
   { key: 'permits', branch: 'bld', tier: 3, price: 40000, months: 2, req: ['zoning'], name: 'Route closures', text: 'Permits to close a walkway or bridge in a public building, and the modelling to justify it.', opens: 'The Galleria on Riverside' },
   { key: 'stewarding', branch: 'crowd', tier: 3, price: 50000, months: 3, req: ['pillars'], name: 'Event stewarding', text: 'Trained stewards who meter a crowd: holding people back so the space ahead never packs solid.', opens: 'Apollo Arena on Riverside, with escalator know-how' },
+  // jobs: how many more jobs a month the firm can sign off once it has this
+  { key: 'sitemgmt', branch: 'bld', tier: 1, price: 12000, months: 1, jobs: 1, name: 'Site management', text: 'A site foreman, proper plans and a van rota: your crews can take one more job a month.' },
+  { key: 'prefab', branch: 'bld', tier: 2, price: 30000, months: 2, req: ['sitemgmt'], jobs: 1, name: 'Prefabricated door sets', text: 'Doors built and tested in your workshop, then fitted on site in a day: one more job a month.' },
 ];
 
 // How-to lessons, shown when research finishes and in the Company › Guide tab: [title, what it does, where it appears, tip]
@@ -51,4 +54,6 @@ export const LESSONS = {
   travelator: ['Travelators', 'A moving walkway speeds people up, but they pile up where it ends. Run one into the back of a queue and it has to stop.', 'Skyport › Pier walkway › length and where it goes.', 'Leave room to step off: a shorter walkway in the right place beats one all the way to the desks.'],
   permits: ['Route closures', 'Braess\'s paradox: add a shortcut and everyone takes it, crowding both pinch points, so everyone is slower. Close it and they spread out again.', 'The Galleria › Footbridge › Closed.', 'If every shopper is squeezing through both bottlenecks, the shortcut is the problem.'],
   stewarding: ['Event stewarding', 'Holding a crowd back can get it in faster. A packed space moves slowly and jams its exits; stewards who only let more in when there\'s room keep it flowing.', 'Concourse › Stewards metering the crowd. On a chained level, check every stage: fix one and the crush moves to the next.', 'Faster at the front can mean a crush further in.'],
+  sitemgmt: ['Site management', 'Your crews can sign off one more job every month.', 'Automatic: the street shows how many jobs you can still take this month.', 'Worth it when good jobs wait because your crews are booked up.'],
+  prefab: ['Prefabricated door sets', 'Doors arrive ready to hang, so your crews can sign off one more job every month.', 'Automatic: the street shows how many jobs you can still take this month.', 'With headquarters and both of these, a firm can take six jobs a month.'],
 };

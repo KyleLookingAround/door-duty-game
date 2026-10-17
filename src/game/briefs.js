@@ -1,6 +1,9 @@
 // Brief wording that depends on the job, kept out of the page so tests can check every case.
 import { CALLBACKS } from '../content/town.js';
 import { STAGE_TWISTS } from '../engine/stages/index.js';
+import { PREMISES } from '../content/company.js';
+import { TECH } from '../content/tech.js';
+import { jobsLeft, jobsPerMonth } from './economy.js';
 
 // a research call: a client you fitted heard about your new research and has work for it
 export const isResearchCall = p => p.status === 'callback' && p.reason === 'paradox';
@@ -26,4 +29,19 @@ export function stageTwist(c, t) {
     if (own) return own;
   }
   return STAGE_TWISTS[t] || { label: t, text: '' };
+}
+
+// The crews' month. jobsLine: what the street says; bookedText: why a job can't be taken right now, and
+// what would give the firm more jobs a month (bigger premises, or research it could start).
+export function jobsLine(S) {
+  const left = jobsLeft(S), cap = jobsPerMonth(S);
+  return left ? `${left} of ${cap} job${cap === 1 ? '' : 's'} left this month` : 'crews booked up until next month';
+}
+export function bookedText(S) {
+  const cap = jobsPerMonth(S), ways = [];
+  const next = PREMISES[(S.premises || 0) + 1];
+  if (next) ways.push(`move to the ${next.name.toLowerCase()}`);
+  const t = TECH.find(x => x.jobs && !S.unlocks[x.key] && (x.req || []).every(k => S.unlocks[k]));
+  if (t) ways.push(`research ${t.name}`);
+  return `Your crews are booked up: ${cap} of ${cap} jobs this month. End the month to take this one${ways.length ? `, or ${ways.join(' or ')} to take more each month` : ''}.`;
 }

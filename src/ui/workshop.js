@@ -5,10 +5,10 @@ import { REV_R, SLOT_W, TAU, V_SAFE, World } from '../engine/world.js';
 import { PRICE, SIM_DT, TEST_SECONDS, designCost, newSim, runSeconds, slotCost, testOver } from '../game/contracts.js';
 import { STAGES, stageName } from '../engine/stages/index.js';
 import { techName } from '../game/economy.js';
-import { charge, feeOf, techOf } from '../game/economy.js';
+import { charge, feeOf, jobsLeft, techOf } from '../game/economy.js';
 import { grade, signOff } from '../game/jobs.js';
 import { cloneDesign, defaultSlot, newDesign } from '../game/designs.js';
-import { stageTwist } from '../game/briefs.js';
+import { bookedText, stageTwist } from '../game/briefs.js';
 import { cv, cw, scale, sizeCanvas } from './canvas.js';
 import { coach, coachDone, coachEl } from './coach.js';
 import { $, TYPE_LABEL, closeSheet, guard, guarded, sheet, toast } from './dom.js';
@@ -278,6 +278,7 @@ export function evaluateTest() {
 }
 function signOffJob() {
   const p = W.plot;
+  if (!jobsLeft(S)) { toast(bookedText(S)); return; }   // the brief stops this; a guard in case
   const { profit, lockedBefore } = signOff(S, p, W.contract, W.design, W.stars, W.result);
   save();
   closeWorkshop();

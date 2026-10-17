@@ -133,6 +133,11 @@ with sync_playwright() as p:
         if not pg.query_selector('#bTake'):
             log(f"  {q['name']} false alarm after {time.time()-t0:.1f}s: {pg.inner_text('#toast')}"); pg.wait_for_timeout(700); continue
         sweep(pg, f"brief for {q['name']}")
+        if pg.query_selector('#bTake').is_disabled():
+            # the crews are booked up this month: the brief must say so; end the month and come back
+            if 'booked up' not in pg.inner_text('#sheet'): fail(f"{q['name']}: Take is disabled but the brief doesn't say why")
+            log(f"  crews booked up ({st.get('monthJobs')} jobs this month): ending the month")
+            pg.click('#bClose'); pg.wait_for_timeout(400); end_month(pg); continue
         st=state(pg); c=st['plots'][q['i']]['contract']
         log(f"  {'SPECIALIST ' if c.get('specialist') else ''}{'INSIDE '+(c.get('stage') or '')+' ' if c.get('stage') else ''}{q['name']} {q['status']} twists={c['twists']} temp={c.get('outsideTemp')} goals={c['goals']} par={c['par']['sig']} £{c['par']['cost']} budget {c['budget']} fee {c['fee']} survey {time.time()-t0:.1f}s novelty={c.get('novelty')}")
         pg.click('#bTake'); pg.wait_for_timeout(250)

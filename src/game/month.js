@@ -97,6 +97,7 @@ export function endMonth(S) {
     } catch (e) { insp = null; }
   }
   S.month++; if (S.month % 12 === 0) S.year++;
+  S.monthJobs = 0;   // a new month: the crews are free again
   // research
   const done = [];
   for (const r of S.research) { r.left--; if (r.left <= 0) { S.unlocks[r.key] = true; done.push(r.key); } }
