@@ -234,6 +234,17 @@ Already on the design page as Later, plus two unbuilt landmarks. Each comes with
 4. **Landmarks:** the Stadium (pillars, gates, barriers) and the full airport chain (kerb, check-in, security, gate, bags). Decide then where the Stadium goes: the end of Riverside, or a fourth street (which brings its own 6–12 months).
 5. **Paradox journal and local paper headlines:** cheap to build, and they reward finishing a lesson. **Done (October 2026):** Company › Guide keeps a journal of every mastered tech's counterintuitive bit (`content/journal.js`, `journal` in `briefs.js`), and the month report opens with the Herald's headline for the month's biggest story: a landmark fitted, a street opened, a tech mastered, the rival winning, a claim or an inspection (`headline`, no dice, so a month replays). Tests in `test/journal.test.js`.
 6. From CLAUDE.md: real callbacks still escalate when the doors already cope.
+7. **Every kind of level gets deeper (owner's request).** The escalators were the model (Phase 1, item 10): three levers that trade against each other, taken from how the real thing is run, and twists that change which lever matters. Most other stages still have one or two controls and one answer. Give each one at least three levers, each with a catch, and twists that turn the answer round:
+   - **Counter hall (queue):** desk staffing by time of day (open more for the lunch peak, fewer after), an express desk for quick jobs (it idles when quick jobs are few), and a ticket machine instead of a snake (people sit down, but they wander off and miss their number).
+   - **Lifts:** zoning, plus a sky-lobby or express lift, destination dispatch (fast, but people who don't key in their floor get lost), and capacity against door dwell time (bigger cars load slower).
+   - **Paternoster:** loop speed and cabins, plus one-way floors at the busiest landings, and a stop rule when the queue at a landing grows.
+   - **Pier walkways:** length and placement, plus a walk-on-the-walkway rule, belt speed (faster belts spill more people at the end), and a split into two shorter walkways.
+   - **Baggage reclaim:** the stand-back line, plus which belt each flight goes to, bag-drop timing, and priority bags first (fewer waiting for most, longer for some).
+   - **The Galleria:** close or widen, plus one-way routes, timed bridge closures (closed at rush hour only), and a third route.
+   - **Concourse (bottleneck):** openings and metering, plus wider openings against more of them, holding areas, and staggered release by block.
+   - **Door jobs:** more levers that already exist on paper: rpm schedules (fast off-peak, slow at the rush), a door that turns one-way with the tide, and a frontage-wide sign or queue line.
+   - **Station gates:** lane direction and tidal flow, plus how many wide aisles, staff at the gate line, and holding people at the platform when the concourse is full.
+   *Tests:* each new lever gets a numeric check that it helps in some levels and hurts in others (as `test/stages.test.js` does for each paradox), golden cases, and variety coverage: across seeds, no single setup should be par for more than about half of a stage's levels.
 
 **Tests that must pass:** each new stage gets a paradox test, golden cases, variety coverage and a bot pass.
 
