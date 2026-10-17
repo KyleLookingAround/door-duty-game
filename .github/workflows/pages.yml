@@ -1,4 +1,5 @@
-# Test, build the single-page game, and publish dist/ to GitHub Pages on every push to main.
+# Test, build the single-page game, play it in a browser for a few months, and publish dist/ to GitHub Pages
+# on every push to main. Pull requests run the same checks without deploying.
 name: Pages
 
 on:
@@ -12,9 +13,11 @@ permissions:
   pages: write
   id-token: write
 
+# Each branch or pull request queues its own runs, so a pull request can never cancel a deploy from main.
+# A newer push to the same pull request cancels its older run; deploys from main always finish.
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: pages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -28,6 +31,16 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the browser bot
+        run: |
+          pip install -r tools/requirements.txt
+          python -m playwright install --with-deps chromium
+      - name: Play the built page (browser bot, about 3 months)
+        working-directory: ${{ runner.temp }}
+        run: python3 ${{ github.workspace }}/tools/bot.py 9
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

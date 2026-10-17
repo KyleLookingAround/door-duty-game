@@ -1,10 +1,21 @@
-# Browser smoke test: plays the built game like a careful player for N months and reports par failures and JS errors.
+# Browser smoke test: plays the built game like a careful player and fails (exit 1) on script errors, a par
+# design that doesn't pass in the page, a cost readout that doesn't match the design, or broken text on screen.
 # usage: python3 tools/bot.py [ROUNDS] [--dev]   (default 48 rounds against dist/index.html; --dev serves src/ over http)
+# A round is one job, or a month ended when there's nothing on; every third round ends the month.
+# Needs Playwright for Python at the version in tools/requirements.txt.
 from playwright.sync_api import sync_playwright
-import pathlib, json, time, sys
-LOG=[]
+import pathlib, json, time, sys, re
+LOG=[]; FAIL=[]
 def log(*a):
     s=' '.join(str(x) for x in a); LOG.append(s); print(s, flush=True)
+def fail(*a):
+    s=' '.join(str(x) for x in a); FAIL.append(s); log('  !!', s)
+# text that means a template went wrong: a missing value, a bad sum, an object printed whole, a negative price
+BROKEN = re.compile(r'undefined|NaN|\[object|£-')
+def sweep(pg, where):
+    text = pg.inner_text('body')
+    for m in BROKEN.finditer(text):
+        fail(f'broken text on the {where}: "...{text[max(0, m.start() - 50):m.end() + 30]}..."'.replace('\n', ' '))
 def state(pg): return json.loads(pg.evaluate("localStorage.getItem('doorduty-tycoon-v2')") or 'null')
 def set_range(pg, sel, v):
     pg.evaluate("([s,v])=>{const el=document.querySelector(s);if(!el)return;el.value=v;el.dispatchEvent(new Event('input'));el.dispatchEvent(new Event('change'))}", [sel, v])
@@ -28,7 +39,7 @@ def apply_stage_part(pg, d):
             continue
         if pg.query_selector(f'#st_{k}'): set_range(pg, f'#st_{k}', v); continue
         if pg.query_selector(f'[data-tog="{k}"]'): setc(pg, f'[data-tog="{k}"]', bool(v)); continue
-        if v not in (False, None, 0): log('  !! no control for', k, v)
+        if v not in (False, None, 0): fail('no control for', k, v)
 def apply_design(pg, slots):
     if isinstance(slots, dict):
         if slots.get('stage') == 'chain':
@@ -40,7 +51,7 @@ def apply_design(pg, slots):
         pg.click(f'.slotbtn[data-i="{i}"]')
         btn=pg.query_selector(f'[data-t="{s["type"]}"]')
         if btn.is_disabled():
-            if btn.get_attribute('aria-pressed')!='true': log('  !! type button disabled', i, s['type'])
+            if btn.get_attribute('aria-pressed')!='true': fail('type button disabled', i, s['type'])
         else: btn.click()
         if s['type']=='revolve':
             cur=int(pg.inner_text('#editor .row output'))
@@ -67,14 +78,17 @@ def company(pg):
     st=state(pg)
     pg.click('#rdBtn'); pg.wait_for_selector('#coClose')
     pg.click('[data-tab="research"]'); pg.wait_for_timeout(150)
+    sweep(pg, 'research tab')
     acted=[]
     # research: cheapest affordable available node
     btns=pg.query_selector_all('#sheet button[data-k]:not([disabled])')
     if btns: k=btns[0].get_attribute('data-k'); btns[0].click(); pg.wait_for_timeout(250); acted.append('research '+k)
     pg.click('[data-tab="premises"]'); pg.wait_for_timeout(150)
+    sweep(pg, 'premises tab')
     mv=pg.query_selector('#sheet button[data-move]:not([disabled])')
     if mv and st['cash']>90000: mv.click(); pg.wait_for_timeout(250); acted.append('move')
     pg.click('[data-tab="staff"]'); pg.wait_for_timeout(150)
+    sweep(pg, 'staff tab')
     for key in ['fitter','doorman','sales','engineer']:
         b=pg.query_selector(f'#sheet button[data-hire="{key}"]:not([disabled])')
         if b and state(pg)['cash']>40000: b.click(); pg.wait_for_timeout(250); acted.append('hire '+key)
@@ -83,6 +97,7 @@ def company(pg):
 def end_month(pg):
     company(pg)
     pg.click('#monthBtn'); pg.wait_for_selector('#mClose')
+    sweep(pg, 'month report')
     st=state(pg); log(f"  [{st['year']}-{st['month']%12+1:02d}] cash {st['cash']} prem {st['premises']} staff {[k for k,v in st['staff'].items() if v]} tech {len(st['unlocks'])} research {[r['key'] for r in st['research']]}")
     log('  month:', pg.inner_text('#sheet h3'), '|', ' / '.join(l for l in pg.inner_text('#sheet').split('\n') if 'Research complete' in l or 'walked' in l or 'overdrawn' in l))
     pg.click('#mClose'); pg.wait_for_timeout(450)
@@ -104,7 +119,7 @@ with sync_playwright() as p:
     for rnd in range(ROUNDS):
         st=state(pg)
         avail=[q for q in st['plots'] if q['status'] in ('open','callback')]
-        if errs: log("  !! JS ERRORS", errs); errs.clear()
+        if errs: fail('JS errors', errs); errs.clear()
         log(f"--- round {rnd} {st['month']} cash {st['cash']} rep {sum(q['stars'] for q in st['plots'])} open {[q['name'][:8]+':'+q['status'] for q in avail]}")
         if not avail:
             end_month(pg); continue
@@ -117,6 +132,7 @@ with sync_playwright() as p:
         pg.wait_for_function("document.querySelector('#bTake') || document.getElementById('sheetWrap').hidden", timeout=180000)
         if not pg.query_selector('#bTake'):
             log(f"  {q['name']} false alarm after {time.time()-t0:.1f}s: {pg.inner_text('#toast')}"); pg.wait_for_timeout(700); continue
+        sweep(pg, f"brief for {q['name']}")
         st=state(pg); c=st['plots'][q['i']]['contract']
         log(f"  {'SPECIALIST ' if c.get('specialist') else ''}{'INSIDE '+(c.get('stage') or '')+' ' if c.get('stage') else ''}{q['name']} {q['status']} twists={c['twists']} temp={c.get('outsideTemp')} goals={c['goals']} par={c['par']['sig']} £{c['par']['cost']} budget {c['budget']} fee {c['fee']} survey {time.time()-t0:.1f}s novelty={c.get('novelty')}")
         pg.click('#bTake'); pg.wait_for_timeout(250)
@@ -124,18 +140,24 @@ with sync_playwright() as p:
             pg.screenshot(path='p_callback_ws.png', full_page=True); globals()['shot_cb']=1
         apply_design(pg, c['par']['slots'])
         cost=pg.inner_text('#kCost')
+        # the readout must match what the design costs (list price), on door jobs and inside jobs alike
+        if cost.split('\n')[0].strip() != f"£{c['par']['cost']:,}": fail(f"{q['name']}: cost shows {cost.split(chr(10))[0]!r} but the par design costs £{c['par']['cost']:,}")
         pg.click('#testBtn')
         # skip straight to the result: the test runs the same steps, just without drawing them
         pg.wait_for_selector('#skipBtn:not([hidden])', timeout=5000); pg.click('#skipBtn')
         pg.wait_for_selector('#rEdit, #rSign', timeout=60000)
         title=pg.inner_text('#sheet h3'); rows=pg.inner_text('#sheet .list').replace('\n',' | ')
+        sweep(pg, f"result for {q['name']}")
         log(f"  result: {title} cost {cost} :: {rows}")
         if pg.query_selector('#rSign'): pg.click('#rSign'); pg.wait_for_timeout(450)
         else:
-            log('  !! PAR DESIGN FAILED IN GAME'); pg.click('#rEdit'); pg.wait_for_timeout(500); pg.click('#wsBack'); pg.wait_for_timeout(500)
+            fail(f"{q['name']}: the par design failed in the page"); pg.click('#rEdit'); pg.wait_for_timeout(500); pg.click('#wsBack'); pg.wait_for_timeout(500)
         if rnd % 3 == 2:
             pg.wait_for_timeout(300)
             end_month(pg)
+    pg.click('[data-view="list"]'); pg.wait_for_timeout(300); sweep(pg, 'street')
     pg.screenshot(path='p_end.png', full_page=True)
-    log('ERRORS', errs)
+    if errs: fail('JS errors', errs)
     b.close()
+log(f"\n{len(FAIL)} problem{'' if len(FAIL) == 1 else 's'}" + (':\n  ' + '\n  '.join(FAIL) if FAIL else ''))
+sys.exit(1 if FAIL else 0)

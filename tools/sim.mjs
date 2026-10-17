@@ -15,7 +15,8 @@ import { TECH } from '../src/content/tech.js';
 import { PREMISES, STAFF } from '../src/content/company.js';
 import { MONTHS } from '../src/game/contracts.js';
 
-export async function simulate({ months = 24, seed = 1, log = () => {} } = {}) {
+// onMonth(S, row) is called after each month ends, with the save as it stands for the next one.
+export async function simulate({ months = 24, seed = 1, log = () => {}, onMonth = () => {} } = {}) {
   const S = freshState(seed);
   const tally = { jobs: 0, parFails: [], falseAlarms: 0, unsurveyable: 0, skipped: 0, months: [] };
   for (let m = 0; m < months; m++) {
@@ -61,6 +62,7 @@ export async function simulate({ months = 24, seed = 1, log = () => {} } = {}) {
     tally.asked = (tally.asked || 0) + (rpt.enquiry.fresh ? 1 : 0); tally.won = (tally.won || 0) + rpt.enquiry.won.length; tally.lapsed = (tally.lapsed || 0) + rpt.enquiry.lapsed.length;
     const row = { month: label, cash: S.cash, rep: rep(S), jobs: S.jobs, fitted: S.plots.filter(p => p.status === 'fitted').length, net: rpt.net, calls: rpt.calls.length };
     tally.months.push(row);
+    onMonth(S, row);
     log(`${row.month.padEnd(9)} cash ${String(Math.round(row.cash)).padStart(8)}  rep ${String(row.rep).padStart(3)}★  jobs ${String(row.jobs).padStart(3)}  fitted ${String(row.fitted).padStart(2)}  net ${String(row.net).padStart(7)}  callbacks ${row.calls}`);
   }
   return { S, tally };

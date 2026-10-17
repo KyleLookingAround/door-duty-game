@@ -1,0 +1,3 @@
+# Python packages for tools/bot.py (the browser smoke test). Keep Playwright pinned: its version must match
+# the Chromium it drives (CI installs the matching one with `python -m playwright install --with-deps chromium`).
+playwright==1.56.0
