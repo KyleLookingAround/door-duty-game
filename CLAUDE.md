@@ -41,7 +41,7 @@ src/
     changes.js           street changes: the causes of ordinary callbacks
   game/                  rules, pure functions over the save S. No DOM.
     contracts.js         makeContract, the surveyor (generateSolved / solveContract), runHeadless, prices
-    designs.js           new and copied designs (always deep copies), defaultSlot
+    designs.js           new and copied designs (always deep copies), defaultSlot, the blueprint book
     briefs.js            brief wording that depends on the job: job labels, why a client called, stage twists
     stagejobs.js         inside jobs: makeStageContract, solveStage (the surveyor for stages), runStage, result rows
     economy.js           fees, upkeep, wear, insurance, reputation (stars + mastery), unlock checks (landmarks need mastery),

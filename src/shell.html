@@ -169,6 +169,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
   padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px));
   padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); padding-top: max(12px, env(safe-area-inset-top, 0px));
 }
+.bprow { display: flex; gap: 8px; align-items: center; justify-content: space-between; font-size: 13px; color: var(--mute); }
 .paper { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #ece6d8; color: #1c1a17; display: grid; gap: 4px; }
 .paper small { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #6b6458; border-bottom: 1px solid #c9c0ae; padding-bottom: 4px; }
 .paper b { font-family: var(--f-display); font-size: 18px; line-height: 1.15; }
@@ -335,6 +336,7 @@ input[type=range] { width: 100%; accent-color: var(--brass); height: 28px; margi
     <div class="chip" id="cTemp"><span>Lobby</span><b id="hTemp">21°</b></div>
     <div class="chip" id="cAcc"><span>Away</span><b id="hAcc">0</b></div>
   </div>
+  <div class="bprow" id="bpRow" hidden></div>
   <div class="slots" id="slots"></div>
   <div class="editor" id="editor"></div>
   <div class="costbar"><div><span id="kCostL">Your doors</span><b id="kCost">£0</b></div><div><span>Budget</span><b id="kBudget">£0</b></div><div><span>Par</span><b id="kPar">£0</b></div><div><span>Your profit</span><b id="kFee">£0</b></div></div>

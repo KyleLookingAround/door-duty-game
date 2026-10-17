@@ -169,6 +169,8 @@ with sync_playwright() as p:
         if q['status']=='callback' and not globals().get('shot_cb'):
             pg.screenshot(path='p_callback_ws.png', full_page=True); globals()['shot_cb']=1
         layout(pg, 'job screen')
+        if pg.query_selector('#bpOpen:visible'):   # the blueprint book: look, check the text, and go back
+            pg.click('#bpOpen'); pg.wait_for_selector('#bpClose'); sweep(pg, 'blueprint book'); pg.click('#bpClose'); pg.wait_for_timeout(300)
         apply_design(pg, c['par']['slots'])
         cost=pg.inner_text('#kCost')
         # the readout must match what the design costs (list price), on door jobs and inside jobs alike
@@ -180,6 +182,7 @@ with sync_playwright() as p:
         title=pg.inner_text('#sheet h3'); rows=pg.inner_text('#sheet .list').replace('\n',' | ')
         sweep(pg, f"result for {q['name']}")
         log(f"  result: {title} cost {cost} :: {rows}")
+        if pg.query_selector('#rSave'): pg.click('#rSave'); pg.wait_for_timeout(150); log('  saved a blueprint')
         if pg.query_selector('#rSign'): pg.click('#rSign'); pg.wait_for_timeout(450)
         else:
             fail(f"{q['name']}: the par design failed in the page"); pg.click('#rEdit'); pg.wait_for_timeout(500); pg.click('#wsBack'); pg.wait_for_timeout(500)

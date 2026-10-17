@@ -2,12 +2,12 @@
 import { BUILDING } from '../content/buildings/index.js';
 import { EVENTS } from '../content/events.js';
 import { REV_R, SLOT_W, TAU, V_SAFE, World } from '../engine/world.js';
-import { PRICE, SIM_DT, TEST_SECONDS, designCost, newSim, runSeconds, slotCost, testOver } from '../game/contracts.js';
+import { MONTHS, PRICE, SIM_DT, TEST_SECONDS, designCost, newSim, runSeconds, slotCost, testOver, violatesRules } from '../game/contracts.js';
 import { STAGES, stageName } from '../engine/stages/index.js';
 import { techName } from '../game/economy.js';
 import { charge, feeOf, jobsLeft, techOf } from '../game/economy.js';
 import { grade, signOff } from '../game/jobs.js';
-import { cloneDesign, defaultSlot, newDesign } from '../game/designs.js';
+import { blueprintsFor, cloneDesign, defaultSlot, dropBlueprint, newDesign, saveBlueprint, unownedIn } from '../game/designs.js';
 import { bookedText, stageTwist } from '../game/briefs.js';
 import { cv, cw, scale, sizeCanvas } from './canvas.js';
 import { coach, coachDone, coachEl } from './coach.js';
@@ -110,7 +110,25 @@ function slotLabel(x, i) {
   const cost = designCost([x], old ? [old] : null);
   return old && old.type === x.type ? (cost ? '+' + kmoney(cost) : 'kept') : kmoney(cost);
 }
+// the blueprint book: designs saved for jobs of this shape (Design office research)
+function renderBlueprints() {
+  const row = $('bpRow'), list = S.unlocks.designoffice && W.mode !== 'test' ? blueprintsFor(S, W.contract) : [];
+  row.hidden = !list.length;
+  if (!list.length) return;
+  row.innerHTML = `<span>Blueprint book: ${list.length} for ${W.contract.stage ? 'this setup' : `${W.contract.slots} bays`}</span><button class="ghost small" type="button" id="bpOpen">Blueprints</button>`;
+  $('bpOpen').onclick = openBlueprints;
+}
+function openBlueprints() {
+  const c = W.contract, list = blueprintsFor(S, c);
+  sheet(`<div class="eyebrow">Blueprint book</div><h3>Start from a saved design</h3><p>It replaces what's on the editor now. Check it against this client's crowd and weather: a good start, not an answer.</p>
+    ${list.map((b, i) => { const miss = unownedIn(b.design, techOf(S)), broken = !c.stage && violatesRules(c, b.design); return `<div class="node ${miss.length || broken ? 'locked' : 'avail'}"><div><b>${b.name}</b><p>${money(designCost(b.design, c.existing))} here${miss.length ? `. <span class="hot">Uses research you don't have: ${miss.map(techName).join(', ')}</span>` : ''}${broken ? '. <span class="hot">Breaks this client\'s rules</span>' : ''}</p></div><div style="display:grid;gap:4px;justify-items:end"><button class="go small" type="button" data-bp="${i}" ${miss.length ? 'disabled' : ''}>Use</button><button class="ghost small" type="button" data-bpdel="${i}">Remove</button></div></div>`; }).join('')}
+    <button class="ghost" type="button" id="bpClose">Back to the job</button>`);
+  $('bpClose').onclick = closeSheet;
+  $('sheet').querySelectorAll('[data-bp]').forEach(b => b.onclick = () => { W.design = cloneDesign(list[+b.dataset.bp].design); closeSheet(); designDirty(); renderEditor(); toast(`Started from ${list[+b.dataset.bp].name}`); });
+  $('sheet').querySelectorAll('[data-bpdel]').forEach(b => b.onclick = () => { dropBlueprint(S, list[+b.dataset.bpdel]); save(); if (blueprintsFor(S, c).length) openBlueprints(); else { closeSheet(); renderEditor(); } });
+}
 export function renderEditor() {
+  renderBlueprints();
   if (W.contract.stage) return renderStageEditor();
   const d = W.design, s = d[W.sel], u = S.unlocks, rules = W.contract.rules || {};
   const fixed = !!(rules.fixed && rules.fixed[W.sel]);
@@ -279,10 +297,12 @@ export function evaluateTest() {
     ${green ? '<p class="note"><strong style="color:var(--ok)">🌿 Green star.</strong> The lobby stayed snug, so the client\'s heating bills drop. They\'ll pay 15% more maintenance.</p>' : ''}
     ${pass && r.bumps ? `<p class="note">${r.bumps} bump${r.bumps > 1 ? 's' : ''} go on your insurance record: +${money(45 * r.bumps)} a month while this install stands.</p>` : ''}
     <ul class="list">${rows.map(([a, v, gl, ok]) => `<li class="${ok === true ? 'pass' : ok === false ? 'fail' : ''}"><span>${a} <span style="color:var(--mute)">${gl}</span></span><span>${v}</span></li>`).join('')}</ul>
+    ${pass && S.unlocks.designoffice ? `<button class="ghost small" type="button" id="rSave">Save as a blueprint</button>` : ''}
     <div style="display:flex;gap:8px">${pass ? `<button class="ghost" type="button" id="rEdit">Keep tweaking</button><button class="go" type="button" id="rSign">Sign off</button>` : `<button class="ghost" type="button" id="rAgain">Watch again</button><button class="go" type="button" id="rEdit">${c.stage ? 'Change the setup' : 'Change the doors'}</button>`}</div>`);
   $('rEdit').onclick = () => { closeSheet(); renderEditor(); };
   if (pass) $('rSign').onclick = () => { closeSheet(); signOffJob(); };
   else $('rAgain').onclick = () => { closeSheet(); startTest(); };
+  if ($('rSave')) $('rSave').onclick = () => { const bp = saveBlueprint(S, c, W.design, `${W.plot.name}, ${MONTHS[S.month % 12]} ${S.year}`); if (!bp) return; save(); $('rSave').disabled = true; $('rSave').textContent = 'Saved to the blueprint book'; };
   setTimeout(() => coach('result', () => document.querySelector('#sheet .list')), 300);
   renderEditor();
 }
