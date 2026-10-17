@@ -1,6 +1,7 @@
 // Twists: each one breaks a different stock answer.
 export const TWISTS = {
   tight:    { label: 'Tight budget', text: 'A small budget, and the owner has ruled out a revolving door.' },
+  kids:     { label: 'School run', text: 'Children racing ahead of their parents, straight at the doors. They bruise easily, and a revolving door needs to slow for them.' },
   fragile:  { label: 'Fragile guests', text: 'Half the customers are older and bruise easily. One bump and you\'re in the local paper.' },
   narrow:   { label: 'Narrow frontage', text: 'The shopfront is one bay wide. Whatever you fit has to do everything.' },
   wind:     { label: 'Windy corner', text: 'A gale funnels down the street. Wide mouths and open doors let it straight in.' },
@@ -13,9 +14,9 @@ export const TWISTS = {
   nofire:   { label: 'Fire officer', text: 'No swing doors: they jam in a crush.' },
   cold:     { label: 'Cold snap', text: 'Freezing outside. Keep the lobby warm.' },
 };
-export const TWIST_POOL = ['tight', 'fragile', 'narrow', 'wind', 'surge', 'listed', 'stepfree', 'nofire', 'cold', 'bikes', 'rain', 'drill'];
+export const TWIST_POOL = ['tight', 'fragile', 'narrow', 'wind', 'surge', 'listed', 'stepfree', 'nofire', 'cold', 'bikes', 'rain', 'drill', 'kids'];
 // twists only offered to firms with the right research
-export const TWIST_REQ = { drill: t => t.pillars, wind: t => t.mouth };
+export const TWIST_REQ = { drill: t => t.pillars, wind: t => t.mouth, kids: t => t.sensor };
 // Pairs that leave no workable door. Some become possible with R&D: those are
 // "specialist" jobs that only firms with the right tech get offered, at a premium.
 export const CONFLICTS = [

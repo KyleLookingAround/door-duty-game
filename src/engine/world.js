@@ -15,10 +15,11 @@ export const GUEST = {
   case:    { r: [0.26, 0.29], walk: [0.95, 1.15], safe: 0.9, react: [0.5, 1.3] },
   pram:    { r: [0.30, 0.33], walk: [0.9, 1.05], safe: 0.8, react: [0.4, 1.0], stepfree: true },   // prams and delivery trolleys
   bike:    { r: [0.28, 0.32], walk: [1.0, 1.2], safe: 1.0, react: [0.4, 0.9], noRevolve: true },  // cyclists wheeling a bike
+  kid:     { r: [0.14, 0.17], walk: [1.5, 1.9], safe: 0.55, react: [0.15, 0.4] },   // children racing ahead of their parents
 };
-export const MIX_TYPES = ['elderly', 'wheel', 'case', 'pram', 'bike'];
+export const MIX_TYPES = ['elderly', 'wheel', 'case', 'pram', 'bike', 'kid'];
 // seconds to tap through a ticket gate
-export const TAP = { normal: 0.9, elderly: 1.8, wheel: 2.0, case: 1.4, pram: 1.8, bike: 2.0 };
+export const TAP = { normal: 0.9, elderly: 1.8, wheel: 2.0, case: 1.4, pram: 1.8, bike: 2.0, kid: 1.0 };
 
 // does the segment (x0,y0)-(x1,y1) pass through the box? (slab test)
 export function segHitsBox(x0, y0, x1, y1, bx0, by0, bx1, by1) {

@@ -347,6 +347,7 @@ export function drawPerson(c, p) {
     c.strokeStyle = '#d4a94f'; c.lineWidth = 0.05; c.beginPath(); c.moveTo(p.x + ox - ux * 0.38, p.y + oy - uy * 0.38); c.lineTo(p.x + ox + ux * 0.38, p.y + oy + uy * 0.38); c.stroke();
     c.fillStyle = '#12151b'; for (const s of [-0.3, 0.3]) { c.beginPath(); c.arc(p.x + ox + ux * s, p.y + oy + uy * s, 0.08, 0, TAU); c.fill(); }
   }
+  if (p.type === 'kid') { c.fillStyle = '#6fcf97'; c.beginPath(); c.arc(p.x, p.y, p.r * 0.55, 0, TAU); c.fill(); }   // a child: small, with a green cap
   if (p.type === 'pram') { c.fillStyle = '#b48cf0'; c.beginPath(); c.ellipse(p.x + ux * 0.3, p.y + uy * 0.3, 0.17, 0.13, ang, 0, TAU); c.fill(); c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(p.x + ux * 0.36, p.y + uy * 0.36, 0.09, 0.08, ang, 0, TAU); c.fill(); }
   if (p.type === 'case') { c.save(); c.translate(p.x - ux * 0.28 + uy * 0.12, p.y - uy * 0.28 - ux * 0.12); c.rotate(ang); c.fillStyle = '#9b7a4a'; c.fillRect(-0.14, -0.1, 0.28, 0.2); c.fillStyle = '#6b5232'; c.fillRect(-0.02, -0.1, 0.04, 0.2); c.restore(); }
   if (p.type === 'wheel') { c.save(); c.translate(p.x, p.y); c.rotate(ang); c.fillStyle = '#2a2f38'; c.fillRect(-p.r * 0.9, -p.r, p.r * 1.6, p.r * 2); c.fillStyle = '#5a626e'; c.fillRect(-p.r * 0.9, -p.r, p.r * 1.6, 0.06); c.fillRect(-p.r * 0.9, p.r - 0.06, p.r * 1.6, 0.06); c.restore(); }

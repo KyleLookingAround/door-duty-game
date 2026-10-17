@@ -74,6 +74,7 @@ export async function openBrief(i, fromWorkshop) {
   if (mix.wheel) guest.push(`${Math.round(mix.wheel * 100)}% wheelchairs`);
   if (mix.pram) guest.push(`${Math.round(mix.pram * 100)}% prams and trolleys`);
   if (mix.bike) guest.push(`${Math.round(mix.bike * 100)}% cyclists`);
+  if (mix.kid) guest.push(`${Math.round(mix.kid * 100)}% children racing ahead`);
   sheet(`<div class="eyebrow">${jobLabel(p)} · ${k.label} · tier ${c.tier + 1}</div>
     <h3>${p.name}</h3>${enquiryNote(p)}
     ${p.status === 'callback' ? `<p>${!isResearchCall(p) && p.change && CHANGE[p.change] ? `<strong style="color:var(--text)">${CHANGE[p.change].label}.</strong> ` : ''}${callText(p, false)}</p>${beforeLine(c)}` : ''}
@@ -109,7 +110,7 @@ export async function openBrief(i, fromWorkshop) {
       <li><span>Surveyor's par: the cheapest pass they found</span><span>${money(c.par.cost)}</span></li>
     </ul>
     <p class="note">${STARS}.${costMult(S) < 1 ? ` Prices shown are list prices; you pay ${Math.round(costMult(S) * 100)}% of them.` : ''}</p>
-    <div class="legend"><span><i style="background:var(--frost)"></i>arriving</span><span><i style="background:var(--rose)"></i>leaving</span><span><i style="background:#fff;border:3px solid var(--frost);box-sizing:border-box"></i>older</span><span><i style="background:var(--frost);border-radius:3px"></i>wheelchair</span><span><i style="background:#b48cf0"></i>pram</span><span><i style="background:#d4a94f;border-radius:2px;height:3px;width:14px;vertical-align:3px"></i>bike</span><span><i style="background:#9b7a4a;border-radius:2px"></i>suitcase</span><span><i style="background:#6b7280"></i>standing still</span></div>
+    <div class="legend"><span><i style="background:var(--frost)"></i>arriving</span><span><i style="background:var(--rose)"></i>leaving</span><span><i style="background:#fff;border:3px solid var(--frost);box-sizing:border-box"></i>older</span><span><i style="background:var(--frost);border-radius:3px"></i>wheelchair</span><span><i style="background:#b48cf0"></i>pram</span><span><i style="background:#d4a94f;border-radius:2px;height:3px;width:14px;vertical-align:3px"></i>bike</span><span><i style="background:#9b7a4a;border-radius:2px"></i>suitcase</span>${(c.crowd.mix || {}).kid ? '<span><i style="background:#6fcf97;width:8px;height:8px"></i>child</span>' : ''}<span><i style="background:#6b7280"></i>standing still</span></div>
     ${fromWorkshop ? '<button class="go" type="button" id="bBack">Back to the workshop</button>'
       : takeButtons()}`);
   if (fromWorkshop) { $('bBack').onclick = closeSheet; return; }
