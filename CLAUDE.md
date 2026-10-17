@@ -29,6 +29,7 @@ src/
     buildings/*.js       one file per client (see buildings/README.md); index.js fixes the save order
     twists.js tech.js company.js town.js events.js guides.js
     paradoxes.js         which finished research makes which fitted client call, and about what
+    changes.js           street changes: the causes of ordinary callbacks
   game/                  rules, pure functions over the save S. No DOM.
     contracts.js         makeContract, the surveyor (generateSolved / solveContract), runHeadless, prices
     stagejobs.js         inside jobs: makeStageContract, solveStage (the surveyor for stages), runStage, result rows
@@ -82,6 +83,12 @@ Rules: a stage must work fed (`sim.fed`, people come from `admit`) as well as on
 
 Clients get inside jobs three ways: a paradox callback when research finishes (`content/paradoxes.js`, see `endMonth`), a building whose `jobs` list is all inside work (Riverside), or a normal callback about an inside setup they already have (`p.inside`). A building can rename and retune a stage for itself (`tune: { queue: { name: 'Bag check', rate, params } }`) and set what's already there (`inside: { queue: { desks: 3 } }`).
 
+## Callbacks
+
+Ordinary callbacks are caused, not random. Each month a **street change** (`content/changes.js`: a bus stop moves, a care home opens, a cold snap) may go on the calendar two months ahead (`scheduleChange`). When it lands (`landChange`), up to a few fitted clients it touches go to status `checking`: they keep paying while the surveyor runs a **check** contract (`opts.check`: the client's normal day plus a moderate version of the change, no random twists, no escalation, and the client's own doors tried exactly as they stand). If they still pass, the client copes (`settleCheck`): `p.coped` goes up and so does their maintenance (`loyalty`, up to +15%). If not, it becomes a normal callback with that job. So doors built with room to spare ride changes out; doors built exactly to par usually don't.
+
+Other callbacks: paradox calls when research finishes (`content/paradoxes.js`), failed inspections, and the rival's botched work coming back. A new firm starts in May; first visits are warm in the warm months and there is no heatwave in the first summer, so temperature arrives in the autumn.
+
 ## Adding a building
 
 1. Copy a similar file in `src/content/buildings/`, change `key`, `plot`, `kind`, `site`, `floor`, `look` and the art hooks.
@@ -90,7 +97,7 @@ Clients get inside jobs three ways: a paradox callback when research finishes (`
 
 ## Known issues / TODO
 
-- Callbacks the installed doors already cope with escalate (up to three times) and then switch complaint, so false alarms should now be rare; if they reappear, check generateSolvedInner in contracts.js.
+- Real callbacks (inspections, the rival, paradox calls) still escalate if the doors already cope (generateSolvedInner); street-change checks don't, by design.
 - A chained level's survey takes 5 to 20 seconds (it improves the route one change at a time, not every combination).
 - The survey is CPU-heavy (a few seconds per tender); the worker hides it, but a full golden run takes ~8 minutes.
 - `prototype/` was removed in the restructure; the original single-file build is in the first commit if a comparison is needed.

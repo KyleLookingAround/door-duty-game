@@ -24,7 +24,8 @@ export function inspect(S, p) {
 // so the calendar can say where; who it touches is decided when it lands.
 export function scheduleChange(S) {
   const at = S.month + 2;
-  if ((S.changes || []).some(x => x.month === at) || random(S) > 0.6) return null;
+  // most months bring something; only a quiet month in five brings nothing
+  if ((S.changes || []).some(x => x.month === at) || random(S) > 0.85) return null;
   // no hot spells in a new firm's first summer
   const pool = CHANGES.filter(d => (!d.months || d.months.includes(at % 12)) && !(d.reason === 'hot' && at < 12));
   const def = pool[randomInt(S, pool.length)];

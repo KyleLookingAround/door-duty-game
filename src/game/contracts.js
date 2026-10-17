@@ -88,7 +88,9 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
     const CB = { busier: 'surge', older: 'fragile', cold: 'cold', safety: 'fragile', access: 'stepfree' };
     if (opts.callback && CB[opts.callback] && !opts.check && !(k.station && opts.callback === 'cold')) twists.push(CB[opts.callback]);
     const n = tier >= 3 ? 2 : 1;
-    const pool = (BUILDING[kindKey].twistPool || TWIST_POOL).filter(t => !twists.includes(t) && (!TWIST_REQ[t] || TWIST_REQ[t](tech)));
+    // a new firm's first warm months stay warm: no cold snaps or gales until the autumn
+    const firstSummer = month < 12 && SEASON_T[month % 12] >= 12;
+    const pool = (BUILDING[kindKey].twistPool || TWIST_POOL).filter(t => !twists.includes(t) && (!TWIST_REQ[t] || TWIST_REQ[t](tech)) && !(firstSummer && (t === 'cold' || t === 'wind')));
     while (twists.length < n + (opts.callback ? 1 : 0) && pool.length) {
       const t = pool.splice(Math.floor(rng() * pool.length), 1)[0];
       if (!clashes(twists, t, tech)) twists.push(t);

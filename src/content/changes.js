@@ -10,8 +10,8 @@
 //   all: true       anyone (weather): the most exposed clients are checked
 // months: only in these months of the year (0 = January). max: how many clients get checked at most.
 export const CHANGES = [
-  { key: 'busstop', label: 'Bus stop moves', text: 'The bus stop moves to {where}. Buses drop crowds right outside.', reason: 'busier', street: true, max: 3 },
-  { key: 'flats', label: 'New flats', text: 'A block of flats opens behind {where}. More people walking past, morning and evening.', reason: 'busier', street: true, max: 3 },
+  { key: 'busstop', label: 'Bus stop moves', text: 'The bus stop moves to {where}. Buses drop crowds right outside.', reason: 'busier', street: true, max: 4 },
+  { key: 'flats', label: 'New flats', text: 'A block of flats opens behind {where}. More people walking past, morning and evening.', reason: 'busier', street: true, max: 4 },
   { key: 'office', label: 'Offices reopen', text: 'A big employer moves back into {where}. The lunch rush gets heavier.', reason: 'busier', street: true, max: 2 },
   { key: 'carehome', label: 'Care home opens', text: 'A care home opens next to {where}. More older visitors, who need slower doors.', reason: 'older', near: true, max: 3 },
   { key: 'surgery', label: 'GP surgery moves', text: 'The GP surgery moves in beside {where}. An older crowd, and more of them.', reason: 'older', near: true, max: 3 },
