@@ -1662,24 +1662,25 @@
    "seed": 3072
   },
   "twists": [
-   "stepfree",
-   "cold",
-   "fragile"
+   "listed",
+   "surge",
+   "bikes"
   ],
   "goals": {
-   "bumps": 0,
-   "minTemp": 19,
-   "access": true,
-   "laps": null,
-   "through": 53
+   "bumps": 4,
+   "minTemp": 18,
+   "access": false,
+   "laps": 1,
+   "bikes": true,
+   "through": 45
   },
-  "par": "lV",
-  "cost": 14500,
-  "fee": 28000,
-  "budget": 25000,
+  "par": "l,r4",
+  "cost": 9500,
+  "fee": 16500,
+  "budget": 17500,
   "relaxed": false,
   "slots": 2,
-  "temp": -4
+  "temp": 1
  },
  {
   "case": {
