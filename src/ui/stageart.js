@@ -43,9 +43,11 @@ const ART = {
     c.fillStyle = '#5b4a38'; c.fillRect(-box.w / 2 + 0.3, -3.35, box.w - 0.6, 0.1);
     for (const dk of s.desks) {
       const busy = !!(dk.user && dk.user.atDesk);
-      c.fillStyle = busy ? 'rgba(212,169,79,.85)' : 'rgba(111,207,151,.8)';
+      // a cover desk off shift is grey; the express desk and cover desks say so
+      const shut = dk.cover && s.open && !s.open(dk);
+      c.fillStyle = shut ? 'rgba(236,230,216,.2)' : busy ? 'rgba(212,169,79,.85)' : 'rgba(111,207,151,.8)';
       c.beginPath(); c.arc(dk.x, -3.52, 0.12, 0, TAU); c.fill();
-      label(c, lw, String(dk.i + 1), dk.x, -3.95, { size: 9 });
+      label(c, lw, dk.express ? `${dk.i + 1} EXPRESS` : dk.cover ? `${dk.i + 1} COVER` : String(dk.i + 1), dk.x, -3.95, { size: dk.express || dk.cover ? 7 : 9, color: dk.express || dk.cover ? 'rgba(212,169,79,.85)' : undefined });
       if (busy && dk.user.slow) label(c, lw, 'slow', dk.x, -2.55, { size: 8, color: 'rgba(212,169,79,.9)' });
     }
     // the queue furniture: barrier tape for the snake, floor markers for lines

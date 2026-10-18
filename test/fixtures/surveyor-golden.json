@@ -2286,21 +2286,21 @@
    "seed": 4101
   },
   "twists": [
-   "pensions"
+   "quick"
   ],
   "goals": {
    "through": 27,
-   "wait": 25,
+   "wait": 6,
    "bumps": 0,
    "minTemp": null,
    "maxTemp": null,
    "access": false,
    "laps": null
   },
-  "par": "q5S",
-  "cost": 10800,
-  "fee": 17300,
-  "budget": 19500,
+  "par": "q3SEc2",
+  "cost": 7300,
+  "fee": 13800,
+  "budget": 14000,
   "relaxed": false,
   "slots": 0,
   "temp": 18

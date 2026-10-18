@@ -73,6 +73,16 @@ test('escalators: turn one round for the evening peak; a fast escalator trips ol
   assert.equal(call.params.down, 0);
   assert.ok(STAGES.escalator.candidates(call, ALL).every(d => d.speed === 'std' && !d.down));
 });
+test('counter hall: lunchtime cover beats a full desk on a lunch-rush day, not an opening rush; an express desk speeds a quick day', () => {
+  const run = (extra, d) => { const w = []; for (let s = 0; s < 10; s++) { const c = makeContract('bank', 3, 3, 700 + s, { stage: 'queue', tech: ALL, extra }); w.push(runStage(c, { stage: 'queue', layout: 'snake', express: false, cover: 0, ...d }, ALL).wait); } return mean(w); };
+  // the same £5,000: a fourth full desk, or two part-time desks through the middle of the day
+  assert.ok(run(['opening'], { desks: 4 }) < run(['opening'], { desks: 3, cover: 2 }), 'an opening rush: the full desk');
+  assert.ok(run(['lunch'], { desks: 3, cover: 2 }) < run(['lunch'], { desks: 4 }), 'a lunch rush: the cover');
+  assert.ok(run(['quick'], { desks: 3, express: true }) < run(['quick'], { desks: 3 }), 'quick jobs go faster at an express desk');
+  // research calls and the Arena's chained level keep the plain hall
+  const call = makeContract('bank', 4, 3, 5, { stage: 'queue', tech: ALL, callback: 'paradox' });
+  assert.ok(STAGES.queue.candidates(call, ALL).every(d => !d.express && !d.cover));
+});
 test('paradox: zoned lifts beat the same lifts stopping everywhere', () => {
   const [zoned, all] = compare('lifts', { count: 6, mode: 'zoned' }, { count: 6, mode: 'all' });
   assert.ok(mean(zoned.map(r => r.wait)) < mean(all.map(r => r.wait)));
