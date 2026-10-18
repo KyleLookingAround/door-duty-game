@@ -18,6 +18,8 @@ function hintFor(S, c, design, r, rows) {
   const revOk = !((c.rules && c.rules.forbid) || []).includes('revolve');
   const rev = has('revolve'), open = has('swing') || has('slider');
   const twoWaySwing = design.some(s => s.type === 'swing' && (s.flow || 'both') === 'both' && !s.lanes);
+  // tourists riding the drum round for the photo: a faster door only spins them faster
+  if (!rows[0][3] && rev && (c.twists || []).includes('tourists')) return `Not enough got through. The tourists ride the revolving door round for the photo, holding up a compartment every time. ${tech.doorman && S.staff && S.staff.doorman ? 'A doorman sees them off; ' : ''}more doors spread them out, and a faster door only spins them round faster.`;
   if (!rows[0][3]) return `Not enough got through. ${upFirst(orList(['more doors', ...(rev ? ['faster wings'] : []), ...(rev && tech.mouth ? ['wider mouths'] : [])]))}.`;
   if (!rows[1][3]) {
     const fix = [];

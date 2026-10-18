@@ -13,10 +13,11 @@ export const TWISTS = {
   drill:    { label: 'Fire drill', text: 'After the rush the fire officer sounds the alarm, and the lobby has to empty fast. Revolving doors fold flat, every door becomes an exit, and crowds jam at narrow ones.' },
   nofire:   { label: 'Fire officer', text: 'No swing doors: they jam in a crush.' },
   cold:     { label: 'Cold snap', text: 'Freezing outside. Keep the lobby warm.' },
+  tourists: { label: 'Tour group', text: 'A coach of tourists who love the revolving door: each one rides it round once for the photo.' },
 };
-export const TWIST_POOL = ['tight', 'fragile', 'narrow', 'wind', 'surge', 'listed', 'stepfree', 'nofire', 'cold', 'bikes', 'rain', 'drill', 'kids'];
+export const TWIST_POOL = ['tight', 'fragile', 'narrow', 'wind', 'surge', 'listed', 'stepfree', 'nofire', 'cold', 'bikes', 'rain', 'drill', 'kids', 'tourists'];
 // twists only offered to firms with the right research
-export const TWIST_REQ = { drill: t => t.pillars, wind: t => t.mouth, kids: t => t.sensor };
+export const TWIST_REQ = { drill: t => t.pillars, wind: t => t.mouth, kids: t => t.sensor, tourists: t => t.doorman };
 // Pairs that leave no workable door. Some become possible with R&D: those are
 // "specialist" jobs that only firms with the right tech get offered, at a premium.
 export const CONFLICTS = [

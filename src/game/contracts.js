@@ -155,6 +155,7 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
     if (t === 'listed') { const mid = Math.floor((slots - 1) / 2); c.rules.fixed = { [mid]: { type: 'revolve', wings: 4, mouth: 40, core: 0.15, rpm: 4, flow: 'both' } }; }
     if (t === 'stepfree') { mix.wheel = Math.max(mix.wheel || 0, 0.06); mix.pram = Math.max(mix.pram || 0, 0.05); goals.access = true; }
     if (t === 'kids') mix.kid = Math.max(mix.kid || 0, 0.15);
+    if (t === 'tourists') mix.tourist = Math.max(mix.tourist || 0, 0.25);
     if (t === 'bikes') { mix.bike = Math.max(mix.bike || 0, 0.08); goals.bikes = true; }
     if (t === 'rain') c.rain = true;
     if (t === 'drill') c.drill = { at: TEST_SECONDS, n: 42 + Math.min(tier, 6) * 3 };
@@ -312,7 +313,7 @@ export function candidates(contract, unlocks) {
   if (unlocks.padded && tw.includes('fragile')) P.push(rev({ rpm: 4, padded: true }), rev({ rpm: 4.5, mouth: 45, padded: true }), rev({ rpm: 5, core: 0.3, padded: true }));
   if (unlocks.sensor && tw.includes('fragile')) P.push(rev({ rpm: 5, sensor: true }), rev({ rpm: 5.5, core: 0.3, sensor: true }), rev({ rpm: 6, mouth: 45, sensor: true }));
   if (unlocks.sensor && tw.includes('kids')) P.push(rev({ rpm: 5.5, sensor: true }), rev({ rpm: 6.5, mouth: 45, sensor: true }));
-  if (unlocks.doorman && (tw.includes('surge') || contract.goals.laps != null)) P.push(rev({ rpm: 6, doorman: true }), rev({ rpm: 5, doorman: true }), rev({ rpm: 6.5, mouth: 45, doorman: true }));
+  if (unlocks.doorman && (tw.includes('surge') || tw.includes('tourists') || contract.goals.laps != null)) P.push(rev({ rpm: 6, doorman: true }), rev({ rpm: 5, doorman: true }), rev({ rpm: 6.5, mouth: 45, doorman: true }));
   if (unlocks.seals && windy) P.push(rev({ mouth: 45, rpm: 5 }));
   { const seen = new Set(); for (let i = P.length - 1; i >= 0; i--) { const k = JSON.stringify(P[i]); if (seen.has(k)) P.splice(i, 1); else seen.add(k); } }
   const wideP = unlocks.wide ? [rev({ wide: true, wings: 3, mouth: 32, rpm: 3.5 }), rev({ wide: true, wings: 3, mouth: 30, rpm: 4 })] : [];

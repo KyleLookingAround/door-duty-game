@@ -347,6 +347,7 @@ export function drawPerson(c, p) {
     c.strokeStyle = '#d4a94f'; c.lineWidth = 0.05; c.beginPath(); c.moveTo(p.x + ox - ux * 0.38, p.y + oy - uy * 0.38); c.lineTo(p.x + ox + ux * 0.38, p.y + oy + uy * 0.38); c.stroke();
     c.fillStyle = '#12151b'; for (const s of [-0.3, 0.3]) { c.beginPath(); c.arc(p.x + ox + ux * s, p.y + oy + uy * s, 0.08, 0, TAU); c.fill(); }
   }
+  if (p.type === 'tourist') { c.fillStyle = '#d4a94f'; c.fillRect(p.x + ux * 0.16 - 0.05, p.y + uy * 0.16 - 0.05, 0.1, 0.1); }   // a tourist: a camera held up
   if (p.type === 'kid') { c.fillStyle = '#6fcf97'; c.beginPath(); c.arc(p.x, p.y, p.r * 0.55, 0, TAU); c.fill(); }   // a child: small, with a green cap
   if (p.type === 'pram') { c.fillStyle = '#b48cf0'; c.beginPath(); c.ellipse(p.x + ux * 0.3, p.y + uy * 0.3, 0.17, 0.13, ang, 0, TAU); c.fill(); c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(p.x + ux * 0.36, p.y + uy * 0.36, 0.09, 0.08, ang, 0, TAU); c.fill(); }
   if (p.type === 'case') { c.save(); c.translate(p.x - ux * 0.28 + uy * 0.12, p.y - uy * 0.28 - ux * 0.12); c.rotate(ang); c.fillStyle = '#9b7a4a'; c.fillRect(-0.14, -0.1, 0.28, 0.2); c.fillStyle = '#6b5232'; c.fillRect(-0.02, -0.1, 0.04, 0.2); c.restore(); }
@@ -361,7 +362,7 @@ export function drawPerson(c, p) {
   c.beginPath(); c.arc(hx, hy, sw * 0.4, 0, TAU); c.fill();
   if (p.umbrella) { c.fillStyle = ['rgba(239,91,76,.45)', 'rgba(156,196,236,.45)', 'rgba(212,169,79,.45)'][(p.born * 5 | 0) % 3 || 0]; c.beginPath(); c.arc(p.x, p.y, p.r + 0.04, 0, TAU); c.fill(); c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = 0.02; c.beginPath(); for (let k = 0; k < 6; k++) { c.moveTo(p.x, p.y); c.lineTo(p.x + Math.cos(k) * (p.r + 0.04), p.y + Math.sin(k) * (p.r + 0.04)); } c.stroke(); }
   if (p.flash > 0) { c.strokeStyle = `rgba(239,91,76,${Math.min(1, p.flash)})`; c.lineWidth = 0.05; c.beginPath(); c.arc(p.x, p.y, p.r + 0.06, 0, TAU); c.stroke(); }
-  if (p.laps > 0) { c.strokeStyle = '#b48cf0'; c.lineWidth = 0.06; c.beginPath(); c.arc(p.x, p.y, p.r + 0.04, 0, TAU); c.stroke(); }
+  if (p.laps > ((GUEST[p.type] || {}).joy || 0)) { c.strokeStyle = '#b48cf0'; c.lineWidth = 0.06; c.beginPath(); c.arc(p.x, p.y, p.r + 0.04, 0, TAU); c.stroke(); }
 }
 export function drawStandingFig(c, x, y, r) {
   c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(x + 0.03, y + 0.04, r, r * 0.62, 0, 0, TAU); c.fill();

@@ -16,10 +16,11 @@ export const GUEST = {
   pram:    { r: [0.30, 0.33], walk: [0.9, 1.05], safe: 0.8, react: [0.4, 1.0], stepfree: true },   // prams and delivery trolleys
   bike:    { r: [0.28, 0.32], walk: [1.0, 1.2], safe: 1.0, react: [0.4, 0.9], noRevolve: true },  // cyclists wheeling a bike
   kid:     { r: [0.14, 0.17], walk: [1.5, 1.9], safe: 0.55, react: [0.15, 0.4] },   // children racing ahead of their parents
+  tourist: { r: [0.19, 0.23], walk: [0.85, 1.15], safe: 0.9, react: [0.4, 1.1], joy: 1 },   // rides a revolving door round once, for the photo
 };
-export const MIX_TYPES = ['elderly', 'wheel', 'case', 'pram', 'bike', 'kid'];
+export const MIX_TYPES = ['elderly', 'wheel', 'case', 'pram', 'bike', 'kid', 'tourist'];
 // seconds to tap through a ticket gate
-export const TAP = { normal: 0.9, elderly: 1.8, wheel: 2.0, case: 1.4, pram: 1.8, bike: 2.0, kid: 1.0 };
+export const TAP = { normal: 0.9, elderly: 1.8, wheel: 2.0, case: 1.4, pram: 1.8, bike: 2.0, kid: 1.0, tourist: 1.6 };
 
 // does the segment (x0,y0)-(x1,y1) pass through the box? (slab test)
 export function segHitsBox(x0, y0, x1, y1, bx0, by0, bx1, by1) {
@@ -490,7 +491,11 @@ export class World {
       const entryA = p.dir > 0 ? -Math.PI / 2 : Math.PI / 2, exitA = -entryA;
       let da = ang - p.lastA; if (da > Math.PI) da -= TAU; if (da < -Math.PI) da += TAU;
       p.accum += da; p.lastA = ang;
-      if (Math.abs(p.accum) > Math.PI + th + 0.35 + p.laps * TAU) { p.laps++; this.stats.laps++; this.events.push({ type: 'lap', x: p.x, y: p.y, t: this.t }); }
+      if (Math.abs(p.accum) > Math.PI + th + 0.35 + p.laps * TAU) {
+        p.laps++;
+        // a tourist's lap for the photo isn't the door's fault; any more than that is
+        if (p.laps > (GUEST[p.type].joy || 0) || d.doorman) { this.stats.laps++; this.events.push({ type: 'lap', x: p.x, y: p.y, t: this.t }); }
+      }
       if (dist > d.R + p.r * 0.4) {
         if (ly * p.dir > 0) { p.state = 'after'; if (this.alarm) this.stats.evacuated = (this.stats.evacuated || 0) + 1; else { this.stats.through++; (this.waits || (this.waits = [])).push(this.t - p.born); if (this.onPass) this.onPass(p); } this.events.push({ type: 'through', x: p.x, y: p.y, t: this.t }); }
         else p.state = 'approach';
@@ -498,7 +503,8 @@ export class World {
         const k = Math.floor(modT(ang - d.phi) / S), s0 = d.phi + k * S;
         const ex = arcOverlap(s0 + 0.08, S - 0.16, exitA - th, 2 * th);
         const en = arcOverlap(s0 + 0.08, S - 0.16, entryA - th, 2 * th);
-        if (ex.len > 0.22) {
+        // a tourist stays on for one more turn, unless a doorman sees them off
+        if (ex.len > 0.22 && !(GUEST[p.type].joy && p.laps < GUEST[p.type].joy && !d.doorman)) {
           if (p.react === null) p.react = (p.reactBase[0] + this.rng() * (p.reactBase[1] - p.reactBase[0])) * (d.doorman ? 0.35 : 1);
           p.react -= dt;
           if (p.react <= 0) { tx = d.cx + Math.cos(ex.mid) * (d.R + 1); ty = Math.sin(ex.mid) * (d.R + 1); sp = Math.min(0.6, p.walk); }

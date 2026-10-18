@@ -25,3 +25,24 @@ test('school runs only come to firms with presence sensors', () => {
   assert.ok(TWIST_POOL.includes('kids'));
   assert.ok(!TWIST_REQ.kids({}) && TWIST_REQ.kids({ sensor: 1 }));
 });
+
+// Tourists (Phase 4): a tour group rides the revolving door round once each for the photo, holding up a
+// compartment. A doorman sees them off; a faster door only spins them round faster.
+test('tour group: a doorman wins back what the tourists cost; a faster door doesn\'t', () => {
+  const t = { doorman: 1 }, two = (c, d) => Array.from({ length: c.slots }, (_, i) => i < 2 ? rev(d) : { type: 'wall' });
+  const sum = { plain: 0, tour: 0, doorman: 0, fast: 0 };
+  for (let seed = 1; seed <= 6; seed++) {
+    // the same day with and without the tour group
+    const tc = makeContract('hotel', 3, 6, 900 + seed, { tech: t, extra: ['tourists'] }), c = structuredClone(tc);
+    assert.ok(tc.crowd.mix.tourist > 0, 'a tour group');
+    c.crowd.mix.tourist = 0;
+    sum.plain += runHeadless(c, two(c, {}), t).through;
+    sum.tour += runHeadless(tc, two(tc, {}), t).through;
+    sum.doorman += runHeadless(tc, two(tc, { doorman: true }), t).through;
+    sum.fast += runHeadless(tc, two(tc, { rpm: 5.5 }), t).through;
+  }
+  assert.ok(sum.tour < sum.plain * 0.9, `tourists hold the door up: ${sum.tour} against ${sum.plain}`);
+  assert.ok(sum.doorman > sum.tour * 1.15, `a doorman sees them off: ${sum.doorman}`);
+  assert.ok(sum.fast <= sum.tour * 1.05, `a faster door doesn't help: ${sum.fast}`);
+  assert.ok(TWIST_POOL.includes('tourists') && !TWIST_REQ.tourists({}) && TWIST_REQ.tourists({ doorman: 1 }), 'only for firms with door staff');
+});
