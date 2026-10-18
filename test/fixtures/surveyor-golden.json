@@ -2439,7 +2439,7 @@
   "goals": {
    "through": 168,
    "wait": 229,
-   "bumps": 6,
+   "bumps": 8,
    "minTemp": null,
    "maxTemp": null,
    "access": false,

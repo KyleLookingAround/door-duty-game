@@ -91,6 +91,15 @@ test('lifts: destination keypads win an ordinary morning and lose one full of vi
   const call = makeContract('office', 4, 3, 5, { stage: 'lifts', tech: ALL, callback: 'paradox' });
   assert.ok(STAGES.lifts.candidates(call, ALL).every(d => d.mode !== 'dest' && d.dwell === 'standard'), 'a research call is about zoning');
 });
+test('walkways: a fast belt gets people there sooner, but older travellers stumble off it on a holiday charter', () => {
+  const run = (extra, d) => { const w = [], b = []; for (let s = 0; s < 6; s++) { const c = makeContract('skyport', 3, 3, 1000 + s, { stage: 'walkway', tech: ALL, extra }); const r = runStage(c, { stage: 'walkway', belt: 40, place: 'start', speed: 'std', signs: false, ...d }, ALL); w.push(r.wait); b.push(r.bumps); } return [mean(w), mean(b)]; };
+  const [stdW, stdB] = run([], {}), [fastW] = run([], { speed: 'fast' }), [, holB] = run(['holiday'], { speed: 'fast' });
+  assert.ok(fastW < stdW, `faster: ${fastW} against ${stdW}`);
+  assert.equal(stdB, 0, 'nobody stumbles off a standard belt');
+  assert.ok(holB > STAGES.walkway.bumps(), `stumbles on a holiday charter: ${holB}`);
+  const call = makeContract('skyport', 4, 3, 5, { stage: 'walkway', tech: ALL, callback: 'paradox' });
+  assert.ok(STAGES.walkway.candidates(call, ALL).every(d => d.speed === 'std' && !d.signs), 'a research call is about where the walkway goes');
+});
 test('paradox: zoned lifts beat the same lifts stopping everywhere', () => {
   const [zoned, all] = compare('lifts', { count: 6, mode: 'zoned' }, { count: 6, mode: 'all' });
   assert.ok(mean(zoned.map(r => r.wait)) < mean(all.map(r => r.wait)));
