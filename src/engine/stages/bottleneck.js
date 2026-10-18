@@ -5,14 +5,24 @@
 // One more lever on the arena's own concourse jobs (not research calls or chained levels): double-width
 // openings. Each one takes people faster, but a wide opening jams worse when the crowd packs in, so they pay off
 // with metering and do nothing without it. (Tighter metering was tried: it always starved the openings.)
+// And timed entry: tickets give each block a time to arrive, spreading most of the crowd over half as long again.
+// It pays off with metering, but on a walk-up night or with a last-minute crowd most people ignore their time.
 import { StageSim } from './common.js';
 
-const LEN = 16, WIDTH = 4.5, X0 = -7.5, WIDE_COST = 1500;
+const LEN = 16, WIDTH = 4.5, X0 = -7.5, WIDE_COST = 1500, TIMED_COST = 3000, TIMED_STRETCH = 1.5, TIMED_KEEP = 0.4;
 
 class ConcourseSim extends StageSim {
   constructor(c, d, tech) {
     super(c, d, tech);
     this.outside = []; this.inside = []; this.ready = Array(d.openings).fill(0); this.crushT = 0;
+    // timed entry: tickets give each block a time to arrive, so most of the crowd (not everyone) spreads out
+    // over half as long again; the arrivals window stretches with it
+    if (d.timed && !this.fed) {
+      const c0 = this.c, T = c0.arrive, L = T * TIMED_STRETCH, k = c0.params.keep ?? TIMED_KEEP, cr = c0.crowd;
+      const phases = cr.phases || [{ until: 1e9, rate: cr.rate }], total = phases.reduce((a, ph, i) => a + ph.rate * (Math.min(ph.until, T) - (i ? Math.min(phases[i - 1].until, T) : 0)), 0);
+      const even = total * (1 - k) / L;
+      this.c = { ...c0, arrive: L, crowd: { ...cr, phases: [...phases.filter(ph => ph.until < T).map(ph => ({ until: ph.until, rate: +(ph.rate * k + even).toFixed(4) })), { until: T, rate: +((phases.find(ph => ph.until >= T) || phases[phases.length - 1]).rate * k + even).toFixed(4) }, { until: 1e9, rate: +even.toFixed(4) }] } };
+    }
   }
   density() { return this.inside.length / (LEN * WIDTH); }
   admit(p) {
@@ -68,9 +78,9 @@ export default {
   reference(ok, c) { return ok.filter(x => x.slots.openings <= c.existing.openings + 1); },
   level(c, rng, tier) {
     const scale = 1 + 0.07 * Math.min(tier, 6);
-    c.params = { through: 1.4, ok: 0.7, jam: 2.6, crush: 1.6, meterAt: 0.6 };
+    c.params = { through: 1.4, ok: 0.7, jam: 2.6, crush: 1.6, meterAt: 0.6, keep: c.twists.includes('walkup') ? 0.85 : c.twists.includes('lastminute') ? 0.7 : TIMED_KEEP };
     c.params.deep = !c.chained && c.opts.callback !== 'paradox';
-    if (c.existing) for (const [k, v] of Object.entries({ wide: false })) if (c.existing[k] == null) c.existing[k] = v;
+    if (c.existing) for (const [k, v] of Object.entries({ wide: false, timed: false })) if (c.existing[k] == null) c.existing[k] = v;
     let rate = 3.0 * scale * (0.95 + rng() * 0.1);
     if (c.twists.includes('soldout')) rate *= 1.2;
     const mix = {};
@@ -86,7 +96,10 @@ export default {
     soldout: { label: 'Sold out', text: 'Every seat sold: a fifth more people arriving at once.' },
     matinee: { label: 'Matinee', text: 'An afternoon show with plenty of older fans, who don\'t like a crush.' },
   },
-  deepTwists: { lastminute: { label: 'Last-minute crowd', text: 'Half the crowd turns up in the final half-minute before the show.' } },
+  deepTwists: {
+    lastminute: { label: 'Last-minute crowd', text: 'Half the crowd turns up in the final half-minute before the show.' },
+    walkup: { label: 'Walk-up night', text: 'Most fans buy their tickets on the night, so hardly anyone has an entry time.' },
+  },
   twistsOf(opts) { return opts.callback === 'paradox' ? this.twists : { ...this.twists, ...this.deepTwists }; },
   options(c) {
     return [
@@ -94,20 +107,21 @@ export default {
       { key: 'metering', label: 'Stewards metering the crowd', kind: 'toggle', tech: 'stewarding', note: '+£2,500 · hold people back at the entrance when the concourse is filling up' },
       ...(c.params.deep ? [
         { key: 'wide', label: 'Double-width openings', kind: 'toggle', note: `+£${WIDE_COST.toLocaleString('en-GB')} an opening · quicker, but they jam worse when the concourse packs` },
+        { key: 'timed', label: 'Timed entry by block', kind: 'toggle', note: `+£${TIMED_COST.toLocaleString('en-GB')} · tickets give each block a time to arrive; most people stick to it, unless they bought on the night or always come late` },
       ] : []),
     ];
   },
   hint(r) { return r.bumps ? 'The concourse is packing solid and people are getting crushed at the openings. Letting fewer in at once can get everyone through faster.' : 'Too slow to the seats.'; },
-  defaults() { return { stage: 'bottleneck', openings: 4, metering: false, wide: false }; },
+  defaults() { return { stage: 'bottleneck', openings: 4, metering: false, wide: false, timed: false }; },
   cost(d, ex) {
     return Math.max(0, d.openings - (ex ? ex.openings : 4)) * 8000 + (d.metering && !(ex && ex.metering) ? 2500 : 0)
-      + (d.wide && !(ex && ex.wide) ? WIDE_COST * d.openings : 0);
+      + (d.wide && !(ex && ex.wide) ? WIDE_COST * d.openings : 0) + (d.timed && !(ex && ex.timed) ? TIMED_COST : 0);
   },
-  sig(d) { return `o${d.openings}${d.metering ? 'M' : ''}${d.wide ? 'W' : ''}`; },
+  sig(d) { return `o${d.openings}${d.metering ? 'M' : ''}${d.wide ? 'W' : ''}${d.timed ? 'T' : ''}`; },
   candidates(c, tech) {
     const out = [];
     for (let n = c.existing.openings; n <= c.existing.openings + 3; n++) for (const metering of tech.stewarding ? [false, true] : [false])
-      for (const wide of c.params.deep ? [false, true] : [false]) out.push({ stage: 'bottleneck', openings: n, metering, wide });
+      for (const wide of c.params.deep ? [false, true] : [false]) for (const timed of c.params.deep ? [false, true] : [false]) out.push({ stage: 'bottleneck', openings: n, metering, wide, timed });
     return out;
   },
   Sim: ConcourseSim,

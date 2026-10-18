@@ -96,7 +96,8 @@ export default {
   bumpLabel: 'Elbows at the belt',
   box: { w: 14, h: 9 },
   metric: 'p90',
-  slack: 1.05,
+  // no slack: the target is the best the client would pay for, so the line alone doesn't always do
+  slack: 1.0,
   // the client expects extra handlers only when the bags are held up airside
   reference(ok, c) { return c.twists.includes('heldup') ? ok : ok.filter(x => !x.slots.handlers); },
   level(c, rng, tier) {

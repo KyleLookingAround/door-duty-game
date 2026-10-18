@@ -208,6 +208,7 @@ const ART = {
     for (let k = 0; k < d.openings; k++) { const y = ((k + 0.5) / d.openings - 0.5) * (WD - 0.6); c.fillStyle = INK; c.fillRect(X0 + LEN, y - 0.3, 0.5, 0.6); }
     label(c, lw, P.into || 'ARENA', X0 + LEN + 0.25, -WD / 2 - 0.65, { size: 8 });
     if (d.metering) { c.fillStyle = BRASS; for (const y of [-WD / 2 + 0.3, WD / 2 - 0.3]) { c.beginPath(); c.arc(X0 + 0.2, y, 0.16, 0, TAU); c.fill(); } label(c, lw, 'STEWARDS', X0 + 0.2, -WD / 2 - 0.3, { size: 8, color: BRASS }); }
+    if (d.timed) label(c, lw, 'TIMED ENTRY BY BLOCK', X0 + 0.2, WD / 2 + 0.45, { size: 8, align: 'left', color: BRASS });
     label(c, lw, `${rho.toFixed(1)} people per m²`, X0 + LEN - 0.2, WD / 2 + 0.45, { size: 8, align: 'right', color: rho > P.crush ? '#ef5b4c' : TEXT });
     for (const p of s.people) drawPerson(c, p);
     fx(c, W, t);

@@ -171,6 +171,12 @@ test('baggage reclaim: a fast belt suits most crowds, not a coach party; handler
   const call = makeContract('skyport', 4, 3, 5, { stage: 'carousel', tech: ALL, callback: 'paradox' });
   assert.ok(STAGES.carousel.candidates(call, ALL).every(d => d.speed === 'std' && !d.handlers), 'a research call is about the line');
 });
+test('concourse: timed entry helps a ticketed crowd with metering, and hardly at all on a walk-up night', () => {
+  const run = (extra, d) => mean(Array.from({ length: 4 }, (_, s) => { const c = makeContract('arena', 3, 3, 1400 + s, { stage: 'bottleneck', tech: ALL, extra }); return runStage(c, { stage: 'bottleneck', openings: c.existing.openings, metering: true, wide: false, timed: false, ...d }, ALL).wait; }));
+  const sold = run(['soldout'], {}), soldT = run(['soldout'], { timed: true }), walk = run(['walkup'], {}), walkT = run(['walkup'], { timed: true });
+  assert.ok(soldT < sold * 0.85, `a sell-out: ${soldT} against ${sold}`);
+  assert.ok(walk - walkT < (sold - soldT) / 2, `a walk-up night: ${walkT} against ${walk}`);
+});
 test('concourse: double-width openings pay off with metering and do nothing without it', () => {
   const run = d => { const w = []; for (let s = 0; s < 4; s++) { const c = makeContract('arena', 3, 3, 1400 + s, { stage: 'bottleneck', tech: ALL }); w.push(runStage(c, { stage: 'bottleneck', openings: c.existing.openings, metering: false, wide: false, ...d }, ALL).wait); } return mean(w); };
   const plain = run({}), wide = run({ wide: true }), metered = run({ metering: true }), both = run({ metering: true, wide: true });
