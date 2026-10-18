@@ -14,7 +14,7 @@ import { stageTwist } from '../src/game/briefs.js';
 
 const ALL = { barriers: 1, escalators: 1, markings: 1, zoning: 1, paternoster: 1, travelator: 1, permits: 1, stewarding: 1, doorman: 1 };
 // where each stage is usually played
-const HOME = { queue: 'bank', escalator: 'station', lifts: 'towers', paternoster: 'townhall', walkway: 'skyport', carousel: 'skyport', braess: 'galleria', bottleneck: 'arena', doors: 'stadium' };
+const HOME = { queue: 'bank', escalator: 'station', lifts: 'towers', paternoster: 'townhall', walkway: 'skyport', carousel: 'skyport', braess: 'galleria', bottleneck: 'arena', doors: 'stadium', security: 'skyport' };
 const job = (stage, seed, tier = 2, kind = HOME[stage]) => makeContract(kind, tier, 3, seed, { stage, tech: ALL });
 const mean = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
 
@@ -110,6 +110,24 @@ test('doors as a stage: fed or on its own, everyone handed in comes out; more ba
   g.params.types = ['gates']; g.crowd.mix = { wheel: 0.1 };
   assert.ok(runStage(g, { stage: 'doors', bays: 3, type: 'gates', staff: false, wide: false }, ALL).lost > 0, 'no wide aisle: wheelchairs can\'t get through');
   assert.equal(runStage(g, { stage: 'doors', bays: 3, type: 'gates', staff: false, wide: true }, ALL).lost, 0);
+});
+test('paradox: at security, smart lanes and longer benches beat a new lane; smart lanes alone stop the belt', () => {
+  const run = d => { const w = [], st = []; for (let s = 0; s < 6; s++) { const c = makeContract('skyport', 3, 3, 300 + s, { stage: 'security', tech: ALL }); const r = runStage(c, { ...c.existing, ...d }, ALL); w.push(r.wait); st.push(r.stops); } return [mean(w), mean(st)]; };
+  const [plainW, plainS] = run({}), [smartW, smartS] = run({ smart: true }), [bothW] = run({ smart: true, bench: true });
+  const c = makeContract('skyport', 3, 3, 300, { stage: 'security', tech: ALL }), [laneW] = run({ lanes: c.existing.lanes + 1 });
+  assert.ok(smartS > plainS, `smart lanes alone fill the benches: ${smartS} stops against ${plainS}`);
+  assert.ok(bothW < laneW && bothW < plainW, `smart lanes with benches ${bothW}s, a new lane ${laneW}s, as it was ${plainW}s`);
+  assert.ok(STAGES.security.cost({ ...c.existing, smart: true, bench: true }, c.existing) < STAGES.security.cost({ ...c.existing, lanes: c.existing.lanes + 1 }, c.existing), 'and for less');
+});
+test('Skyport\'s security and departures wait for Security lanes', () => {
+  const kinds = unlocks => { const seen = new Set(); for (let seed = 1; seed <= 24; seed++) {
+    const S = freshState(seed); Object.assign(S.unlocks, unlocks); S.marketOpen = S.riversideOpen = true;
+    const p = S.plots.find(q => q.kind === 'skyport'); p.status = 'open'; p.stars = 1; p.contract = null;
+    refreshPlots(S); seen.add(p.contract.chain ? p.contract.chain.join('+') : p.contract.stage);
+  } return seen; };
+  const before = kinds({ travelator: 1 }), after = kinds({ travelator: 1, security: 1 });
+  assert.ok(!before.has('security') && !before.has('doors+queue+security'), [...before].join());
+  assert.ok(after.has('security') && after.has('doors+queue+security'), [...after].join());
 });
 test('counter hall: lunchtime cover beats a full desk on a lunch-rush day, not an opening rush; an express desk speeds a quick day', () => {
   const run = (extra, d) => { const w = []; for (let s = 0; s < 10; s++) { const c = makeContract('bank', 3, 3, 700 + s, { stage: 'queue', tech: ALL, extra }); w.push(runStage(c, { stage: 'queue', layout: 'snake', express: false, cover: 0, ...d }, ALL).wait); } return mean(w); };

@@ -76,7 +76,7 @@ export default {
     rate = StageSim.tune(c, rate, scale);
     const mix = { case: 0.1, elderly: 0.1, ...(c.params.mix || {}) };
     c.crowd = { rate: +rate.toFixed(3), mix };
-    c.arrive = 60; c.run = 120;
+    c.arrive = c.params.arrive || 60; c.run = c.arrive + 60;
     // most of the crowd in the last stretch before kick-off
     if (c.twists.includes('kickoff')) c.crowd.phases = [{ until: 30, rate: +(rate * 0.5).toFixed(3) }, { until: 1e9, rate: +(rate * 1.5).toFixed(3) }];
   },

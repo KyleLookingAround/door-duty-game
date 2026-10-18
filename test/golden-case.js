@@ -13,6 +13,8 @@ export const TECHS = {
   stadium: { barriers: 1, pillars: 1, stewarding: 1, gates: 1, turnstiles: 1, doorman: 1 },
   // the Station's whole route (Chain modelling): the escalators and the gate line
   chains: { barriers: 1, escalators: 1, gates: 1, tidal: 1, doorman: 1, chains: 1 },
+  // Skyport departures (Security lanes): the terminal doors, check-in and security
+  airport: { barriers: 1, escalators: 1, gates: 1, doorman: 1, chains: 1, travelator: 1, security: 1 },
 };
 // A case: k (client), tn (tech), month, seed, and one of:
 //   a door job: first (first visit), ev (event), cb (callback reason);

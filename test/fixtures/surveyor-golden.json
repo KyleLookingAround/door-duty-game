@@ -2578,5 +2578,66 @@
   "relaxed": false,
   "slots": 0,
   "temp": 18
+ },
+ {
+  "case": {
+   "k": "skyport",
+   "tn": "airport",
+   "month": 3,
+   "ev": null,
+   "cb": "paradox",
+   "stage": "security",
+   "seed": 4111
+  },
+  "twists": [],
+  "goals": {
+   "through": 30,
+   "wait": 96,
+   "bumps": 0,
+   "minTemp": null,
+   "maxTemp": null,
+   "access": false,
+   "laps": null
+  },
+  "par": "s3MBx3",
+  "cost": 18000,
+  "fee": 29000,
+  "budget": 30000,
+  "relaxed": false,
+  "slots": 0,
+  "temp": 18
+ },
+ {
+  "case": {
+   "k": "skyport",
+   "tn": "airport",
+   "month": 3,
+   "ev": null,
+   "chain": [
+    "doors",
+    "queue",
+    "security"
+   ],
+   "seed": 4112
+  },
+  "twists": [
+   "mortgages"
+  ],
+  "goals": {
+   "through": 38,
+   "wait": 129,
+   "bumps": 2,
+   "minTemp": null,
+   "maxTemp": null,
+   "access": false,
+   "laps": null
+  },
+  "par": "d1R|q5L|s3MBx4",
+  "cost": 26000,
+  "fee": 36500,
+  "budget": 42000,
+  "relaxed": false,
+  "slots": 0,
+  "temp": 18
  }
 ]

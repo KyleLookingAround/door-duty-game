@@ -18,7 +18,9 @@ export function makeStageContract(kindKey, tier, month, seed, opts = {}) {
   const own = k => (B.inside && B.inside[k]) || {};
   if (!opts.existing) { if (c.existing.parts) c.existing.parts = c.existing.parts.map(p => ({ ...p, ...own(p.stage) })); else Object.assign(c.existing, own(st.key)); }
   // levels: the stage's own twists, more of them as the client's tier rises
-  const stTwists = st.twistsOf ? st.twistsOf(opts, kindKey) : st.twists, pool = Object.keys(stTwists), twists = [];
+  // (a client can switch off a stage twist that makes no sense there: null in its tune, as the airport does for paper tickets)
+  const off = t => Object.values(B.tune || {}).some(tu => tu.twists && tu.twists[t] === null);
+  const stTwists = st.twistsOf ? st.twistsOf(opts, kindKey) : st.twists, pool = Object.keys(stTwists).filter(t => !off(t)), twists = [];
   if (opts.callback && st.callbackTwist && st.callbackTwist[opts.callback]) twists.push(st.callbackTwist[opts.callback]);
   // a paradox callback is about the paradox: at most one extra wrinkle
   const n = opts.callback === 'paradox' ? (tier >= 4 ? 1 : 0) : (tier >= 4 ? 2 : tier >= 1 ? 1 : 0) + (opts.callback ? 1 : 0);

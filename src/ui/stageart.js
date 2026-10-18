@@ -5,6 +5,7 @@ import { TAU, SLOT_W, WORLD_HH } from '../engine/world.js';
 import { STAGES, stageName } from '../engine/stages/index.js';
 import { drawPerson } from './canvas.js';
 
+const ARCH_Y_ART = 0.2;   // where security's arches stand (security.js ARCH_Y)
 const INK = '#12151b', LINE = 'rgba(236,230,216,0.18)', BRASS = '#d4a94f', TEXT = 'rgba(236,230,216,0.6)';
 
 function label(c, lw, text, x, y, opts = {}) {
@@ -208,6 +209,30 @@ const ART = {
     label(c, lw, P.into || 'ARENA', X0 + LEN + 0.25, -WD / 2 - 0.65, { size: 8 });
     if (d.metering) { c.fillStyle = BRASS; for (const y of [-WD / 2 + 0.3, WD / 2 - 0.3]) { c.beginPath(); c.arc(X0 + 0.2, y, 0.16, 0, TAU); c.fill(); } label(c, lw, 'STEWARDS', X0 + 0.2, -WD / 2 - 0.3, { size: 8, color: BRASS }); }
     label(c, lw, `${rho.toFixed(1)} people per m²`, X0 + LEN - 0.2, WD / 2 + 0.45, { size: 8, align: 'right', color: rho > P.crush ? '#ef5b4c' : TEXT });
+    for (const p of s.people) drawPerson(c, p);
+    fx(c, W, t);
+  },
+  // airport security: lanes running up the hall; unloading places, the scanner and arch, and the repacking bench
+  security(c, W, t, lw) {
+    const s = W.world, d = W.design, box = STAGES.security.box;
+    floor(c, W.contract.kind, box.w, box.h);
+    walls(c, lw, box.w, box.h, [[-1.2, box.h / 2, 1.2, box.h / 2], [-box.w / 2 + 1, -box.h / 2, box.w / 2 - 1, -box.h / 2]]);
+    label(c, lw, 'FROM CHECK-IN', 0, box.h / 2 - 0.2, { size: 8 });
+    label(c, lw, 'TO THE GATES', 0, -box.h / 2 + 0.35, { size: 8 });
+    for (const ln of s.lanes) {
+      // the belt from the unloading tables, through the scanner, to the bench
+      c.fillStyle = '#2f3540'; c.fillRect(ln.x - 0.85, -2.6, 0.5, 5.0);
+      for (let k = 0; k < ln.divest.length; k++) { c.fillStyle = '#4a4f5a'; c.fillRect(ln.x - 0.5 + (k - (ln.divest.length - 1) / 2) * 0.55 - 0.22, 1.55, 0.44, 0.22); }
+      c.fillStyle = ln.cur != null ? '#d4a94f' : '#5a626e'; c.fillRect(ln.x - 1.0, -0.35, 0.8, 0.7);
+      label(c, lw, 'X-RAY', ln.x - 0.6, -0.48, { size: 6 });
+      c.strokeStyle = '#9cc4ec'; c.lineWidth = 0.06; c.strokeRect(ln.x + 0.45, ARCH_Y_ART - 0.3, 0.6, 0.6);
+      // the bench: one square per tray waiting to be repacked; red when full and the belt has stopped
+      const full = ln.bench.length >= ln.cap;
+      c.fillStyle = full ? 'rgba(239,91,76,.35)' : 'rgba(0,0,0,.25)'; c.fillRect(ln.x - 0.9, -2.9, 0.6, (d.bench ? 2.0 : 1.2));
+      ln.bench.forEach((tr, k) => { c.fillStyle = tr.held ? '#ef5b4c' : '#9cc4ec'; c.fillRect(ln.x - 0.82, -2.85 + k * 0.24, 0.44, 0.18); });
+      for (let k = 0; k < Math.min(ln.belt.length, 10); k++) { c.fillStyle = 'rgba(156,196,236,.7)'; c.fillRect(ln.x - 0.82, 0.45 + k * 0.22, 0.44, 0.16); }
+      if (d.smart) label(c, lw, 'SMART', ln.x - 0.5, 2.2, { size: 6, color: BRASS });
+    }
     for (const p of s.people) drawPerson(c, p);
     fx(c, W, t);
   },

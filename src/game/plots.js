@@ -53,7 +53,8 @@ export function refreshPlots(S) {
         // a client that only has inside jobs (Riverside): pick one of its levels
         // a tender carrying a research lesson (no fitted client could call about it): the lesson's problem, graded
         if (p.lessonTender) Object.assign(opts, p.callChain ? { stage: 'chain', chain: p.callChain } : p.callStage ? { stage: p.callStage } : { need: p.callTwist ? [p.callTwist] : [], lesson: p.callTech });
-        else if (B.jobs) { const j = B.jobs[randomInt(S, B.jobs.length)]; Object.assign(opts, j.chain ? { stage: 'chain', chain: j.chain } : { stage: j.stage }); }
+        // (some levels need research first: Skyport's security and departures need Security lanes)
+        else if (B.jobs) { const js = B.jobs.filter(j => !j.needs || S.unlocks[j.needs]), j = js[randomInt(S, js.length)]; Object.assign(opts, j.chain ? { stage: 'chain', chain: j.chain } : { stage: j.stage }); }
       }
       const ev = eventOf(S.month);
       p.contract = makeContract(p.kind, tierOf(S, p), S.month, 1 + randomInt(S, 1e6), { ...opts, tech: techOf(S), event: ev && !opts.first ? ev.key : null });
