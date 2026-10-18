@@ -7,7 +7,7 @@
 //  - Extra baggage handlers: the bags reach the belt sooner. Worth most when they're held up airside.
 import { StageSim } from './common.js';
 
-const RX = 4.6, RY = 2.0, EDGE = 0.45, HANDLER_COST = 4000, SPEED_COST = 1000;
+const RX = 4.6, RY = 2.0, EDGE = 0.45, HANDLER_COST = 4000, BELT_SPEED_COST = 1000;
 // belt speed (m/s), how grabbable a bag is, and how grabbable for an older traveller
 export const BELT_SPEEDS = { std: [0.42, 1, 0.7], fast: [0.6, 0.96, 0.4] };
 
@@ -127,7 +127,7 @@ export default {
       { key: 'line', label: 'Stand-back line', kind: 'toggle', tech: 'markings', note: '+£600 · a painted line a step back from the belt' },
       { key: 'belts', label: 'Belts', kind: 'stepper', min: 1, max: 2, note: '£45,000 for a second carousel' },
       ...(c.params.deep ? [
-        { key: 'speed', label: 'Belt speed', kind: 'seg', choices: [['std', 'Standard'], ['fast', 'Fast']], note: `£${SPEED_COST.toLocaleString('en-GB')} to change · a fast belt brings bags round sooner, but they're harder to grab, above all for older travellers` },
+        { key: 'speed', label: 'Belt speed', kind: 'seg', choices: [['std', 'Standard'], ['fast', 'Fast']], note: `£${BELT_SPEED_COST.toLocaleString('en-GB')} to change · a fast belt brings bags round sooner, but they're harder to grab, above all for older travellers` },
         { key: 'handlers', label: 'Extra baggage handlers', kind: 'toggle', note: `+£${HANDLER_COST.toLocaleString('en-GB')} · the bags reach the belt sooner` },
       ] : []),
     ];
@@ -136,7 +136,7 @@ export default {
   defaults() { return { stage: 'carousel', line: false, belts: 1, speed: 'std', handlers: false }; },
   cost(d, ex) {
     return (d.line && !(ex && ex.line) ? 600 : 0) + Math.max(0, d.belts - (ex ? ex.belts : 1)) * 45000
-      + ((d.speed || 'std') !== ((ex && ex.speed) || 'std') ? SPEED_COST : 0) + (d.handlers && !(ex && ex.handlers) ? HANDLER_COST : 0);
+      + ((d.speed || 'std') !== ((ex && ex.speed) || 'std') ? BELT_SPEED_COST : 0) + (d.handlers && !(ex && ex.handlers) ? HANDLER_COST : 0);
   },
   sig(d) { return `c${d.belts}${d.line ? 'L' : ''}${d.speed && d.speed !== 'std' ? d.speed[0] : ''}${d.handlers ? 'H' : ''}`; },
   candidates(c, tech) {
