@@ -227,15 +227,44 @@ export function streetSVG() {
   if (evk !== 'marathon') o.push(`<line x1="0" y1="${G + 52}" x2="${W}" y2="${G + 52}" stroke="rgba(236,230,216,.4)" stroke-width="2" stroke-dasharray="18 16"/>`);
   if (m === 11 || m === 0) o.push(`<rect x="0" y="${G - 2}" width="${W}" height="5" fill="#dfe7ef" opacity=".7"/>`);   // snow on the kerbline
   if (evk === 'storm') for (let k = 0; k < 6; k++) o.push(`<ellipse cx="${RND(k, 10) * W}" cy="${G + 40 + RND(k, 11) * 20}" rx="${20 + RND(k, 12) * 20}" ry="4" fill="rgba(156,196,236,.18)"/>`);
-  // people on the pavement
-  const crowd = evk === 'blackfriday' ? 26 : evk === 'sales' ? 18 : evk === 'storm' ? 6 : 11;
+  // the street reacts to your firm: visitors walk in through the doors you fitted, a crowd waits outside work
+  // that's on the table, and the rival's van is parked outside what it won (cosmetic: Math.random is fine here)
+  const fig = (col, extra = '') => `<circle cx="0" cy="-26" r="4.2" fill="${col}"/><rect x="-4.5" y="-21" width="9" height="16" rx="3" fill="${col}"/><rect x="-3.5" y="-6" width="2.5" height="7" fill="${col}"/><rect x="1" y="-6" width="2.5" height="7" fill="${col}"/>${extra}`;
+  plots.forEach((p, i) => {
+    const bx = placed[i], bw = BUILDING[p.kind].look.w, st = p.status, inst = st === 'rival' ? rivalInstall(p) : p.install;
+    const n = inst ? inst.length : 1, fx0 = bx + 6, sw = (bw - 12) / n;
+    const doors = inst ? inst.map((d, j) => d && d.type !== 'wall' ? fx0 + (j + 0.5) * sw : null).filter(x => x != null) : [bx + bw / 2];
+    if (st === 'fitted' && !p.broken && doors.length) {
+      // two or three visitors heading in, more for a busy client
+      const k = 2 + (p.stars >= 3 ? 1 : 0);
+      for (let v = 0; v < k; v++) {
+        const door = doors[v % doors.length], from = door + (v % 2 ? 1 : -1) * (160 + RND(p.i, v) * 200), d = 10 + RND(v, p.i) * 9;
+        o.push(`<g class="visit" style="--x0:${from}px;--x1:${door}px;animation-duration:${d}s;animation-delay:${-RND(p.i * 3, v) * d}s"><g transform="translate(0 ${G + 3 + (v % 2) * 3})">${fig(['#1a1d24', '#2a2530', '#202a30'][v % 3])}</g></g>`);
+      }
+    }
+    if ((st === 'open' || st === 'callback' || st === 'checking') && st !== 'locked') {
+      // the job, visible: people bunched up at the door
+      const door = doors[0], k = st === 'checking' ? 2 : 4;
+      for (let v = 0; v < k; v++) o.push(`<g class="bob" style="animation-delay:${v * 0.4}s"><g transform="translate(${door - 16 + v * 9} ${G + 6 + (v % 2) * 3})">${fig(st === 'callback' ? '#3a2226' : '#22262e')}</g></g>`);
+    }
+    if (st === 'rival') {
+      const vx = bx + bw / 2;
+      o.push(`<g transform="translate(${vx} ${G + 38})"><rect x="-38" y="-24" width="76" height="24" rx="4" fill="#6a6e76"/><rect x="22" y="-22" width="14" height="10" rx="2" fill="#9cc4ec" opacity=".7"/><rect x="-34" y="-16" width="52" height="9" fill="#3a3d43"/><text x="-8" y="-9.5" text-anchor="middle" class="sc-small" style="fill:#c8c2b6;font-size:6px">${scEsc(RIVAL.toUpperCase())}</text><circle cx="-22" cy="1" r="5" fill="#111"/><circle cx="22" cy="1" r="5" fill="#111"/></g>`);
+    }
+  });
+  // people on the pavement: busier the more clients you serve on this street
+  const served = plots.filter(p => p.status === 'fitted').length;
+  const crowd = Math.min(30, (evk === 'blackfriday' ? 26 : evk === 'sales' ? 18 : evk === 'storm' ? 6 : 11) + served * 2);
+  // match days on Riverside once the Stadium is yours: fans in club scarves
+  const fans = plots.some(p => p.kind === 'stadium' && p.status === 'fitted');
   for (let k = 0; k < crowd; k++) {
     const dir = k % 2 ? 1 : -1, dur = 26 + RND(k, 13) * 22, col = ['#1a1d24', '#2a2530', '#202a30', '#2d2620'][k % 4];
     const pram = evk === 'marathon' && k % 4 === 0, umb = evk === 'storm' || (season === 'winter' && k % 3 === 0 && evk !== 'xmas');
     o.push(`<g class="walker ${dir > 0 ? 'right' : 'left'}" style="animation-duration:${dur}s;animation-delay:${-RND(k, 14) * dur}s;--sw:${W + 40}px">
       <g transform="translate(0 ${G + 4 + (k % 3) * 4})"><circle cx="0" cy="-26" r="4.2" fill="${col}"/><rect x="-4.5" y="-21" width="9" height="16" rx="3" fill="${col}"/><rect x="-3.5" y="-6" width="2.5" height="7" fill="${col}"/><rect x="1" y="-6" width="2.5" height="7" fill="${col}"/>
       ${umb ? `<path d="M-11 -30 q11 -12 22 0 z" fill="${['#ef5b4c', '#9cc4ec', '#d4a94f'][k % 3]}"/><line x1="0" y1="-30" x2="0" y2="-18" stroke="#111" stroke-width="1"/>` : ''}
-      ${pram ? `<rect x="${dir * 7}" y="-12" width="10" height="7" rx="2" fill="#b48cf0"/>` : ''}</g></g>`);
+      ${pram ? `<rect x="${dir * 7}" y="-12" width="10" height="7" rx="2" fill="#b48cf0"/>` : ''}
+      ${fans && k % 3 === 1 ? `<rect x="-5" y="-22" width="10" height="3" fill="#ef5b4c"/><rect x="${dir > 0 ? -6 : 3}" y="-20" width="3" height="8" fill="#ef5b4c"/>` : ''}</g></g>`);
   }
   if (evk === 'blackfriday') { const si = plots.findIndex(p => p.kind === 'store'); if (si >= 0) for (let k = 0; k < 9; k++) { const qx = placed[si] + 40 + k * 15; o.push(`<g transform="translate(${qx} ${G + 8})"><circle cx="0" cy="-26" r="4.2" fill="#1d2129"/><rect x="-4.5" y="-21" width="9" height="16" rx="3" fill="#1d2129"/><rect x="-4" y="-6" width="8" height="7" fill="#1d2129"/></g>`); }
     if (si >= 0) o.push(`<rect x="${placed[si] + 40}" y="${G - 112}" width="170" height="20" fill="#12151b" stroke="#d4a94f"/><text x="${placed[si] + 125}" y="${G - 98}" text-anchor="middle" class="sc-tag" style="fill:#d4a94f">BLACK FRIDAY</text>`); }

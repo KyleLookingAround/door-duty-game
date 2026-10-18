@@ -12,7 +12,7 @@ import { jobsLine } from '../game/briefs.js';
 import { refreshPlots } from '../game/plots.js';
 import { coach, coachDone, coachEl } from './coach.js';
 import { $, guarded, toast } from './dom.js';
-import { streetSVG } from './scene.js';
+import { SC_H, streetSVG } from './scene.js';
 import { openBrief, openClient, openCompany } from './sheets.js';
 import { S, save } from './store.js';
 import { survey, twistLabel } from './survey.js';
@@ -67,7 +67,7 @@ export function renderStreet() {
   if (box._svg !== sc.svg) { box.innerHTML = sc.svg; box._svg = sc.svg; }   // unchanged scenes keep their animation running
   // first visit: scroll to the first job on the table; after that, stay where the player left it
   if (keepX != null) box.scrollLeft = keepX;
-  else { const here = S.plots.filter(p => streetOf(p) === (S.street || 'high')); const fi = here.findIndex(p => p.status === 'open' || p.status === 'callback'); box.scrollLeft = fi > 0 ? Math.max(0, sc.placed[fi] - 40) : 0; box.dataset.ready = '1'; }
+  else { const here = S.plots.filter(p => streetOf(p) === (S.street || 'high')); const fi = here.findIndex(p => p.status === 'open' || p.status === 'callback'); const svg = box.querySelector('svg'), k = svg ? svg.getBoundingClientRect().height / SC_H || 1 : 1; box.scrollLeft = fi > 0 ? Math.max(0, (sc.placed[fi] - 40) * k) : 0; box.dataset.ready = '1'; }   // (k: the painting may be scaled up on wide screens)
   box.querySelectorAll('.sbld').forEach(g => {
     if (g._wired) return; g._wired = true;
     if (g.dataset.firm) { const go = guarded(() => openCompany()); g.addEventListener('click', go); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }); return; }

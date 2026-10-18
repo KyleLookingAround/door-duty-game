@@ -115,6 +115,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
 .scene .walker.left { animation: walkL linear infinite; }
 @keyframes walkR { from { transform: translateX(-30px); } to { transform: translateX(var(--sw)); } }
 @keyframes walkL { from { transform: translateX(var(--sw)); } to { transform: translateX(-30px); } }
+.scene .visit { animation: visit linear infinite; }
+@keyframes visit { 0% { transform: translateX(var(--x0)); opacity: 0; } 8% { opacity: 1; } 82% { transform: translateX(var(--x1)); opacity: 1; } 90%, 100% { transform: translateX(var(--x1)); opacity: 0; } }
+.scene .slide-l { animation: slideL 3.2s ease-in-out infinite; }
+.scene .slide-r { animation: slideR 3.2s ease-in-out infinite; }
+@keyframes slideL { 0%, 30%, 100% { transform: translateX(0); } 45%, 75% { transform: translateX(-9px); } }
+@keyframes slideR { 0%, 30%, 100% { transform: translateX(0); } 45%, 75% { transform: translateX(9px); } }
 .scene .fall { animation: fall linear infinite; }
 @keyframes fall { from { transform: translate(0, 0); } to { transform: translate(-30px, 340px); } }
 .scene .pour { animation: pour linear infinite; }
@@ -172,6 +178,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
   #streetView, #dockStreet .in { max-width: 1100px; }
   #ledger .street { grid-template-columns: 1fr 1fr; }
   #ledger .street > :not(.plot) { grid-column: 1 / -1; }   /* headings and tips span both columns */
+  #map .scene { height: 440px; width: auto; }   /* the street painting scales up to use the room */
 }
 @media (min-width: 1000px) {
   #workshop, #dockWs .in { max-width: 1400px; }
