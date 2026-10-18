@@ -107,6 +107,12 @@ test('baggage reclaim: a fast belt suits most crowds, not a coach party; handler
   const call = makeContract('skyport', 4, 3, 5, { stage: 'carousel', tech: ALL, callback: 'paradox' });
   assert.ok(STAGES.carousel.candidates(call, ALL).every(d => d.speed === 'std' && !d.handlers), 'a research call is about the line');
 });
+test('concourse: double-width openings pay off with metering and do nothing without it', () => {
+  const run = d => { const w = []; for (let s = 0; s < 4; s++) { const c = makeContract('arena', 3, 3, 1400 + s, { stage: 'bottleneck', tech: ALL }); w.push(runStage(c, { stage: 'bottleneck', openings: c.existing.openings, metering: false, wide: false, ...d }, ALL).wait); } return mean(w); };
+  const plain = run({}), wide = run({ wide: true }), metered = run({ metering: true }), both = run({ metering: true, wide: true });
+  assert.ok(both < metered, `metered and wide: ${both} against ${metered}`);
+  assert.ok(Math.abs(wide - plain) < (plain - both) / 4, `wide alone barely helps a packed concourse: ${wide} against ${plain}`);
+});
 test('paradox: zoned lifts beat the same lifts stopping everywhere', () => {
   const [zoned, all] = compare('lifts', { count: 6, mode: 'zoned' }, { count: 6, mode: 'all' });
   assert.ok(mean(zoned.map(r => r.wait)) < mean(all.map(r => r.wait)));
