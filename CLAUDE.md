@@ -59,7 +59,9 @@ src/
     store.js             the live save S (only this module replaces it)
     street.js scene.js   the street screen: ledger and the painted SVG street
     workshop.js canvas.js  the job screen: editor, test run, canvas plan view
-    stageart.js          drawing the inside jobs, and laying out a chained level's stages
+    stageart.js          drawing the inside jobs, and laying out a chained level's stages. One style for every room:
+                         the stage palette (FIXTURE, BELT, GLASS, HULL; BRASS for the player's choices), titles above
+                         the room, people clipped to the walls with "+N more waiting outside" (drawRoom)
     sheets.js            bottom sheets: brief, company, client, lessons, the month report
     coach.js survey.js dom.js
   worker.js              the survey worker: runs generateSolved off the main thread (ui/survey.js keeps a pool of them)

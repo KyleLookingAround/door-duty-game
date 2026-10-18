@@ -15,9 +15,16 @@ export function sizeCanvas() {
   dpr = Math.min(2, window.devicePixelRatio || 1);
   cw = r.width;
   // an inside job sizes to its own hall; a chained level lays its stages out across a wide screen or down a narrow one
-  if (W.contract.stage) W.layout = stageLayout(W.contract, cw > 720);
+  // on a wide screen the plan sits beside the controls, so it can be most of the screen's height (less the header,
+  // the brief strip and the action bar)
+  const maxH = window.innerWidth >= 1000 ? window.innerHeight - 200 : window.innerHeight * (W.contract.chain ? 0.8 : 0.5);
+  // a chained level: a row or a stack of rooms, whichever draws bigger in the space there is
+  if (W.contract.stage) {
+    const fit = L => Math.min(cw / L.w, maxH / L.h), row = stageLayout(W.contract, true), stack = stageLayout(W.contract, false);
+    W.layout = fit(row) >= fit(stack) ? row : stack;
+  }
   const n = W.contract.slots, box = W.layout && W.contract.stage ? W.layout : null, ww = box ? box.w : n * SLOT_W, wh = box ? box.h : WORLD_HH * 2;
-  ch = Math.min(cw * wh / ww, window.innerHeight * (W.contract.chain ? 0.8 : 0.5));
+  ch = Math.min(cw * wh / ww, maxH);
   scale = Math.min(cw / ww, ch / wh);
   cv.style.height = ch + 'px';
   cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);

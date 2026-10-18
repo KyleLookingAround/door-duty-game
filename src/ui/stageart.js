@@ -6,6 +6,8 @@ import { STAGES, stageName } from '../engine/stages/index.js';
 import { drawPerson } from './canvas.js';
 
 const ARCH_Y_ART = 0.2;   // where security's arches stand (security.js ARCH_Y)
+// the stage palette: every room uses these, so the levels look like one game
+const FIXTURE = '#3a404b', BELT = '#2f3540', GLASS = 'rgba(156,196,236,.85)', HULL = '#262c36', HULL_EDGE = '#8a8f99';
 const INK = '#12151b', LINE = 'rgba(236,230,216,0.18)', BRASS = '#d4a94f', TEXT = 'rgba(236,230,216,0.6)';
 
 function label(c, lw, text, x, y, opts = {}) {
@@ -206,7 +208,7 @@ const ART = {
     // the openings into the arena
     c.fillStyle = '#4a4060'; c.fillRect(X0 + LEN, -WD / 2 - 0.4, 0.5, WD + 0.8);
     for (let k = 0; k < d.openings; k++) { const y = ((k + 0.5) / d.openings - 0.5) * (WD - 0.6); c.fillStyle = INK; c.fillRect(X0 + LEN, y - 0.3, 0.5, 0.6); }
-    label(c, lw, P.into || 'ARENA', X0 + LEN + 0.25, -WD / 2 - 0.65, { size: 8 });
+    label(c, lw, P.into || 'ARENA', X0 + LEN + 0.5, -WD / 2 - 0.65, { size: 8, align: 'right' });
     if (d.metering) { c.fillStyle = BRASS; for (const y of [-WD / 2 + 0.3, WD / 2 - 0.3]) { c.beginPath(); c.arc(X0 + 0.2, y, 0.16, 0, TAU); c.fill(); } label(c, lw, 'STEWARDS', X0 + 0.2, -WD / 2 - 0.3, { size: 8, color: BRASS }); }
     if (d.timed) label(c, lw, 'TIMED ENTRY BY BLOCK', X0 + 0.2, WD / 2 + 0.45, { size: 8, align: 'left', color: BRASS });
     label(c, lw, `${rho.toFixed(1)} people per m²`, X0 + LEN - 0.2, WD / 2 + 0.45, { size: 8, align: 'right', color: rho > P.crush ? '#ef5b4c' : TEXT });
@@ -220,18 +222,21 @@ const ART = {
     walls(c, lw, box.w, box.h, [[-1.2, box.h / 2, 1.2, box.h / 2], [-box.w / 2 + 1, -box.h / 2, box.w / 2 - 1, -box.h / 2]]);
     label(c, lw, 'FROM CHECK-IN', 0, box.h / 2 - 0.2, { size: 8 });
     label(c, lw, 'TO THE GATES', 0, -box.h / 2 + 0.35, { size: 8 });
+    const gap = s.lanes.length > 1 ? s.lanes[1].x - s.lanes[0].x : 2.6;
     for (const ln of s.lanes) {
-      // the belt from the unloading tables, through the scanner, to the bench
-      c.fillStyle = '#2f3540'; c.fillRect(ln.x - 0.85, -2.6, 0.5, 5.0);
-      for (let k = 0; k < ln.divest.length; k++) { c.fillStyle = '#4a4f5a'; c.fillRect(ln.x - 0.5 + (k - (ln.divest.length - 1) / 2) * 0.55 - 0.22, 1.55, 0.44, 0.22); }
-      c.fillStyle = ln.cur != null ? '#d4a94f' : '#5a626e'; c.fillRect(ln.x - 1.0, -0.35, 0.8, 0.7);
+      // each lane, so it reads as one: unloading tables, the belt through the scanner, the arch, the bench
+      c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(ln.x - gap / 2 + 0.08, -3.2, gap - 0.16, 5.9);
+      label(c, lw, `LANE ${ln.i + 1}`, ln.x, 2.55, { size: 7 });
+      c.fillStyle = BELT; c.fillRect(ln.x - 0.85, -2.6, 0.5, 5.0);
+      for (let k = 0; k < ln.divest.length; k++) { c.fillStyle = FIXTURE; c.fillRect(ln.x - 0.5 + (k - (ln.divest.length - 1) / 2) * 0.55 - 0.22, 1.55, 0.44, 0.22); }
+      c.fillStyle = ln.cur != null ? BRASS : FIXTURE; c.fillRect(ln.x - 1.0, -0.35, 0.8, 0.7);
       label(c, lw, 'X-RAY', ln.x - 0.6, -0.48, { size: 6 });
-      c.strokeStyle = '#9cc4ec'; c.lineWidth = 0.06; c.strokeRect(ln.x + 0.45, ARCH_Y_ART - 0.3, 0.6, 0.6);
+      c.strokeStyle = GLASS; c.lineWidth = 0.07; c.beginPath(); c.moveTo(ln.x + 0.42, ARCH_Y_ART + 0.3); c.lineTo(ln.x + 0.42, ARCH_Y_ART - 0.3); c.lineTo(ln.x + 1.08, ARCH_Y_ART - 0.3); c.lineTo(ln.x + 1.08, ARCH_Y_ART + 0.3); c.stroke();
       // the bench: one square per tray waiting to be repacked; red when full and the belt has stopped
       const full = ln.bench.length >= ln.cap;
-      c.fillStyle = full ? 'rgba(239,91,76,.35)' : 'rgba(0,0,0,.25)'; c.fillRect(ln.x - 0.9, -2.9, 0.6, (d.bench ? 2.0 : 1.2));
-      ln.bench.forEach((tr, k) => { c.fillStyle = tr.held ? '#ef5b4c' : '#9cc4ec'; c.fillRect(ln.x - 0.82, -2.85 + k * 0.24, 0.44, 0.18); });
-      for (let k = 0; k < Math.min(ln.belt.length, 10); k++) { c.fillStyle = 'rgba(156,196,236,.7)'; c.fillRect(ln.x - 0.82, 0.45 + k * 0.22, 0.44, 0.16); }
+      c.fillStyle = full ? 'rgba(239,91,76,.35)' : FIXTURE; c.fillRect(ln.x - 0.9, -2.9, 0.6, (d.bench ? 2.0 : 1.2));
+      ln.bench.forEach((tr, k) => { c.fillStyle = tr.held ? '#ef5b4c' : GLASS; c.fillRect(ln.x - 0.82, -2.85 + k * 0.24, 0.44, 0.18); });
+      for (let k = 0; k < Math.min(ln.belt.length, 10); k++) { c.fillStyle = GLASS; c.fillRect(ln.x - 0.82, 0.45 + k * 0.22, 0.44, 0.16); }
       if (d.smart) label(c, lw, 'SMART', ln.x - 0.5, 2.2, { size: 6, color: BRASS });
     }
     for (const p of s.people) drawPerson(c, p);
@@ -243,11 +248,11 @@ const ART = {
     floor(c, W.contract.kind, box.w, box.h);
     label(c, lw, 'GATE', -8.2, box.h / 2 - 0.3, { size: 8 });
     // the fuselage
-    c.fillStyle = '#d9dee6'; c.beginPath(); c.moveTo(X0 - 0.4, -2.3); c.lineTo(X0 + L + 0.2, -2.3); c.quadraticCurveTo(X0 + L + 1.6, 0, X0 + L + 0.2, 2.3); c.lineTo(X0 - 0.4, 2.3); c.quadraticCurveTo(X0 - 1.6, 0, X0 - 0.4, -2.3); c.fill();
-    c.fillStyle = '#c5ccd6'; c.fillRect(X0, -0.22, L, 0.44);
+    c.fillStyle = HULL; c.strokeStyle = HULL_EDGE; c.lineWidth = 0.1; c.beginPath(); c.moveTo(X0 - 0.4, -2.3); c.lineTo(X0 + L + 0.2, -2.3); c.quadraticCurveTo(X0 + L + 1.6, 0, X0 + L + 0.2, 2.3); c.lineTo(X0 - 0.4, 2.3); c.quadraticCurveTo(X0 - 1.6, 0, X0 - 0.4, -2.3); c.fill(); c.stroke();
+    c.fillStyle = BELT; c.fillRect(X0, -0.22, L, 0.44);
     for (let r = 1; r <= P.rows; r++) for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) {
       const taken = s.seated.has(r + (sd < 0 ? 'CBA' : 'DEF')[k]);
-      c.fillStyle = taken ? '#6f7f99' : '#8fa0bb'; c.fillRect(X0 + (r - 1) * RW + 0.12, sd * (0.42 + 0.55 * k) - 0.2, RW - 0.24, 0.4);
+      c.fillStyle = taken ? '#5a6478' : FIXTURE; c.fillRect(X0 + (r - 1) * RW + 0.12, sd * (0.42 + 0.55 * k) - 0.2, RW - 0.24, 0.4);
     }
     label(c, lw, 'FRONT DOOR', X0 - 0.2, -2.55, { size: 7 });
     if (d.rear) label(c, lw, 'REAR STAIRS', X0 + L, -2.55, { size: 7, color: BRASS });
@@ -272,7 +277,7 @@ const ART = {
       } else if (d.type === 'slider') {
         const g = d.w * (d.open || 0) / 2;
         c.fillStyle = '#4b5560'; c.fillRect(x0, -0.11, (SLOT_W - d.w) / 2, 0.22); c.fillRect(d.cx + d.w / 2, -0.11, (SLOT_W - d.w) / 2, 0.22);
-        c.fillStyle = 'rgba(156,196,236,0.85)'; c.fillRect(d.cx - d.w / 2, -0.06, d.w / 2 - g, 0.12); c.fillRect(d.cx + g, -0.06, d.w / 2 - g, 0.12);
+        c.fillStyle = GLASS; c.fillRect(d.cx - d.w / 2, -0.06, d.w / 2 - g, 0.12); c.fillRect(d.cx + g, -0.06, d.w / 2 - g, 0.12);
       } else if (d.type === 'revolve') {
         c.fillStyle = '#2b2722'; c.beginPath(); c.arc(d.cx, 0, d.R, 0, TAU); c.fill();
         c.strokeStyle = 'rgba(190,220,245,0.75)'; c.lineWidth = 0.07;
@@ -281,7 +286,7 @@ const ART = {
         const th = d.mouth * Math.PI / 180;
         for (const a0 of [-Math.PI / 2 + th, Math.PI / 2 + th]) { c.beginPath(); c.arc(d.cx, 0, d.R + 0.03, a0, a0 + Math.PI - 2 * th); c.stroke(); }
       } else if (d.type === 'gates') {
-        for (const b of d.cabs) { c.fillStyle = '#3a404b'; c.fillRect(d.cx + b - d.cabHalf, -0.5, d.cabHalf * 2, 1.0); }
+        for (const b of d.cabs) { c.fillStyle = FIXTURE; c.fillRect(d.cx + b - d.cabHalf, -0.5, d.cabHalf * 2, 1.0); }
         for (const l of d.gl) if (l.open <= 0) { c.strokeStyle = BRASS; c.lineWidth = 0.07; c.beginPath(); c.moveTo(l.x - l.hw, 0); c.lineTo(l.x + l.hw, 0); c.stroke(); }
         if (d.wide) label(c, lw, 'WIDE', d.cx, 0.85, { size: 7, color: BRASS });
       }
@@ -294,31 +299,51 @@ const ART = {
 
 // a stage's drawing area: fixed, or set by the level (a door stage is as wide as its frontage)
 const boxOf = (k, sub) => STAGES[k].boxOf ? STAGES[k].boxOf(sub) : STAGES[k].box;
-// a chained level lays its stages out in a row on a wide screen, stacked on a narrow one
+// a chained level lays its stages out in a row on a wide screen, stacked on a narrow one, each with room above it
+// for its title (TITLE_H), so the title never sits on the drawing
+const TITLE_H = 0.8;
 export function stageLayout(contract, wide) {
   if (!contract.chain) { const b = boxOf(contract.stage, contract); return { w: b.w, h: b.h, parts: [{ x: 0, y: 0, box: b }] }; }
   const boxes = contract.chain.map((k, i) => boxOf(k, contract.parts[i])), gap = 1.2;
   if (wide) {
-    const w = boxes.reduce((a, b) => a + b.w, 0) + gap * (boxes.length - 1), h = Math.max(...boxes.map(b => b.h));
+    const w = boxes.reduce((a, b) => a + b.w, 0) + gap * (boxes.length - 1), h = Math.max(...boxes.map(b => b.h)) + TITLE_H;
     let x = -w / 2;
-    return { w, h, parts: boxes.map(b => { const at = x + b.w / 2; x += b.w + gap; return { x: at, y: 0, box: b }; }) };
+    return { w, h, parts: boxes.map(b => { const at = x + b.w / 2; x += b.w + gap; return { x: at, y: TITLE_H / 2, box: b }; }) };
   }
-  const w = Math.max(...boxes.map(b => b.w)), h = boxes.reduce((a, b) => a + b.h, 0) + gap * (boxes.length - 1);
+  const w = Math.max(...boxes.map(b => b.w)), h = boxes.reduce((a, b) => a + b.h + TITLE_H, 0) + gap * (boxes.length - 1);
   let y = -h / 2;
-  return { w, h, parts: boxes.map(b => { const at = y + b.h / 2; y += b.h + gap; return { x: 0, y: at, box: b }; }) };
+  return { w, h, parts: boxes.map(b => { const at = y + TITLE_H + b.h / 2; y += b.h + TITLE_H + gap; return { x: 0, y: at, box: b }; }) };
+}
+
+// One room, the same way for every stage: drawn inside its walls (anything beyond them is clipped), and anyone
+// queueing outside it is counted at the door rather than drawn over the next room.
+function drawRoom(c, k, Wp, box, t, lw) {
+  c.save(); c.beginPath(); c.rect(-box.w / 2 - 0.12, -box.h / 2 - 0.12, box.w + 0.24, box.h + 0.24); c.clip();
+  ART[k](c, Wp, t, lw);
+  c.restore();
+  const out = (Wp.world.people || []).filter(p => !p.gone && (Math.abs(p.x) > box.w / 2 + 0.1 || Math.abs(p.y) > box.h / 2 + 0.1)).length;
+  if (out) pill(c, lw, `+${out} more waiting outside`, 0, box.h / 2 - 0.35);
+}
+// a small label on a dark pill, readable over a crowd
+function pill(c, lw, text, x, y) {
+  c.save(); c.scale(lw, lw);
+  c.font = '700 10px Figtree, sans-serif'; c.textAlign = 'center';
+  const wpx = c.measureText(text).width + 14, X = x / lw, Y = y / lw;
+  c.fillStyle = 'rgba(14,17,22,.88)'; c.beginPath(); c.roundRect(X - wpx / 2, Y - 11, wpx, 16, 8); c.fill();
+  c.fillStyle = BRASS; c.fillText(text, X, Y + 1); c.restore();
 }
 
 export function drawStage(c, W, t, lw) {
   const con = W.contract;
-  if (!con.chain) { const fn = ART[con.stage]; if (fn) fn(c, W, t, lw); return; }
+  if (!con.chain) { if (ART[con.stage]) drawRoom(c, con.stage, W, boxOf(con.stage, con), t, lw); return; }
   const L = W.layout || stageLayout(con, true);
   con.chain.forEach((k, i) => {
     const pt = L.parts[i];
     c.save(); c.translate(pt.x, pt.y);
-    ART[k](c, { world: W.world.parts[i], design: W.design.parts[i], contract: { ...con.parts[i], kind: con.kind }, fx: (W.fx || []).filter(e => e.part === i) }, t, lw);
-    // which stage the editor is on, and the order they come in
+    drawRoom(c, k, { world: W.world.parts[i], design: W.design.parts[i], contract: { ...con.parts[i], kind: con.kind }, fx: (W.fx || []).filter(e => e.part === i) }, pt.box, t, lw);
+    // which stage the editor is on, and the order they come in (the title sits above the room)
     if (W.mode !== 'test' && i === (W.part || 0)) { c.strokeStyle = 'rgba(212,169,79,.8)'; c.lineWidth = 2 * lw; c.setLineDash([6 * lw, 4 * lw]); c.strokeRect(-pt.box.w / 2, -pt.box.h / 2, pt.box.w, pt.box.h); c.setLineDash([]); }
-    label(c, lw, `${i + 1}. ${stageName(con, k).toUpperCase()}`, -pt.box.w / 2 + 0.25, -pt.box.h / 2 + 0.45, { size: 10, align: 'left', color: BRASS });
+    label(c, lw, `${i + 1}. ${stageName(con, k).toUpperCase()}`, -pt.box.w / 2, -pt.box.h / 2 - 0.28, { size: 11, align: 'left', color: BRASS });
     c.restore();
   });
 }
