@@ -83,6 +83,14 @@ test('counter hall: lunchtime cover beats a full desk on a lunch-rush day, not a
   const call = makeContract('bank', 4, 3, 5, { stage: 'queue', tech: ALL, callback: 'paradox' });
   assert.ok(STAGES.queue.candidates(call, ALL).every(d => !d.express && !d.cover));
 });
+test('lifts: destination keypads win an ordinary morning and lose one full of visitors; a top-floor canteen breaks zoning', () => {
+  const run = (extra, d) => { const w = []; for (let s = 0; s < 6; s++) { const c = makeContract('office', 3, 3, 800 + s, { stage: 'lifts', tech: ALL, extra }); w.push(runStage(c, { stage: 'lifts', count: c.existing.count, dwell: 'standard', ...d }, ALL).wait); } return mean(w); };
+  assert.ok(run([], { mode: 'dest' }) < run([], { mode: 'zoned' }), 'keypads group the trips');
+  assert.ok(run(['visitors'], { mode: 'dest' }) > run(['visitors'], { mode: 'zoned' }), 'visitors who don\'t use the keypad ride the wrong car');
+  assert.ok(run(['canteen'], { mode: 'zoned' }) > run(['canteen'], { mode: 'all' }), 'half the lifts serve floors nobody wants');
+  const call = makeContract('office', 4, 3, 5, { stage: 'lifts', tech: ALL, callback: 'paradox' });
+  assert.ok(STAGES.lifts.candidates(call, ALL).every(d => d.mode !== 'dest' && d.dwell === 'standard'), 'a research call is about zoning');
+});
 test('paradox: zoned lifts beat the same lifts stopping everywhere', () => {
   const [zoned, all] = compare('lifts', { count: 6, mode: 'zoned' }, { count: 6, mode: 'all' });
   assert.ok(mean(zoned.map(r => r.wait)) < mean(all.map(r => r.wait)));

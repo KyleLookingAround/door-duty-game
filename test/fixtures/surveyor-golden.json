@@ -2344,21 +2344,21 @@
    "seed": 4103
   },
   "twists": [
-   "visitors"
+   "canteen"
   ],
   "goals": {
-   "through": 100,
-   "wait": 82,
+   "through": 101,
+   "wait": 56,
    "bumps": 0,
    "minTemp": null,
    "maxTemp": null,
    "access": false,
    "laps": null
   },
-  "par": "l4Z",
-  "cost": 4000,
-  "fee": 10500,
-  "budget": 9000,
+  "par": "l5D",
+  "cost": 52000,
+  "fee": 70500,
+  "budget": 81000,
   "relaxed": false,
   "slots": 0,
   "temp": 18
