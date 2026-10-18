@@ -100,6 +100,13 @@ test('walkways: a fast belt gets people there sooner, but older travellers stumb
   const call = makeContract('skyport', 4, 3, 5, { stage: 'walkway', tech: ALL, callback: 'paradox' });
   assert.ok(STAGES.walkway.candidates(call, ALL).every(d => d.speed === 'std' && !d.signs), 'a research call is about where the walkway goes');
 });
+test('baggage reclaim: a fast belt suits most crowds, not a coach party; handlers matter when bags are held up', () => {
+  const run = (extra, d) => { const w = []; for (let s = 0; s < 4; s++) { const c = makeContract('skyport', 3, 3, 1200 + s, { stage: 'carousel', tech: ALL, extra }); w.push(runStage(c, { stage: 'carousel', belts: 1, line: true, speed: 'std', handlers: false, ...d }, ALL).wait); } return mean(w); };
+  assert.ok(run(['pensioners'], { speed: 'fast' }) > run(['pensioners'], {}), 'older travellers miss bags on a fast belt');
+  assert.ok(run(['heldup'], { handlers: true }) < run(['heldup'], {}), 'handlers get held-up bags out sooner');
+  const call = makeContract('skyport', 4, 3, 5, { stage: 'carousel', tech: ALL, callback: 'paradox' });
+  assert.ok(STAGES.carousel.candidates(call, ALL).every(d => d.speed === 'std' && !d.handlers), 'a research call is about the line');
+});
 test('paradox: zoned lifts beat the same lifts stopping everywhere', () => {
   const [zoned, all] = compare('lifts', { count: 6, mode: 'zoned' }, { count: 6, mode: 'all' });
   assert.ok(mean(zoned.map(r => r.wait)) < mean(all.map(r => r.wait)));
