@@ -325,6 +325,12 @@ input[type=range] { width: 100%; accent-color: var(--brass); height: 28px; margi
 }
 .toast.show { opacity: 1; } .toast.bad { background: var(--warn); }
 @media (prefers-reduced-motion: reduce) { .toast, .progress i { transition: none; } }
+/* wide screens: sheets hang from near the top, so switching tabs doesn't make them jump, and get room to read
+   (after the base sheet rules, so these win) */
+@media (min-width: 1100px) {
+  .overlay { align-items: flex-start; padding-top: 6vh; }
+  body .sheet { max-width: 720px; max-height: 88vh; }
+}
 </style>
 </head>
 <body>
