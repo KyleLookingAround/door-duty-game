@@ -206,7 +206,7 @@ export function openCompany(tab) {
         const owned = refine ? !step : S.unlocks[t.key], doing = S.research.find(r => r.key === t.key), queued = queue.some(q => q.key === t.key);
         const mastered = owned && isMastered(S, t.key);
         const missing = (t.req || []).filter(r => !S.unlocks[r]);
-        const unmastered = t.tier >= 3 ? (t.req || []).filter(r => S.unlocks[r] && !isMastered(S, r)) : [];
+        const unmastered = (t.req || []).filter(r => S.unlocks[r] && !isMastered(S, r));
         const tierOk = t.tier <= P.tier;
         let state, action = '';
         const how = LESSONS[t.key] ? `<button class="ghost small" type="button" data-lesson="${t.key}">How to use</button>` : '';
