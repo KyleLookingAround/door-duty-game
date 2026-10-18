@@ -107,7 +107,7 @@ export default {
     StageSim.tune(c, 0, 1);
     const mix = { case: 0.1 };
     if (c.twists.includes('families')) mix.pram = 0.08;
-    if (c.twists.includes('pensioners')) mix.elderly = 0.3;
+    if (c.twists.includes('coach')) mix.elderly = 0.3;
     c.crowd = { rate: +(1.2 * scale * (c.twists.includes('twoflights') ? 1.3 : 1) * (0.95 + rng() * 0.1)).toFixed(3), mix };
     c.arrive = 90; c.run = 400;
   },
@@ -119,7 +119,7 @@ export default {
   },
   deepTwists: {
     heldup: { label: 'Bags held up', text: 'The bags are held up airside: the first ones are late onto the belt.' },
-    pensioners: { label: 'Coach party', text: 'A coach party of older travellers, slow to lift a bag off a moving belt.' },
+    coach: { label: 'Coach party', text: 'A coach party of older travellers, slow to lift a bag off a moving belt.' },
   },
   twistsOf(opts) { return opts.callback === 'paradox' ? this.twists : { ...this.twists, ...this.deepTwists }; },
   options(c) {

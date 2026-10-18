@@ -3,7 +3,7 @@
 // hesitate, miss it, or stumble stepping on. The fastest loop is rarely the one that moves the most people.
 import { StageSim } from './common.js';
 
-const SHAFT_X = 0, LANDING_Y = 3.4, CABIN_GAP = 2.6, LEVEL = 0.35;
+const SHAFT_X = 0, LANDING_Y = 3.4, CABIN_GAP = 2.6, LEVEL = 0.35, STAIRS_SIGN_COST = 500;
 
 class PaternosterSim extends StageSim {
   constructor(c, d, tech) {
@@ -12,10 +12,15 @@ class PaternosterSim extends StageSim {
   }
   admit(p) {
     p.x = -3.5 + this.rng() * 1.5; p.y = LANDING_Y + 1.4; p.gone = false; p.inAt = this.t;
-    p.floor = 1 + Math.floor(this.rng() * this.c.params.floors);
+    const P = this.c.params;
+    p.floor = P.first && this.rng() < P.first ? 1 : 1 + Math.floor(this.rng() * P.floors);
     p.tries = 0;
-    this.q.push(p); this.people.push(p);
+    this.people.push(p);
+    // a "Stairs for one floor" sign: people going one floor up walk, leaving the cabins for everyone else
+    if (this.d.stairs && p.floor === 1) { this.climb(p); return; }
+    this.q.push(p);
   }
+  climb(p) { p.stairs = this.t + p.floor * this.c.params.floorH / (p.walk * 0.22); this.climbing.push(p); }
   step(dt) {
     this.t += dt;
     this.arrivals(dt);
@@ -23,7 +28,9 @@ class PaternosterSim extends StageSim {
     // a cabin floor comes level with the landing every CABIN_GAP / v seconds, and stays within reach for 2 * LEVEL / v
     const before = this.phase;
     this.phase = (this.phase + v * dt) % CABIN_GAP;
-    if (this.phase < before && !this.idle) {
+    // children on a school trip ride round over the top: a cabin comes past already full (an attendant stops most of it)
+    const full = this.phase < before && P.joy && this.rng() < P.joy * (d.attendant ? 0.3 : 1);
+    if (this.phase < before && !this.idle && !full) {
       const window = 2 * LEVEL / v;
       let used = 0, spent = 0;
       for (let k = 0; k < this.q.length && used < per; k++) {
@@ -33,7 +40,7 @@ class PaternosterSim extends StageSim {
         const need = p.react * (d.attendant ? 0.6 : 1) + 0.45 + spent;
         if (need > window * 1.15) {
           // too quick for them: they wait for the next cabin, and after a couple give up and take the stairs
-          if (++p.tries >= 2) { this.q.splice(k, 1); k--; p.stairs = this.t + p.floor * P.floorH / (p.walk * 0.22); this.climbing.push(p); continue; }
+          if (++p.tries >= 2) { this.q.splice(k, 1); k--; this.climb(p); continue; }
           break;
         }
         if (need > window * 0.8 && this.rng() < 0.5) {
@@ -76,7 +83,10 @@ export default {
   slack: 1.15,
   level(c, rng, tier) {
     const scale = 1 + 0.07 * Math.min(tier, 6);
-    c.params = { floors: 5, floorH: 3.2 };
+    // the deeper puzzle (a stairs sign, and twists about who's visiting) isn't on research calls or chained levels
+    const deep = !c.chained && c.opts.callback !== 'paradox';
+    c.params = { floors: 5, floorH: 3.2, deep, joy: c.twists.includes('school') ? 0.35 : 0, first: c.twists.includes('wedding') ? 0.6 : 0 };
+    if (c.existing && c.existing.stairs == null) c.existing.stairs = false;
     const mix = { elderly: c.twists.includes('pensioners') ? 0.45 : 0.2 };
     let rate = 0.16 * scale * (0.94 + rng() * 0.12);
     if (c.twists.includes('council')) rate *= 1.2;
@@ -89,21 +99,31 @@ export default {
     council: { label: 'Council meeting', text: 'Full council tonight: a quarter more people heading upstairs.' },
     pensioners: { label: 'Pensioners\' day', text: 'Nearly half the visitors are older and need longer to judge the step.' },
   },
+  deepTwists: {
+    school: { label: 'School trip', text: 'A school trip riding round and round over the top: a lot of cabins come past already full.' },
+    wedding: { label: 'Wedding day', text: 'Weddings at the register office: most visitors are only going up to the first floor.' },
+  },
+  twistsOf(opts) { return opts.callback === 'paradox' ? this.twists : { ...this.twists, ...this.deepTwists }; },
   options(c, tech) {
     return [
       { key: 'speed', label: 'Loop speed', kind: 'range', min: 0.15, max: 0.5, step: 0.01, fmt: v => `${(+v).toFixed(2)} m/s` },
       { key: 'wide', label: 'Two-person cabins', kind: 'toggle', note: '+£9,000 · rebuild the cabins so two can step on together' },
-      { key: 'attendant', label: 'Landing attendant', kind: 'toggle', tech: 'doorman', note: '+£3,000 · calls "now" so people step on at the right moment' },
+      { key: 'attendant', label: 'Landing attendant', kind: 'toggle', tech: 'doorman', note: '+£3,000 · calls "now" so people step on at the right moment, and stops anyone riding round' },
+      ...(c.params.deep ? [{ key: 'stairs', label: '"One floor? Take the stairs"', kind: 'toggle', note: `+£${STAIRS_SIGN_COST} · people going one floor up walk, leaving the cabins for everyone else` }] : []),
     ];
   },
   explain(d) { const v = d.speed; return `A cabin every ${(CABIN_GAP / v).toFixed(1)}s, level with the floor for ${(2 * LEVEL / v).toFixed(1)}s. Most people need about a second to step on; older visitors need two.`; },
-  hint(r) { return r.bumps ? 'People are stumbling as they step on. A slower loop gives them longer to judge it.' : 'Too few people are getting upstairs. Too slow and the cabins come rarely; too fast and people let them pass.'; },
-  defaults() { return { stage: 'paternoster', speed: 0.45, wide: false, attendant: false }; },
-  cost(d, ex) { return (d.wide && !(ex && ex.wide) ? 9000 : 0) + (d.attendant && !(ex && ex.attendant) ? 3000 : 0); },
-  sig(d) { return `p${Math.round(d.speed * 100)}${d.wide ? 'W' : ''}${d.attendant ? 'A' : ''}`; },
+  hint(r, c) {
+    if (c && c.params.joy && !r.bumps) return 'Watch the cabins coming round already full: children on the school trip are riding over the top.';
+    if (c && c.params.first && !r.bumps) return 'Most people are only going up one floor. On the stairs they\'d be nearly as quick, and leave the cabins free.';
+    return r.bumps ? 'People are stumbling as they step on. A slower loop gives them longer to judge it.' : 'Too few people are getting upstairs. Too slow and the cabins come rarely; too fast and people let them pass.';
+  },
+  defaults() { return { stage: 'paternoster', speed: 0.45, wide: false, attendant: false, stairs: false }; },
+  cost(d, ex) { return (d.wide && !(ex && ex.wide) ? 9000 : 0) + (d.attendant && !(ex && ex.attendant) ? 3000 : 0) + (d.stairs && !(ex && ex.stairs) ? STAIRS_SIGN_COST : 0); },
+  sig(d) { return `p${Math.round(d.speed * 100)}${d.wide ? 'W' : ''}${d.attendant ? 'A' : ''}${d.stairs ? 'S' : ''}`; },
   candidates(c, tech) {
     const out = [];
-    for (const speed of [0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45]) for (const wide of [false, true]) for (const attendant of tech.doorman ? [false, true] : [false]) out.push({ stage: 'paternoster', speed, wide, attendant });
+    for (const speed of [0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45]) for (const wide of [false, true]) for (const attendant of tech.doorman ? [false, true] : [false]) for (const stairs of c.params.deep ? [false, true] : [false]) out.push({ stage: 'paternoster', speed, wide, attendant, stairs });
     return out;
   },
   Sim: PaternosterSim,

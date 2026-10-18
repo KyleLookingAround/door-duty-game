@@ -2373,21 +2373,21 @@
    "seed": 4104
   },
   "twists": [
-   "council"
+   "pensioners"
   ],
   "goals": {
-   "through": 33,
-   "wait": 161,
+   "through": 32,
+   "wait": 115,
    "bumps": 2,
    "minTemp": null,
    "maxTemp": null,
    "access": false,
    "laps": null
   },
-  "par": "p20W",
-  "cost": 9000,
-  "fee": 15500,
-  "budget": 16500,
+  "par": "p20WS",
+  "cost": 9500,
+  "fee": 16000,
+  "budget": 17500,
   "relaxed": false,
   "slots": 0,
   "temp": 18

@@ -2,7 +2,7 @@
 // (the counterintuitive setup beats the obvious one on average), and finished research brings its callback.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STAGES, STAGE_LIST } from '../src/engine/stages/index.js';
+import { STAGES, STAGE_LIST, STAGE_TWISTS } from '../src/engine/stages/index.js';
 import { makeContract } from '../src/game/contracts.js';
 import { runStage } from '../src/game/stagejobs.js';
 import { freshState } from '../src/game/state.js';
@@ -10,6 +10,7 @@ import { endMonth } from '../src/game/month.js';
 import { refreshPlots } from '../src/game/plots.js';
 import { PARADOX_CALLS } from '../src/content/paradoxes.js';
 import { BUILDING } from '../src/content/buildings/index.js';
+import { stageTwist } from '../src/game/briefs.js';
 
 const ALL = { barriers: 1, escalators: 1, markings: 1, zoning: 1, paternoster: 1, travelator: 1, permits: 1, stewarding: 1, doorman: 1 };
 // where each stage is usually played
@@ -73,6 +74,25 @@ test('escalators: turn one round for the evening peak; a fast escalator trips ol
   assert.equal(call.params.down, 0);
   assert.ok(STAGES.escalator.candidates(call, ALL).every(d => d.speed === 'std' && !d.down));
 });
+test('every stage twist a level can draw has its own key, a label and its text in the brief', () => {
+  const seen = {};
+  for (const st of STAGE_LIST) for (const g of ['twists', 'turnTwists', 'deepTwists', 'dayTwists']) for (const k of Object.keys(st[g] || {})) {
+    assert.ok(!seen[k], `twist ${k} is in both ${seen[k]} and ${st.key}`);
+    seen[k] = st.key;
+  }
+  for (const st of STAGE_LIST) {
+    const c = job(st.key, 7);
+    for (const k of Object.keys(st.twistsOf ? st.twistsOf(c.opts) : st.twists)) { const t = stageTwist(c, k); assert.ok(STAGE_TWISTS[k] && t.label !== k && t.text, `${st.key} twist ${k}`); }
+  }
+});
+test('paternoster: a stairs sign helps a wedding day; an attendant stops a school trip riding round', () => {
+  const run = (extra, d) => { const w = []; for (let s = 0; s < 6; s++) { const c = makeContract('townhall', 3, 3, 1800 + s, { stage: 'paternoster', tech: ALL, extra }); w.push(runStage(c, { stage: 'paternoster', speed: 0.3, wide: false, attendant: false, stairs: false, ...d }, ALL).wait); } return mean(w); };
+  assert.ok(run(['wedding'], { stairs: true }) < run(['wedding'], {}) * 0.6, 'most trips are one floor: walk them');
+  const [plainA, schoolA, school] = [run([], { attendant: true }), run(['school'], { attendant: true }), run(['school'], {})];
+  assert.ok(school - schoolA > (run([], {}) - plainA), `the attendant matters more on a school trip: ${school} -> ${schoolA}`);
+  const call = makeContract('townhall', 4, 3, 5, { stage: 'paternoster', tech: ALL, callback: 'paradox' });
+  assert.ok(STAGES.paternoster.candidates(call, ALL).every(d => !d.stairs), 'a research call is about the loop speed');
+});
 test('counter hall: lunchtime cover beats a full desk on a lunch-rush day, not an opening rush; an express desk speeds a quick day', () => {
   const run = (extra, d) => { const w = []; for (let s = 0; s < 10; s++) { const c = makeContract('bank', 3, 3, 700 + s, { stage: 'queue', tech: ALL, extra }); w.push(runStage(c, { stage: 'queue', layout: 'snake', express: false, cover: 0, ...d }, ALL).wait); } return mean(w); };
   // the same £5,000: a fourth full desk, or two part-time desks through the middle of the day
@@ -102,7 +122,7 @@ test('walkways: a fast belt gets people there sooner, but older travellers stumb
 });
 test('baggage reclaim: a fast belt suits most crowds, not a coach party; handlers matter when bags are held up', () => {
   const run = (extra, d) => { const w = []; for (let s = 0; s < 4; s++) { const c = makeContract('skyport', 3, 3, 1200 + s, { stage: 'carousel', tech: ALL, extra }); w.push(runStage(c, { stage: 'carousel', belts: 1, line: true, speed: 'std', handlers: false, ...d }, ALL).wait); } return mean(w); };
-  assert.ok(run(['pensioners'], { speed: 'fast' }) > run(['pensioners'], {}), 'older travellers miss bags on a fast belt');
+  assert.ok(run(['coach'], { speed: 'fast' }) > run(['coach'], {}), 'older travellers miss bags on a fast belt');
   assert.ok(run(['heldup'], { handlers: true }) < run(['heldup'], {}), 'handlers get held-up bags out sooner');
   const call = makeContract('skyport', 4, 3, 5, { stage: 'carousel', tech: ALL, callback: 'paradox' });
   assert.ok(STAGES.carousel.candidates(call, ALL).every(d => d.speed === 'std' && !d.handlers), 'a research call is about the line');

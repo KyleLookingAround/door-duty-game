@@ -139,6 +139,7 @@ const ART = {
     c.strokeStyle = 'rgba(236,230,216,.18)'; c.lineWidth = 0.04;
     for (let k = 0; k < 14; k++) { c.beginPath(); c.moveTo(3.1, 3.2 - k * 0.42); c.lineTo(4.2, 3.2 - k * 0.42); c.stroke(); }
     label(c, lw, 'STAIRS', 3.65, 3.75, { size: 8 });
+    if (d.stairs) label(c, lw, 'ONE FLOOR? WALK', 3.65, 4.3, { size: 7, color: BRASS });
     for (const p of s.people) drawPerson(c, p);
     fx(c, W, t);
   },
