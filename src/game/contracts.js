@@ -102,7 +102,8 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   if (first) twists = [...k.hook.twists];
   else {
     const CB = { busier: 'surge', older: 'fragile', cold: 'cold', safety: 'fragile', access: 'stepfree' };
-    if (opts.callback && CB[opts.callback] && !opts.check && !(k.station && opts.callback === 'cold')) twists.push(CB[opts.callback]);
+    // (a failed inspection replays the inspector's day: only a step-free failure adds its access goal)
+    if (opts.callback && CB[opts.callback] && !opts.check && !(opts.inspection && opts.callback !== 'access') && !(k.station && opts.callback === 'cold')) twists.push(CB[opts.callback]);
     // a research call's own problem (opts.need) comes before any random draw, so the draws fit around it
     for (const t of need) if (!twists.includes(t)) twists.push(t);
     const n = tier >= 3 ? 2 : 1;
@@ -131,7 +132,7 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   // cyclists need an open door: buildings that insist on a very warm lobby can't take them without draught lobbies
   if (k.comfort >= 18 && !tech.vestibule) twists = twists.filter(t => t !== 'bikes');
   // last-resort plain job: just the callback reason and what a research call is about, nothing extra
-  if (opts.plain) twists = [...new Set([...(opts.callback && !opts.check ? twists.slice(0, 1) : []), ...need])];
+  if (opts.plain) twists = [...new Set([...(opts.callback && !opts.check && !(opts.inspection && opts.callback !== 'access') ? twists.slice(0, 1) : []), ...need])];
   // twists that can't be met with the door the client keeps: tight and listed rule revolving doors out or in,
   // no-fire rules out swing doors, and cyclists can't ride a revolving door
   if (lesson) twists = twists.filter(t => need.includes(t) || !((t === 'tight' && !kept.some(x => x !== 'revolve')) || (t === 'listed' && !kept.includes('revolve')) || (t === 'nofire' && !kept.some(x => x !== 'swing')) || (t === 'bikes' && !kept.some(x => x !== 'revolve')) || (t === 'stepfree' && !kept.includes('slider') && !(tech.wide && kept.includes('revolve')) && !(tech.autoswing && kept.includes('swing')))));
@@ -594,7 +595,10 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
     const opts = { ...(c.opts || {}) };
     // a callback the old doors already pass: turn up the client's change before trying anything else.
     // These retries don't count against MAX: severity is capped, so this loop always ends.
-    if (free && !c.relaxed && (opts.callback || c.stage) && !opts.check && severity < 3) {
+    // (Not a street-change check or a failed inspection: those replay a real day, and if the doors cope with it,
+    // the client copes. Research calls, a client wanting more, and the rival's work do escalate: those clients
+    // are asking for something new.)
+    if (free && !c.relaxed && (opts.callback || c.stage) && !opts.check && !opts.inspection && severity < 3) {
       severity++;
       c = makeContract(c.kind, c.tier, c.month, c.seed, { ...opts, severity }); c.job = job;
       attempt--;
@@ -602,7 +606,7 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
     }
     // still nothing to fix even at its worst: the doors genuinely beat that problem, so the client calls
     // about a different one (a cold snap, an older crowd, a busier street) instead
-    if (free && !c.relaxed && opts.callback && !c.stage && !opts.check && (opts.switched || 0) < 2) {
+    if (free && !c.relaxed && opts.callback && !c.stage && !opts.check && !opts.inspection && (opts.switched || 0) < 2) {
       const order = ['cold', 'older', 'busier', 'access'].filter(r => r !== opts.callback);
       const next = order[(opts.switched || 0) % order.length];
       severity = 0;
@@ -611,7 +615,7 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
       continue;
     }
     if (attempt === MAX - 1) break;
-    if (opts.check && free) break;   // a street-change check: the old setup copes, and that's the answer
+    if ((opts.check || opts.inspection) && free) break;   // a street-change check or an inspection replay: the old setup copes, and that's the answer
     if (c.stage && !c.relaxed) { if (repeat) { opts.extra = []; c = makeContract(c.kind, c.tier, c.month, c.seed + 53 * (attempt + 1), opts); c.job = job; c.novelty = true; continue; } break; }
     // a research call whose own twist makes it unfair (a surge no frontage can move): calm the crowd and
     // try again, rather than settle for a goal of a handful of people. Doesn't count against MAX.

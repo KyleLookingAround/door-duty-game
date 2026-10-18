@@ -106,7 +106,7 @@ export function signOff(S, p, c, design, stars, r) {
   else p.install = design.map(s => ({ ...s }));
   p.stars = Math.max(p.stars, stars);
   p.fee = Math.max(p.fee, c.fee);
-  p.status = 'fitted'; p.contract = null; p.reason = null;
+  p.status = 'fitted'; p.contract = null; p.reason = null; p.inspection = null;
   // a fresh install: new doors, a clean record, and a green star if the lobby stayed snug.
   // An inside job at a client whose doors you already fitted leaves the doors' wear and record alone.
   if (!c.stage || !p.install) { p.wear = 0; p.broken = false; p.cert = false; p.bumpRec = r.bumps; p.stopRec = r.stops || 0; }

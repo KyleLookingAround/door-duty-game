@@ -21,7 +21,7 @@ export function settleCheck(S, p, sc) {
 // call goes back on the list for another client, so the research still gets its lesson job.
 export function falseAlarm(S, p) {
   if (p.reason === 'paradox' && p.callTech) S.pendingCalls = [...(S.pendingCalls || []), [p.callTech, p.callIdx || 0, S.month - 2]];
-  p.status = 'fitted'; p.contract = null; p.reason = null;
+  p.status = 'fitted'; p.contract = null; p.reason = null; p.inspection = null;
   p.callTech = null; p.callStage = null; p.callChain = null; p.callTwist = null; p.lessonTender = false;
 }
 
@@ -56,8 +56,11 @@ export function refreshPlots(S) {
         // (some levels need research first: Skyport's security and departures need Security lanes)
         else if (B.jobs) { const js = B.jobs.filter(j => !j.needs || S.unlocks[j.needs]), j = js[randomInt(S, js.length)]; Object.assign(opts, j.chain ? { stage: 'chain', chain: j.chain } : { stage: j.stage }); }
       }
-      const ev = eventOf(S.month);
-      p.contract = makeContract(p.kind, tierOf(S, p), S.month, 1 + randomInt(S, 1e6), { ...opts, tech: techOf(S), event: ev && !opts.first ? ev.key : null });
+      const ev = eventOf(S.month), seed = 1 + randomInt(S, 1e6);
+      // a failed inspection: the inspector's own day (no random twists; a step-free failure keeps its access goal)
+      const day = p.status === 'callback' && (p.reason === 'safety' || p.reason === 'access') && p.inspection;
+      if (day) p.contract = makeContract(p.kind, day.tier, day.month, day.seed, { ...opts, inspection: true, plain: true, tech: techOf(S) });
+      else p.contract = makeContract(p.kind, tierOf(S, p), S.month, seed, { ...opts, tech: techOf(S), event: ev && !opts.first ? ev.key : null });
     }
   }
   return notes;

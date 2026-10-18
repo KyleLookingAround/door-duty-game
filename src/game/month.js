@@ -15,11 +15,12 @@ export const CLAIM_EXCESS = 1200, INSPECTION_FINE = 2500;
 
 // an inspector re-runs an old install against today's crowd
 export function inspect(S, p) {
-  const c = makeContract(p.kind, tierOf(S, p), S.month, 1 + randomInt(S, 1e6), { plain: true, existing: p.install, tech: techOf(S) });
+  const day = { seed: 1 + randomInt(S, 1e6), tier: tierOf(S, p), month: S.month };
+  const c = makeContract(p.kind, day.tier, day.month, day.seed, { plain: true, existing: p.install, tech: techOf(S) });
   const r = runHeadless(c, p.install, techOf(S));
   const access = ['library', 'townhall', 'station'].includes(p.kind) ? stepFreeOk(p) : true;
   const safe = r.bumps <= c.goals.bumps && r.stops <= 3;
-  return { pass: safe && access, safe, access, bumps: r.bumps, limit: c.goals.bumps };
+  return { pass: safe && access, safe, access, bumps: r.bumps, limit: c.goals.bumps, day };
 }
 
 // Put a street change on the calendar two months ahead, now and then. Where it lands is decided now,
@@ -95,7 +96,8 @@ export function endMonth(S) {
       const res = inspect(S, p);
       insp = { p, ...res };
       if (res.pass) p.cert = true;
-      else { S.cash -= INSPECTION_FINE; p.status = 'callback'; p.reason = res.access ? 'safety' : 'access'; p.contract = null; p.tier++; }
+      // the callback replays the day the inspector saw, so the job is about what actually failed
+      else { S.cash -= INSPECTION_FINE; p.status = 'callback'; p.reason = res.access ? 'safety' : 'access'; p.contract = null; p.tier++; p.inspection = res.day; }
     } catch (e) { insp = null; }
   }
   S.month++; if (S.month % 12 === 0) S.year++;
