@@ -312,6 +312,33 @@ export function openClient(i) {
   $('clClose').onclick = closeSheet;
   $('clServ').onclick = () => { if (!service(S, p)) return; save(); renderStreet(); closeSheet(); toast(`${p.name} serviced · good as new`); };
 }
+// The surveyor's out: while the player reads the month report, the new month's tenders and callbacks are being
+// surveyed (they start as the street redraws). Show each one's progress, so the wait between months is visible
+// and mostly over by the time the player is back on the street. Unfinished ones carry on in the background.
+const surveying = () => S.plots.filter(p => (p.status === 'open' || p.status === 'callback' || p.status === 'checking') && p.contract && !p.contract.solved);
+function surveyorPanel(list) {
+  if (!list.length) return '';
+  return `<div class="surveyor" id="svPanel"><div class="eyebrow" id="svHead">The surveyor is out · ${list.length} job${list.length > 1 ? 's' : ''} to look at</div>
+    ${list.map(p => `<div class="svrow"><span>${p.name}${p.status === 'checking' ? ' · checking your doors' : ''}</span><span class="svst" id="svs${p.i}">surveying</span><div class="progress"><i id="svb${p.i}"></i></div></div>`).join('')}</div>`;
+}
+function wireSurveyor(list) {
+  let left = list.length;
+  const head = () => { const h = $('svHead'); if (h) h.textContent = left ? `The surveyor is out · ${left} still to look at` : 'The surveyor is back · everything is ready on the street'; };
+  for (const p of list) {
+    const entry = surveys.get(p.contract.seed), was = p.status;
+    const bar = f => { const el = $('svb' + p.i); if (el) el.style.width = Math.round(f * 100) + '%'; };
+    if (entry) { bar(entry.progress); entry.listeners.add(bar); }
+    survey(p).then(() => {
+      if (entry) entry.listeners.delete(bar);
+      left--;
+      const st = $('svs' + p.i), el = $('svb' + p.i);
+      if (el) el.style.width = '100%';
+      if (st) st.textContent = p.status === 'fitted' ? (was === 'checking' ? 'they coped: no job' : 'false alarm: no job') : was === 'checking' ? 'calling you back' : 'ready';
+      head();
+    });
+  }
+}
+
 // DOM wiring, called once at boot
 export function initSheets() {
   $('rdBtn').onclick = guarded(() => openCompany());
@@ -321,7 +348,8 @@ export function initSheets() {
   const rpt = endMonth(S), paper = headline(S, rpt);
   const { research, lessonTenders, moved, moving, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry } = rpt;
   save();
-  renderStreet();
+  renderStreet();   // starts surveying the month's new work in the background
+  const surveyingNow = surveying();
   sheet(`<div class="eyebrow">${MONTHS[S.month % 12]} ${S.year}</div><h3>${net >= 0 ? 'Up ' + money(net) : 'Down ' + money(-net)} this month</h3>
     ${paper ? `<div class="paper"><small>The ${S.marketOpen ? 'Town' : 'High Street'} Herald · ${MONTHS[S.month % 12]} ${S.year}</small><b>${paper.head}</b>${paper.text ? `<p>${paper.text}</p>` : ''}</div>` : ''}
     <ul class="list">
@@ -334,6 +362,7 @@ export function initSheets() {
       ${insp && !insp.pass ? `<li class="fail"><span>Inspection fine · ${insp.p.name}</span><span>−${money(INSPECTION_FINE)}</span></li>` : ''}
       <li><span><b>Cash now</b></span><span class="${S.cash < 0 ? 'neg' : ''}">${money(S.cash)}</span></li>
     </ul>
+    ${surveyorPanel(surveyingNow)}
     ${insp ? `<p><strong style="color:${insp.pass ? 'var(--ok)' : 'var(--warn)'}">Inspection at ${insp.p.name}:</strong> ${insp.pass ? 'passed. They get a certificate of compliance, and pay you 10% more maintenance.' : !insp.access ? 'failed. There is no step-free way in. You have a callback to fix it.' : `failed on safety: ${insp.bumps} people clipped, the limit is ${insp.limit}. You have a callback to fix it.`}</p>` : ''}
     ${lost.length ? `<p><span class="hot">${RIVAL} won ${lost.map(p => p.name).join(' and ')}.</span> Tenders you leave sitting are fair game. Their work rarely lasts: expect the client back.</p>` : ''}
     ${broke.length ? `<p><span class="hot">Broken down:</span> ${broke.map(p => p.name).join(', ')}. No maintenance fee until you send someone. Tap the building on the street to service it.</p>` : ''}
@@ -355,8 +384,9 @@ export function initSheets() {
     ${winter ? '<p class="note">Winter: colder tenders.</p>' : ''}
     <button class="go" type="button" id="mClose">Back to the street</button>`);
   $('mClose').onclick = closeSheet;
+  wireSurveyor(surveyingNow);
   const monthHTML = $('sheet').innerHTML;
-  const rewire = () => { $('sheet').querySelectorAll('[data-co]').forEach(b => b.onclick = () => openCompany(b.dataset.co)); $('sheet').querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => openLesson(b.dataset.lesson, () => { $('sheet').innerHTML = monthHTML; $('mClose').onclick = closeSheet; rewire(); })); };
+  const rewire = () => { $('mClose').onclick = closeSheet; $('sheet').querySelectorAll('[data-co]').forEach(b => b.onclick = () => openCompany(b.dataset.co)); $('sheet').querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => openLesson(b.dataset.lesson, () => { $('sheet').innerHTML = monthHTML; $('mClose').onclick = closeSheet; rewire(); })); };
   rewire();
 });
 }

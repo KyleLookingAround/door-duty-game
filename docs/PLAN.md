@@ -250,6 +250,8 @@ Already on the design page as Later, plus two unbuilt landmarks. Each comes with
 
 **Phase 4 finished (October 2026).** Everything above is in, tried and left out with the reason, or moved to Phase 5 (door-job schedules and frontage-wide settings, which are programmable doors). Boarding isn't chained after security: it needs everyone at the gate when boarding is called, and a chain hands people on as they finish.
 
+**Owner's idea (October 2026): the month change as a loading screen. Done.** The new month's tenders and callbacks already started surveying as the month report opened; now the report shows it. "The surveyor is out" lists each job with a progress bar and says when it's ready, a client coped with a street change, a check turned into a callback, or a callback was a false alarm. Back to the street works at any time; unfinished surveys carry on in the background as before.
+
 ### Phase 5: endgame
 
 1. **Programmable doors**, opened by the Door controllers node. *Architecture:* rules as data (condition, then action, from a fixed list) read by the engine each step; never run as code, so the engine stays deterministic.

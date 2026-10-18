@@ -143,5 +143,5 @@ The build plan is `docs/PLAN.md`: what's next, the tests each phase must pass, a
 - A research call with its lesson can take 15 to 30 seconds to survey (lesson checks and calm retries add runs); the Phase 3 worker pool is the fix.
 - About a third of research calls (in the lesson test's sample) still can't be given a fair lesson on some seeds and fall back to an ordinary job.
 - A chained level's survey takes 5 to 20 seconds (it improves the route one change at a time, not every combination).
-- The survey is CPU-heavy (a few seconds per tender); the worker hides it. Golden surveys run on every core (`surveyAll` in `test/golden-case.js`), so a full golden run is about 2 minutes on 4 cores; a headless game is still one month after another (10-25 s a month).
+- The survey is CPU-heavy (a few seconds per tender); the worker hides it, and the month report is its loading screen: the new month's work starts surveying as the report opens, and the report shows each job's progress ("The surveyor is out", `surveyorPanel` in `ui/sheets.js`). Golden surveys run on every core (`surveyAll` in `test/golden-case.js`), so a full golden run is about 2 minutes on 4 cores; a headless game is still one month after another (10-25 s a month).
 - `prototype/` was removed in the restructure; the original single-file build is in the first commit if a comparison is needed.
