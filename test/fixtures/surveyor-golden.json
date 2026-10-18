@@ -2547,5 +2547,36 @@
   "relaxed": false,
   "slots": 0,
   "temp": 18
+ },
+ {
+  "case": {
+   "k": "station",
+   "tn": "chains",
+   "month": 3,
+   "ev": null,
+   "cb": "paradox",
+   "chain": [
+    "escalator",
+    "doors"
+   ],
+   "seed": 4110
+  },
+  "twists": [],
+  "goals": {
+   "through": 351,
+   "wait": 95,
+   "bumps": 4,
+   "minTemp": null,
+   "maxTemp": null,
+   "access": false,
+   "laps": null
+  },
+  "par": "e2S|d2G",
+  "cost": 1500,
+  "fee": 10000,
+  "budget": 7000,
+  "relaxed": false,
+  "slots": 0,
+  "temp": 18
  }
 ]

@@ -44,6 +44,7 @@ export const PARADOX_CALLS = {
   travelator: [{ kinds: ['skyport'], stage: 'walkway', text: 'Skyport wants moving walkways down the long pier, but they\'ve heard they can make things worse.' }],
   markings: [{ kinds: ['skyport'], stage: 'carousel', text: 'Bags are taking forever at reclaim, and passengers crowd the belt. They\'ve heard a painted line helps.' }],
   permits: [{ kinds: ['galleria'], stage: 'braess', text: 'The Galleria\'s new footbridge was meant to speed things up. Since it opened, getting out has been slower.' }],
+  chains: [{ kinds: ['station'], chain: ['escalator', 'doors'], text: 'Station Quarter wants the evening looked at as one route: the escalators up from the platforms and the gate line together. Every fix so far has just moved the queue.' }],
   stewarding: [{ kinds: ['arena'], chain: ['queue', 'escalator', 'bottleneck'], text: 'Apollo Arena has a sell-out coming. Every time they fix one crush, another appears further in.' }],
   turnstiles: [{ kinds: ['stadium'], chain: ['doors', 'queue', 'bottleneck'], text: 'Riverside Stadium has new turnstiles, and fans get through them faster than ever. Now the crush is at the bag search.' }],
 };

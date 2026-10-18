@@ -11,6 +11,8 @@ export const TECHS = {
   inside: { barriers: 1, pillars: 1, stewarding: 1, escalators: 1, markings: 1, zoning: 1, paternoster: 1, travelator: 1, permits: 1 },
   // the Stadium: turnstiles (a door stage of ticket gates), with gate-line staff
   stadium: { barriers: 1, pillars: 1, stewarding: 1, gates: 1, turnstiles: 1, doorman: 1 },
+  // the Station's whole route (Chain modelling): the escalators and the gate line
+  chains: { barriers: 1, escalators: 1, gates: 1, tidal: 1, doorman: 1, chains: 1 },
 };
 // A case: k (client), tn (tech), month, seed, and one of:
 //   a door job: first (first visit), ev (event), cb (callback reason);

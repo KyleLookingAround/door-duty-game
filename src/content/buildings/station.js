@@ -6,8 +6,16 @@ export default {
   // a station only gets the twists that make sense at a gate line
   twistPool: ['fragile', 'stepfree', 'rain', 'surge', 'bikes', 'narrow'],
   doorTypes: ['wall', 'gates'],
-  inside: { escalator: { count: 2, rule: 'walk' } },   // the deep escalators up from the platforms
-  tune: { escalator: { twists: { shoppers: { label: 'Luggage', text: 'Travellers with cases stand still on the steps.' } } } },
+  inside: { escalator: { count: 2, rule: 'walk' }, doors: { bays: 2, type: 'gates' } },   // the deep escalators up from the platforms, and the gate line
+  tune: {
+    escalator: { twists: { shoppers: { label: 'Luggage', text: 'Travellers with cases stand still on the steps.' } } },
+    // the gate line as a stage of a whole-route job (Chain modelling): passengers off the escalators, out through the gates
+    doors: { name: 'Gate line', about: 'Passengers tap out one at a time. Only a wide aisle takes a wheelchair or a bike.', params: { width: 3, types: ['gates'], mix: { case: 0.1, wheel: 0.02 } },
+      twists: {
+        kickoff: { label: 'Late trains', text: 'Two trains held outside, then in together: half the evening crowd arrives at once.' },
+        paper: { label: 'Machines down', text: 'The ticket machines are down and everyone has a paper ticket: slower through every gate.' },
+      } },
+  },
   site({ S, n, HW, cx, last }) {
     // ticket machines on the street side, the departure board and the escalators down to the platforms
     S.obstacles.push({ kind: 'rect', x0: -HW + 0.15, x1: -HW + 0.75, y0: -1.75, y1: -1.35, tag: 'machines' });
