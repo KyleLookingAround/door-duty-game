@@ -45,6 +45,7 @@ export const PARADOX_CALLS = {
   markings: [{ kinds: ['skyport'], stage: 'carousel', text: 'Bags are taking forever at reclaim, and passengers crowd the belt. They\'ve heard a painted line helps.' }],
   permits: [{ kinds: ['galleria'], stage: 'braess', text: 'The Galleria\'s new footbridge was meant to speed things up. Since it opened, getting out has been slower.' }],
   stewarding: [{ kinds: ['arena'], chain: ['queue', 'escalator', 'bottleneck'], text: 'Apollo Arena has a sell-out coming. Every time they fix one crush, another appears further in.' }],
+  turnstiles: [{ kinds: ['stadium'], chain: ['doors', 'queue', 'bottleneck'], text: 'Riverside Stadium has new turnstiles, and fans get through them faster than ever. Now the crush is at the bag search.' }],
 };
 
 // can this client make this call (or send this enquiry)?

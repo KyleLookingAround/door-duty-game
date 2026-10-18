@@ -14,7 +14,7 @@ import { stageTwist } from '../src/game/briefs.js';
 
 const ALL = { barriers: 1, escalators: 1, markings: 1, zoning: 1, paternoster: 1, travelator: 1, permits: 1, stewarding: 1, doorman: 1 };
 // where each stage is usually played
-const HOME = { queue: 'bank', escalator: 'station', lifts: 'towers', paternoster: 'townhall', walkway: 'skyport', carousel: 'skyport', braess: 'galleria', bottleneck: 'arena' };
+const HOME = { queue: 'bank', escalator: 'station', lifts: 'towers', paternoster: 'townhall', walkway: 'skyport', carousel: 'skyport', braess: 'galleria', bottleneck: 'arena', doors: 'stadium' };
 const job = (stage, seed, tier = 2, kind = HOME[stage]) => makeContract(kind, tier, 3, seed, { stage, tech: ALL });
 const mean = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
 
@@ -92,6 +92,24 @@ test('paternoster: a stairs sign helps a wedding day; an attendant stops a schoo
   assert.ok(school - schoolA > (run([], {}) - plainA), `the attendant matters more on a school trip: ${school} -> ${schoolA}`);
   const call = makeContract('townhall', 4, 3, 5, { stage: 'paternoster', tech: ALL, callback: 'paradox' });
   assert.ok(STAGES.paternoster.candidates(call, ALL).every(d => !d.stairs), 'a research call is about the loop speed');
+});
+test('doors as a stage: fed or on its own, everyone handed in comes out; more bays move a crowd faster', () => {
+  const c = makeContract('skyport', 3, 3, 21, { stage: 'doors', tech: ALL });
+  const run = d => runStage(c, { stage: 'doors', bays: 2, type: 'slider', staff: false, wide: false, ...d }, ALL);
+  const one = run({ bays: 1 }), four = run({ bays: 4 });
+  assert.ok(four.through === four.spawned && !four.lost, 'everyone gets through sliders');
+  assert.ok(four.wait < one.wait, `four bays beat one: ${four.wait} against ${one.wait}`);
+  // revolving doors and cases: the arrivals doors' lesson
+  assert.ok(run({ type: 'revolve' }).wait > run({}).wait, 'revolving doors are slower for people with cases');
+  // fed from the stage before: a chained level hands everyone on, and the doors count them out
+  const ch = makeContract('skyport', 3, 3, 22, { stage: 'chain', chain: ['carousel', 'doors'], tech: ALL });
+  const r = runStage(ch, { stage: 'chain', parts: [{ ...ch.existing.parts[0] }, { stage: 'doors', bays: 4, type: 'slider', staff: false, wide: false }] }, ALL);
+  assert.ok(r.through === r.parts[1].handed && r.through > 20, `everyone off the belt goes out through the doors: ${r.through} of ${r.parts[1].handed}`);
+  // a gate line's people need the wide aisle
+  const g = makeContract('skyport', 3, 3, 23, { stage: 'doors', tech: ALL });
+  g.params.types = ['gates']; g.crowd.mix = { wheel: 0.1 };
+  assert.ok(runStage(g, { stage: 'doors', bays: 3, type: 'gates', staff: false, wide: false }, ALL).lost > 0, 'no wide aisle: wheelchairs can\'t get through');
+  assert.equal(runStage(g, { stage: 'doors', bays: 3, type: 'gates', staff: false, wide: true }, ALL).lost, 0);
 });
 test('counter hall: lunchtime cover beats a full desk on a lunch-rush day, not an opening rush; an express desk speeds a quick day', () => {
   const run = (extra, d) => { const w = []; for (let s = 0; s < 10; s++) { const c = makeContract('bank', 3, 3, 700 + s, { stage: 'queue', tech: ALL, extra }); w.push(runStage(c, { stage: 'queue', layout: 'snake', express: false, cover: 0, ...d }, ALL).wait); } return mean(w); };

@@ -2485,5 +2485,67 @@
   "relaxed": false,
   "slots": 0,
   "temp": 18
+ },
+ {
+  "case": {
+   "k": "stadium",
+   "tn": "stadium",
+   "month": 3,
+   "ev": null,
+   "stage": "doors",
+   "seed": 4108
+  },
+  "twists": [
+   "paper"
+  ],
+  "goals": {
+   "through": 153,
+   "wait": 7,
+   "bumps": 7,
+   "minTemp": null,
+   "maxTemp": null,
+   "access": false,
+   "laps": null
+  },
+  "par": "d3GS",
+  "cost": 11500,
+  "fee": 21000,
+  "budget": 20500,
+  "relaxed": false,
+  "slots": 0,
+  "temp": 18
+ },
+ {
+  "case": {
+   "k": "stadium",
+   "tn": "stadium",
+   "month": 3,
+   "ev": null,
+   "chain": [
+    "doors",
+    "queue",
+    "bottleneck"
+   ],
+   "seed": 4109
+  },
+  "twists": [
+   "paper"
+  ],
+  "goals": {
+   "through": 157,
+   "wait": 63,
+   "bumps": 9,
+   "minTemp": null,
+   "maxTemp": null,
+   "access": false,
+   "laps": null
+  },
+  "par": "d2GS|q7L|o6",
+  "cost": 34000,
+  "fee": 53500,
+  "budget": 54000,
+  "relaxed": false,
+  "slots": 0,
+  "temp": 18
  }
 ]

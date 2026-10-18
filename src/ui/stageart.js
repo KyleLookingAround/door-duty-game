@@ -1,7 +1,7 @@
 // Drawing the inside jobs on the job screen's canvas. One function per stage, in metres, centred on (0, 0).
 // The canvas has already been translated to the centre and scaled; lw is one screen pixel in metres.
 import { BUILDING } from '../content/buildings/index.js';
-import { TAU } from '../engine/world.js';
+import { TAU, SLOT_W, WORLD_HH } from '../engine/world.js';
 import { STAGES, stageName } from '../engine/stages/index.js';
 import { drawPerson } from './canvas.js';
 
@@ -205,18 +205,55 @@ const ART = {
     // the openings into the arena
     c.fillStyle = '#4a4060'; c.fillRect(X0 + LEN, -WD / 2 - 0.4, 0.5, WD + 0.8);
     for (let k = 0; k < d.openings; k++) { const y = ((k + 0.5) / d.openings - 0.5) * (WD - 0.6); c.fillStyle = INK; c.fillRect(X0 + LEN, y - 0.3, 0.5, 0.6); }
-    label(c, lw, 'ARENA', X0 + LEN + 0.25, -WD / 2 - 0.65, { size: 8 });
+    label(c, lw, P.into || 'ARENA', X0 + LEN + 0.25, -WD / 2 - 0.65, { size: 8 });
     if (d.metering) { c.fillStyle = BRASS; for (const y of [-WD / 2 + 0.3, WD / 2 - 0.3]) { c.beginPath(); c.arc(X0 + 0.2, y, 0.16, 0, TAU); c.fill(); } label(c, lw, 'STEWARDS', X0 + 0.2, -WD / 2 - 0.3, { size: 8, color: BRASS }); }
     label(c, lw, `${rho.toFixed(1)} people per m²`, X0 + LEN - 0.2, WD / 2 + 0.45, { size: 8, align: 'right', color: rho > P.crush ? '#ef5b4c' : TEXT });
     for (const p of s.people) drawPerson(c, p);
     fx(c, W, t);
   },
+  // a frontage across the route: the door physics' own doors, drawn simply; people walk up through them
+  doors(c, W, t, lw) {
+    const w = W.world.world, P = W.contract.params, bw = P.width * SLOT_W, bh = 2 * WORLD_HH;
+    floor(c, W.contract.kind, bw, bh);
+    c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(-bw / 2, -bh / 2, bw, bh / 2);
+    walls(c, lw, bw, bh);
+    for (const d of w.doors) {
+      const x0 = d.cx - SLOT_W / 2;
+      if (d.type === 'wall') { c.fillStyle = '#4b5560'; c.fillRect(x0, -0.11, SLOT_W, 0.22); continue; }
+      if (d.type === 'swing') {
+        const ang = (d.swing || 0) * 1.2;
+        c.fillStyle = '#4b5560'; c.fillRect(x0, -0.11, (SLOT_W - d.w) / 2, 0.22); c.fillRect(d.cx + d.w / 2, -0.11, (SLOT_W - d.w) / 2, 0.22);
+        c.strokeStyle = '#9cc4ec'; c.lineWidth = 0.06;
+        for (const sg of [-1, 1]) { const hx = d.cx + sg * d.w / 2; c.beginPath(); c.moveTo(hx, 0); c.lineTo(hx - sg * Math.cos(ang) * d.w / 2, -Math.sin(ang) * d.w / 2); c.stroke(); }
+      } else if (d.type === 'slider') {
+        const g = d.w * (d.open || 0) / 2;
+        c.fillStyle = '#4b5560'; c.fillRect(x0, -0.11, (SLOT_W - d.w) / 2, 0.22); c.fillRect(d.cx + d.w / 2, -0.11, (SLOT_W - d.w) / 2, 0.22);
+        c.fillStyle = 'rgba(156,196,236,0.85)'; c.fillRect(d.cx - d.w / 2, -0.06, d.w / 2 - g, 0.12); c.fillRect(d.cx + g, -0.06, d.w / 2 - g, 0.12);
+      } else if (d.type === 'revolve') {
+        c.fillStyle = '#2b2722'; c.beginPath(); c.arc(d.cx, 0, d.R, 0, TAU); c.fill();
+        c.strokeStyle = 'rgba(190,220,245,0.75)'; c.lineWidth = 0.07;
+        for (let k = 0; k < d.wings; k++) { const a = d.phi + k * TAU / d.wings; c.beginPath(); c.moveTo(d.cx, 0); c.lineTo(d.cx + Math.cos(a) * d.R, Math.sin(a) * d.R); c.stroke(); }
+        c.strokeStyle = BRASS; c.lineWidth = 0.08;
+        const th = d.mouth * Math.PI / 180;
+        for (const a0 of [-Math.PI / 2 + th, Math.PI / 2 + th]) { c.beginPath(); c.arc(d.cx, 0, d.R + 0.03, a0, a0 + Math.PI - 2 * th); c.stroke(); }
+      } else if (d.type === 'gates') {
+        for (const b of d.cabs) { c.fillStyle = '#3a404b'; c.fillRect(d.cx + b - d.cabHalf, -0.5, d.cabHalf * 2, 1.0); }
+        for (const l of d.gl) if (l.open <= 0) { c.strokeStyle = BRASS; c.lineWidth = 0.07; c.beginPath(); c.moveTo(l.x - l.hw, 0); c.lineTo(l.x + l.hw, 0); c.stroke(); }
+        if (d.wide) label(c, lw, 'WIDE', d.cx, 0.85, { size: 7, color: BRASS });
+      }
+      if (d.doorman) { c.fillStyle = BRASS; c.beginPath(); c.arc(d.cx + SLOT_W / 2 - 0.3, -0.45, 0.17, 0, TAU); c.fill(); }
+    }
+    for (const p of W.world.people) drawPerson(c, p);
+    fx(c, W, t);
+  },
 };
 
+// a stage's drawing area: fixed, or set by the level (a door stage is as wide as its frontage)
+const boxOf = (k, sub) => STAGES[k].boxOf ? STAGES[k].boxOf(sub) : STAGES[k].box;
 // a chained level lays its stages out in a row on a wide screen, stacked on a narrow one
 export function stageLayout(contract, wide) {
-  if (!contract.chain) { const b = STAGES[contract.stage].box; return { w: b.w, h: b.h, parts: [{ x: 0, y: 0, box: b }] }; }
-  const boxes = contract.chain.map(k => STAGES[k].box), gap = 1.2;
+  if (!contract.chain) { const b = boxOf(contract.stage, contract); return { w: b.w, h: b.h, parts: [{ x: 0, y: 0, box: b }] }; }
+  const boxes = contract.chain.map((k, i) => boxOf(k, contract.parts[i])), gap = 1.2;
   if (wide) {
     const w = boxes.reduce((a, b) => a + b.w, 0) + gap * (boxes.length - 1), h = Math.max(...boxes.map(b => b.h));
     let x = -w / 2;

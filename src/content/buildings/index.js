@@ -16,9 +16,10 @@ import towers from './towers.js';
 import skyport from './skyport.js';
 import galleria from './galleria.js';
 import arena from './arena.js';
+import stadium from './stadium.js';
 import { SLOT_W } from '../../engine/world.js';
 
-export const BUILDINGS = [cafe, pharmacy, bank, office, hotel, library, store, townhall, station, museum, cinema, gym, clinic, towers, skyport, galleria, arena];
+export const BUILDINGS = [cafe, pharmacy, bank, office, hotel, library, store, townhall, station, museum, cinema, gym, clinic, towers, skyport, galleria, arena, stadium];
 export const BUILDING = Object.fromEntries(BUILDINGS.map(b => [b.key, b]));
 export const KINDS = Object.fromEntries(BUILDINGS.map(b => [b.key, b.kind]));
 export const PLOTS = BUILDINGS.map(b => ({ ...b.plot, kind: b.key }));

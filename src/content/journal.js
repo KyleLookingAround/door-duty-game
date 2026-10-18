@@ -25,6 +25,7 @@ export const JOURNAL = {
   markings: ['A tin of paint', 'A line a step back from the baggage belt gets everyone their bags sooner than a second carousel.'],
   permits: ['Braess\'s paradox', 'A shortcut everyone takes crowds both pinch points. Close it and everyone is quicker. Unless the long way really is long.'],
   stewarding: ['The moving bottleneck', 'Holding a crowd back can get it in faster; and fix one crush, and it moves to the next stage.'],
+  turnstiles: ['Through the gate, into the crush', 'Turnstiles set how fast the space behind them fills. More of them only helps if the bag search and the concourse can keep up.'],
 };
 
 // The local paper. Each kind has a few headlines; the month picks one (no dice: the same month, the same paper).

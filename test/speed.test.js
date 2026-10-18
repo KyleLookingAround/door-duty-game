@@ -16,6 +16,7 @@ test('surveys finish within their budgets', { skip: !full && 'SPEED=1 only (the 
     ['a research call with its lesson', 40, () => time(makeContract('office', 4, 11, 21, { callback: 'paradox', existing: [REV, { type: 'wall' }, { type: 'wall' }], need: ['surge'], lesson: 'core', tech: TECHS.mid }), TECHS.mid)],
     ['a station escalator job', 15, () => time(makeContract('station', 3, 3, 5, { stage: 'escalator', tech: TECHS.inside, extra: ['evening'] }), TECHS.inside)],
     ['the Arena chain', 60, () => time(makeContract('arena', 3, 3, 4107, { stage: 'chain', chain: ['queue', 'escalator', 'bottleneck'], tech: TECHS.inside }), TECHS.inside)],
+    ['the Stadium chain (turnstiles on the door physics)', 60, () => time(makeContract('stadium', 3, 3, 4109, { stage: 'chain', chain: ['doors', 'queue', 'bottleneck'], tech: TECHS.stadium }), TECHS.stadium)],
   ];
   const over = [];
   for (const [what, budget, run] of rows) {

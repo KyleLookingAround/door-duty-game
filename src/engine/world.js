@@ -149,7 +149,8 @@ export class World {
     return best;
   }
 
-  spawn(dir, atX) {
+  // forced: who this is (a door stage in a chained level hands on the person from the stage before)
+  spawn(dir, atX, forced) {
     const m = this.cfg.crowd.mix || {};
     const u = this.rng();
     let type = 'normal', acc = 0;
@@ -159,6 +160,7 @@ export class World {
     // step-free jobs always see at least one wheelchair user early, so a design can't pass by luck
     if (m.wheel && !this.wheelSeen && this.stats.spawned === 3) type = 'wheel';
     if (type === 'wheel') this.wheelSeen = true;
+    if (forced) type = forced;
     const g = GUEST[type];
     const lerp = (a, t) => a[0] + (a[1] - a[0]) * t;
     let x = (this.rng() * 2 - 1) * (this.HW - 0.4);
@@ -176,9 +178,9 @@ export class World {
     p.door = this.chooseDoor(p);
     this.stats.spawned++;
     if (p.door < 0) { this.stats.turnedAway++; if (g.stepfree) this.stats.accessFail++; if (type === 'bike') this.stats.bikeFail++; this.events.push({ type: 'away', who: type, x: Math.max(-this.HW + 1.2, Math.min(this.HW - 1.2, x)), y: -dir * (this.HH - 0.9), t: this.t }); return true; }
-    if (this.queueAt(this.doors[p.door], dir) > 22) { this.stats.turnedAway++; return true; }
+    if (!this.cfg.patient && this.queueAt(this.doors[p.door], dir) > 22) { this.stats.turnedAway++; return true; }   // inside a building (a door stage), nobody walks off
     this.people.push(p);
-    return true;
+    return p;
   }
 
   step(dt) {
@@ -328,7 +330,7 @@ export class World {
               const ay = -p.y * p.dir;   // distance in front of the paddle
               if (ay > -0.12 && ay < 0.9 && Math.abs(p.x - l.x) < 0.32 && ay < ny) { ny = ay; nb = p; }
             }
-            if (nb) { l.user = nb; nb.tapT = TAP[nb.type] * (d.doorman ? 0.6 : 1) * (0.85 + this.rng() * 0.3); }
+            if (nb) { l.user = nb; nb.tapT = TAP[nb.type] * (d.doorman ? 0.6 : 1) * (this.cfg.tapK || 1) * (0.85 + this.rng() * 0.3); }
           }
           l.switchT = Math.max(0, l.switchT - dt);
           if (l.user && (l.user.state === 'after' || l.user.dead)) l.user = null;
@@ -456,7 +458,7 @@ export class World {
           p.state = 'after';
           if (p.lane && p.lane.l.user === p) p.lane.l.user = null;
           if (this.alarm) this.stats.evacuated = (this.stats.evacuated || 0) + 1;   // the drill doesn't count as rush-hour traffic
-          else { this.stats.through++; if (p.born != null) (this.waits || (this.waits = [])).push(this.t - p.born); }
+          else { this.stats.through++; if (p.born != null) (this.waits || (this.waits = [])).push(this.t - p.born); if (this.onPass) this.onPass(p); }
           this.events.push({ type: 'through', x: p.x, y: p.y, t: this.t });
           // fire-exit capacity: about 1.3 people per metre of door width per second
           if (this.alarm) dd.passT = 1 / (1.3 * (dd.folded ? 1.2 : dd.w || 1.2));
@@ -490,7 +492,7 @@ export class World {
       p.accum += da; p.lastA = ang;
       if (Math.abs(p.accum) > Math.PI + th + 0.35 + p.laps * TAU) { p.laps++; this.stats.laps++; this.events.push({ type: 'lap', x: p.x, y: p.y, t: this.t }); }
       if (dist > d.R + p.r * 0.4) {
-        if (ly * p.dir > 0) { p.state = 'after'; if (this.alarm) this.stats.evacuated = (this.stats.evacuated || 0) + 1; else { this.stats.through++; (this.waits || (this.waits = [])).push(this.t - p.born); } this.events.push({ type: 'through', x: p.x, y: p.y, t: this.t }); }
+        if (ly * p.dir > 0) { p.state = 'after'; if (this.alarm) this.stats.evacuated = (this.stats.evacuated || 0) + 1; else { this.stats.through++; (this.waits || (this.waits = [])).push(this.t - p.born); if (this.onPass) this.onPass(p); } this.events.push({ type: 'through', x: p.x, y: p.y, t: this.t }); }
         else p.state = 'approach';
       } else {
         const k = Math.floor(modT(ang - d.phi) / S), s0 = d.phi + k * S;
