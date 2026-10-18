@@ -10,9 +10,10 @@ import braess from './braess.js';
 import bottleneck from './bottleneck.js';
 import doors from './doors.js';
 import security from './security.js';
+import boarding from './boarding.js';
 import { makeChain } from './chain.js';
 
-export const STAGE_LIST = [queue, escalator, lifts, paternoster, walkway, carousel, braess, bottleneck, doors, security];
+export const STAGE_LIST = [queue, escalator, lifts, paternoster, walkway, carousel, braess, bottleneck, doors, security, boarding];
 export const STAGES = Object.fromEntries(STAGE_LIST.map(s => [s.key, s]));
 STAGES.chain = makeChain(STAGES);
 // what a client calls a stage (the arena's queue is its bag check)

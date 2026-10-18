@@ -6,8 +6,8 @@ export default {
   key: 'skyport',
   plot: { name: 'Skyport Terminal', rep: 30, street: 'riverside', needs: ['travelator'], why: 'The new terminal wants a firm that knows travelators' },
   kind: { label: 'Airport', slots: 3, in: 1, out: 1, mix: { case: 0.4 }, hook: { twists: [], temp: 12 } },
-  jobs: [{ stage: 'walkway' }, { stage: 'carousel' }, { chain: ['walkway', 'carousel'] }, { stage: 'security', needs: 'security' }, { chain: ['doors', 'queue', 'security'], needs: 'security' }],
-  inside: { walkway: { belt: 0 }, carousel: { belts: 1 }, security: { lanes: 3, searchers: 3 }, doors: { bays: 1, type: 'revolve' }, queue: { desks: 4 } },
+  jobs: [{ stage: 'walkway' }, { stage: 'carousel' }, { chain: ['walkway', 'carousel'] }, { stage: 'security', needs: 'security' }, { chain: ['doors', 'queue', 'security'], needs: 'security' }, { stage: 'boarding', needs: 'boarding' }],
+  inside: { walkway: { belt: 0 }, carousel: { belts: 1 }, security: { lanes: 3, searchers: 3 }, doors: { bays: 1, type: 'revolve' }, queue: { desks: 4 }, boarding: { method: 'backfront' } },
   // departures: the doors in from the kerb, the check-in desks and security
   tune: {
     doors: { name: 'Terminal doors', about: 'The doors in from the drop-off kerb. Everyone has a case or a trolley.', rate: 0.3, params: { width: 4, arrive: 120, types: ['revolve', 'slider', 'swing'], mix: { case: 0.45, elderly: 0.1 } },

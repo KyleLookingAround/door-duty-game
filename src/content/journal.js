@@ -24,6 +24,7 @@ export const JOURNAL = {
   travelator: ['Leave room to step off', 'A moving walkway speeds people up, then they pile up where it ends. A shorter walkway in the right place beats one to the desks.'],
   markings: ['A tin of paint', 'A line a step back from the baggage belt gets everyone their bags sooner than a second carousel.'],
   permits: ['Braess\'s paradox', 'A shortcut everyone takes crowds both pinch points. Close it and everyone is quicker. Unless the long way really is long.'],
+  boarding: ['Back to front is slower', 'Boarding the back rows first piles everyone into the same part of the aisle. Any order spreads them out; windows first means nobody stands up to let anyone in.'],
   security: ['The trays, not the scanner', 'A scanner waiting for people to unload won\'t go faster with a second one beside it. More places to unload, and room to repack, move more people for less.'],
   chains: ['The slowest stage moves', 'Fix the escalators and the queue turns up at the gate line instead. A route is only as quick as its slowest stage, and fixing that one makes another the slowest.'],
   stewarding: ['The moving bottleneck', 'Holding a crowd back can get it in faster; and fix one crush, and it moves to the next stage.'],

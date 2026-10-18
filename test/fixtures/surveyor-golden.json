@@ -2639,5 +2639,62 @@
   "relaxed": false,
   "slots": 0,
   "temp": 18
+ },
+ {
+  "case": {
+   "k": "skyport",
+   "tn": "airport",
+   "month": 3,
+   "ev": null,
+   "cb": "paradox",
+   "stage": "boarding",
+   "seed": 4113
+  },
+  "twists": [],
+  "goals": {
+   "through": 89,
+   "wait": 281,
+   "bumps": 0,
+   "minTemp": null,
+   "maxTemp": null,
+   "access": false,
+   "laps": null
+  },
+  "par": "bOS",
+  "cost": 2000,
+  "fee": 10500,
+  "budget": 7000,
+  "relaxed": false,
+  "slots": 0,
+  "temp": 18
+ },
+ {
+  "case": {
+   "k": "skyport",
+   "tn": "airport",
+   "month": 3,
+   "ev": null,
+   "stage": "boarding",
+   "seed": 4114
+  },
+  "twists": [
+   "handluggage"
+  ],
+  "goals": {
+   "through": 72,
+   "wait": 186,
+   "bumps": 0,
+   "minTemp": null,
+   "maxTemp": null,
+   "access": false,
+   "laps": null
+  },
+  "par": "bRG",
+  "cost": 2000,
+  "fee": 8500,
+  "budget": 7000,
+  "relaxed": false,
+  "slots": 0,
+  "temp": 18
  }
 ]

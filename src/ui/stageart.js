@@ -236,6 +236,24 @@ const ART = {
     for (const p of s.people) drawPerson(c, p);
     fx(c, W, t);
   },
+  // boarding: the gate on the left, then a single-aisle plane, its rows of seats either side
+  boarding(c, W, t, lw) {
+    const s = W.world, d = W.design, P = W.contract.params, box = STAGES.boarding.box, X0 = -6.2, RW = 0.8, L = P.rows * RW;
+    floor(c, W.contract.kind, box.w, box.h);
+    label(c, lw, 'GATE', -8.2, box.h / 2 - 0.3, { size: 8 });
+    // the fuselage
+    c.fillStyle = '#d9dee6'; c.beginPath(); c.moveTo(X0 - 0.4, -2.3); c.lineTo(X0 + L + 0.2, -2.3); c.quadraticCurveTo(X0 + L + 1.6, 0, X0 + L + 0.2, 2.3); c.lineTo(X0 - 0.4, 2.3); c.quadraticCurveTo(X0 - 1.6, 0, X0 - 0.4, -2.3); c.fill();
+    c.fillStyle = '#c5ccd6'; c.fillRect(X0, -0.22, L, 0.44);
+    for (let r = 1; r <= P.rows; r++) for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) {
+      const taken = s.seated.has(r + (sd < 0 ? 'CBA' : 'DEF')[k]);
+      c.fillStyle = taken ? '#6f7f99' : '#8fa0bb'; c.fillRect(X0 + (r - 1) * RW + 0.12, sd * (0.42 + 0.55 * k) - 0.2, RW - 0.24, 0.4);
+    }
+    label(c, lw, 'FRONT DOOR', X0 - 0.2, -2.55, { size: 7 });
+    if (d.rear) label(c, lw, 'REAR STAIRS', X0 + L, -2.55, { size: 7, color: BRASS });
+    label(c, lw, { random: 'ANY ORDER', backfront: 'BACK TO FRONT', outsidein: 'WINDOWS FIRST' }[d.method] + (d.staff ? ' · GATE STAFF' : '') + (d.gatecheck ? ' · BAGS CHECKED' : ''), X0 + L / 2, 2.75, { size: 8, color: BRASS });
+    for (const p of s.people) drawPerson(c, p);
+    fx(c, W, t);
+  },
   // a frontage across the route: the door physics' own doors, drawn simply; people walk up through them
   doors(c, W, t, lw) {
     const w = W.world.world, P = W.contract.params, bw = P.width * SLOT_W, bh = 2 * WORLD_HH;

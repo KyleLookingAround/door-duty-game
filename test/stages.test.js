@@ -14,7 +14,7 @@ import { stageTwist } from '../src/game/briefs.js';
 
 const ALL = { barriers: 1, escalators: 1, markings: 1, zoning: 1, paternoster: 1, travelator: 1, permits: 1, stewarding: 1, doorman: 1 };
 // where each stage is usually played
-const HOME = { queue: 'bank', escalator: 'station', lifts: 'towers', paternoster: 'townhall', walkway: 'skyport', carousel: 'skyport', braess: 'galleria', bottleneck: 'arena', doors: 'stadium', security: 'skyport' };
+const HOME = { queue: 'bank', escalator: 'station', lifts: 'towers', paternoster: 'townhall', walkway: 'skyport', carousel: 'skyport', braess: 'galleria', bottleneck: 'arena', doors: 'stadium', security: 'skyport', boarding: 'skyport' };
 const job = (stage, seed, tier = 2, kind = HOME[stage]) => makeContract(kind, tier, 3, seed, { stage, tech: ALL });
 const mean = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
 
@@ -128,6 +128,14 @@ test('Skyport\'s security and departures wait for Security lanes', () => {
   const before = kinds({ travelator: 1 }), after = kinds({ travelator: 1, security: 1 });
   assert.ok(!before.has('security') && !before.has('doors+queue+security'), [...before].join());
   assert.ok(after.has('security') && after.has('doors+queue+security'), [...after].join());
+});
+test('paradox: boarding back to front is slower than any order; windows first is quicker still', () => {
+  const run = d => mean(Array.from({ length: 6 }, (_, s) => { const c = makeContract('skyport', 3, 3, 600 + s, { stage: 'boarding', tech: ALL }); return runStage(c, { stage: 'boarding', method: 'backfront', staff: false, gatecheck: false, rear: false, ...d }, ALL).wait; }));
+  const back = run({}), strict = run({ staff: true }), any = run({ method: 'random' }), windows = run({ method: 'outsidein', staff: true });
+  assert.ok(any < back && back < strict, `any order ${any}, back to front ${back}, kept strictly ${strict}`);
+  assert.ok(windows < any, `windows first ${windows}`);
+  const call = makeContract('skyport', 4, 3, 5, { stage: 'boarding', tech: ALL, callback: 'paradox' });
+  assert.ok(STAGES.boarding.candidates(call, ALL).every(d => !d.gatecheck && !d.rear), 'a research call is about the order');
 });
 test('counter hall: lunchtime cover beats a full desk on a lunch-rush day, not an opening rush; an express desk speeds a quick day', () => {
   const run = (extra, d) => { const w = []; for (let s = 0; s < 10; s++) { const c = makeContract('bank', 3, 3, 700 + s, { stage: 'queue', tech: ALL, extra }); w.push(runStage(c, { stage: 'queue', layout: 'snake', express: false, cover: 0, ...d }, ALL).wait); } return mean(w); };
