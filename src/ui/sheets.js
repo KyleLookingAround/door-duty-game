@@ -7,6 +7,9 @@ import { RIVAL } from '../content/town.js';
 import { TWISTS } from '../content/twists.js';
 import { STAGES, stageName, stageAbout } from '../engine/stages/index.js';
 import { MONTHS, candidates } from '../game/contracts.js';
+import { townDay } from '../game/townday.js';
+import { playTownDay, replayTownDay, townDayOutcome } from './townday.js';
+import { footfallLine, footfallOf, footfallReport } from '../game/footfall.js';
 import { advertCost, charge, costMult, feeOf, insurance, isMastered, jobsLeft, jobsPerMonth, monthlyIncome, overheads, prem, rep, rivalActive, serviceCost, techName, techOf, upkeep, loyalty } from '../game/economy.js';
 import { advice, hasWork } from '../game/enquiries.js';
 import { bookedText, callText, headline, isResearchCall, jobLabel, journal, movingText, stageTwist } from '../game/briefs.js';
@@ -81,7 +84,7 @@ export async function openBrief(i, fromWorkshop) {
     ${BUILDING[p.kind].brief ? BUILDING[p.kind].brief(c) : ''}
     ${c.opts && c.opts.callback === 'botched' ? '<p class="note"><strong style="color:var(--brass)">Rescue job.</strong> Put right what Brassworks fitted, and the client pays 30% more margin.</p>' : ''}
     ${c.event ? (() => { const ev = Object.values(EVENTS).find(e => e.key === c.event); return `<p><strong style="color:var(--brass)">${ev.label}.</strong> ${ev.text} Seasonal work: 25% more margin.</p>`; })() : ''}
-    ${c.twists.length ? c.twists.map(t => `<p><strong style="color:var(--text)">${twistLabel(t)}.</strong> ${TWISTS[t] ? TWISTS[t].text : ''}</p>`).join('') : '<p>A straightforward job.</p>'}
+    ${c.twists.length ? c.twists.map(t => `<p><strong style="color:var(--text)">${twistLabel(t)}.</strong> ${TWISTS[t] ? TWISTS[t].text : ''}</p>`).join('') : '<p>A straightforward job.</p>'}${footNote(p, c)}
     ${c.specialist ? '<p class="note"><strong style="color:var(--brass)">Specialist job.</strong> Only firms with the right R&amp;D get offered this one, so your margin is 60% bigger.</p>' : ''}
     ${c.novelty ? '<p class="note">The surveyor added a wrinkle because your recent jobs used the same answer.</p>' : ''}
     <div class="facts">
@@ -119,6 +122,9 @@ export async function openBrief(i, fromWorkshop) {
   $('bTake').onclick = () => { closeSheet(); openWorkshop(i); };
 }
 
+// footfall the job was drawn with (game/footfall.js): busier or quieter than the client's usual day
+const footNote = (p, c) => { const f = c.opts && c.opts.footfall, line = f && !c.first ? footfallLine(S, p, f) : null; return line ? `<p><strong style="color:var(--text)">${f > 1 ? 'Busier than usual' : 'Quieter than usual'}.</strong> ${line}</p>` : ''; };
+
 // the brief for an inside job: what the stage is, what's already there, the targets, and the paradox at stake
 function briefStage(p, c, i, fromWorkshop) {
   const k = KINDS[p.kind], g = c.goals, st = STAGES[c.stage];
@@ -130,7 +136,7 @@ function briefStage(p, c, i, fromWorkshop) {
     ${c.chain ? `<p><strong style="color:var(--brass)">${c.chain.length} stages, one crowd.</strong> Everyone goes through ${parts.map(x => stageName(c, x.st.key).toLowerCase()).join(', then ')}. Speed up one stage and the queue moves on to the next.</p>` : ''}
     ${parts.map(({ st: ps }) => `<p><strong style="color:var(--text)">${stageName(c, ps.key)}.</strong> ${stageAbout(c, ps.key)}</p>`).join('')}
     ${c.event ? (() => { const ev = Object.values(EVENTS).find(e => e.key === c.event); return `<p><strong style="color:var(--brass)">${ev.label}.</strong> A busier day than usual. Seasonal work: 25% more margin.</p>`; })() : ''}
-    ${c.twists.map(t => { const tw = stageTwist(c, t); return `<p><strong style="color:var(--text)">${tw.label}.</strong> ${tw.text}</p>`; }).join('')}
+    ${c.twists.map(t => { const tw = stageTwist(c, t); return `<p><strong style="color:var(--text)">${tw.label}.</strong> ${tw.text}</p>`; }).join('')}${footNote(p, c)}
     ${beforeLineStage(c)}
     <div class="facts">
       <div class="fact"><span>They pay you</span><b>${kmoney(feeOf(S, c))}</b></div>
@@ -305,6 +311,7 @@ export function openClient(i) {
       <li><span>Safety record at sign-off</span><span>${p.bumpRec || 0} bump${p.bumpRec === 1 ? '' : 's'} · ${p.stopRec || 0} stop${p.stopRec === 1 ? '' : 's'}</span></li>
       <li><span>Adds to your insurance</span><span>${money(45 * (p.bumpRec || 0) + 25 * (p.stopRec || 0))}/mo</span></li>
       <li class="${p.coped ? 'pass' : ''}"><span>Street changes their doors coped with</span><span>${p.coped ? `${p.coped} · +${Math.round((loyalty(p) - 1) * 100)}% fee` : 'none yet'}</span></li>
+      ${footfallLine(S, p) ? `<li class="${footfallOf(S, p) > 1 ? 'pass' : ''}"><span>${footfallLine(S, p)}</span><span>${footfallOf(S, p) > 1 ? '+' : '−'}${Math.round(Math.abs(footfallOf(S, p) - 1) * 50)}% fee</span></li>` : ''}
       <li class="${p.green ? 'pass' : ''}"><span>Green star · lobby kept snug</span><span>${p.green ? '+15% fee' : 'no'}</span></li>
       <li class="${p.cert ? 'pass' : ''}"><span>Inspection certificate</span><span>${p.cert ? '+10% fee' : 'not yet'}</span></li>
     </ul>
@@ -333,6 +340,7 @@ function wireSurveyor(list) {
       left--;
       const st = $('svs' + p.i), el = $('svb' + p.i);
       if (el) el.style.width = '100%';
+      if (was === 'checking') townDayOutcome(p.i, p.status === 'fitted');
       if (st) st.textContent = p.status === 'fitted' ? (was === 'checking' ? 'they coped: no job' : 'false alarm: no job') : was === 'checking' ? 'calling you back' : 'ready';
       head();
     });
@@ -346,7 +354,7 @@ export function initSheets() {
   // research never stops: a free bench has to be given a project (or a market study) first
   if (!benchesFilled(S)) { openCompany('research'); toast('A bench is free: choose research, or run a market study', true); return; }
   const rpt = endMonth(S), paper = headline(S, rpt);
-  const { research, lessonTenders, moved, moving, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry } = rpt;
+  const { research, lessonTenders, moved, moving, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry, footfall } = rpt;
   save();
   renderStreet();   // starts surveying the month's new work in the background
   const surveyingNow = surveying();
@@ -362,6 +370,7 @@ export function initSheets() {
       ${insp && !insp.pass ? `<li class="fail"><span>Inspection fine · ${insp.p.name}</span><span>−${money(INSPECTION_FINE)}</span></li>` : ''}
       <li><span><b>Cash now</b></span><span class="${S.cash < 0 ? 'neg' : ''}">${money(S.cash)}</span></li>
     </ul>
+    <div class="townday"><canvas id="tdCanvas" aria-label="A day on the street, sped up"></canvas><button class="ghost small" type="button" id="tdAgain">Watch the day again</button></div>
     ${surveyorPanel(surveyingNow)}
     ${insp ? `<p><strong style="color:${insp.pass ? 'var(--ok)' : 'var(--warn)'}">Inspection at ${insp.p.name}:</strong> ${insp.pass ? 'passed. They get a certificate of compliance, and pay you 10% more maintenance.' : !insp.access ? 'failed. There is no step-free way in. You have a callback to fix it.' : `failed on safety: ${insp.bumps} people clipped, the limit is ${insp.limit}. You have a callback to fix it.`}</p>` : ''}
     ${lost.length ? `<p><span class="hot">${RIVAL} won ${lost.map(p => p.name).join(' and ')}.</span> Tenders you leave sitting are fair game. Their work rarely lasts: expect the client back.</p>` : ''}
@@ -377,6 +386,7 @@ export function initSheets() {
     ${enquiry.lapsed.map(x => `<p><span class="hot">${x.p.name} stopped waiting</span> for ${techName(x.tech)}. ${x.rival ? `They've gone to ${RIVAL}. Expect them back when it goes wrong.` : 'They\'re a little less loyal for it.'}</p>`).join('')}
     ${enquiry.fresh ? (() => { const p = enquiry.fresh, e = p.enquiry, t = TECH.find(x => x.key === e.tech); return `<p><strong style="color:var(--brass)">Enquiry from ${p.name}.</strong> ${e.text} They need ${t.name} within ${e.by - S.month} months (${t.months} to research, ${kmoney(t.price)}). Have it ready and the job is yours, with a ${kmoney(e.bonus)} bonus.</p><div class="learn"><button class="ghost small" type="button" data-co="research">Open research</button></div>`; })() : ''}
     ${changes.map(ch => `<p><strong style="color:var(--text)">${CHANGE[ch.key].label}.</strong> ${changeText(ch, changeWhere(S, ch))} ${ch.checked.length ? `The surveyor is checking how your doors cope at ${ch.checked.map(p => p.name).join(', ')}. Only those that fall short will call.` : 'None of your clients is affected.'}</p>`).join('')}
+    ${(() => { const t = footfallReport(S, footfall); return t ? `<p><strong style="color:var(--text)">The town.</strong> ${t}</p>` : ''; })()}
     ${(() => { if (hasWork(S)) return calls.length ? '' : `<p>${inc ? 'Every fitted client is happy.' : 'Win a tender to start earning maintenance fees.'}</p>`; if (enquiry.fresh) return ''; const a = advice(S); return `<p><strong style="color:var(--text)">Nothing on the table.</strong> ${a ? a.text : 'Every fitted client is happy.'}</p>${a && a.tab ? `<div class="learn"><button class="ghost small" type="button" data-co="${a.tab}">Open ${a.tab}</button></div>` : ''}`; })()}
     ${evNow ? `<p><strong style="color:var(--brass)">${evNow.label} this month.</strong> ${evNow.text} Tenders pay 25% more margin.</p>` : ''}
     ${(() => { const nx = eventOf(S.month + 1); return nx ? `<p class="note">Next month: ${nx.label}.</p>` : ''; })()}
@@ -384,9 +394,10 @@ export function initSheets() {
     ${winter ? '<p class="note">Winter: colder tenders.</p>' : ''}
     <button class="go" type="button" id="mClose">Back to the street</button>`);
   $('mClose').onclick = closeSheet;
+  playTownDay($('tdCanvas'), townDay(S, rpt));
   wireSurveyor(surveyingNow);
   const monthHTML = $('sheet').innerHTML;
-  const rewire = () => { $('mClose').onclick = closeSheet; $('sheet').querySelectorAll('[data-co]').forEach(b => b.onclick = () => openCompany(b.dataset.co)); $('sheet').querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => openLesson(b.dataset.lesson, () => { $('sheet').innerHTML = monthHTML; $('mClose').onclick = closeSheet; rewire(); })); };
+  const rewire = () => { $('mClose').onclick = closeSheet; $('tdAgain').onclick = () => replayTownDay($('tdCanvas')); $('sheet').querySelectorAll('[data-co]').forEach(b => b.onclick = () => openCompany(b.dataset.co)); $('sheet').querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => openLesson(b.dataset.lesson, () => { $('sheet').innerHTML = monthHTML; $('mClose').onclick = closeSheet; rewire(); replayTownDay($('tdCanvas')); })); };
   rewire();
 });
 }

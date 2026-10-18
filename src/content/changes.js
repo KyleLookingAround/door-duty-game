@@ -9,6 +9,8 @@
 //   near: true      one client and its neighbours either side
 //   all: true       anyone (weather): the most exposed clients are checked
 // months: only in these months of the year (0 = January). max: how many clients get checked at most.
+// caused: never drawn at random; it follows from your own work (footfall, see game/footfall.js), and it
+// lands only on the clients whose footfall rose (ch.plots).
 export const CHANGES = [
   { key: 'busstop', label: 'Bus stop moves', text: 'The bus stop moves to {where}. Buses drop crowds right outside.', reason: 'busier', street: true, max: 4 },
   { key: 'flats', label: 'New flats', text: 'A block of flats opens behind {where}. More people walking past, morning and evening.', reason: 'busier', street: true, max: 4 },
@@ -18,6 +20,7 @@ export const CHANGES = [
   { key: 'audit', label: 'Access audit', text: 'The council starts an access audit on {where}. Wheelchairs and prams must get in everywhere.', reason: 'access', street: true, max: 2 },
   { key: 'coldsnap', label: 'Cold snap', text: 'A cold snap is on its way: well below freezing for weeks.', reason: 'cold', all: true, months: [10, 11, 0, 1], max: 3 },
   { key: 'gales', label: 'Gales forecast', text: 'Gales are forecast for the whole town: cold air driven straight through open doors.', reason: 'cold', all: true, months: [1, 2, 9, 10], max: 2 },
+  { key: 'crowds', label: 'Busier street', text: 'Word gets round: more people are coming up {where}, and the doors there will feel it.', reason: 'busier', street: true, caused: true, max: 3 },
   { key: 'hot', label: 'Hot spell', text: 'A long hot spell is forecast: lobbies will need keeping cool.', reason: 'hot', all: true, months: [5, 6, 7], max: 3 },
 ];
 export const CHANGE = Object.fromEntries(CHANGES.map(c => [c.key, c]));

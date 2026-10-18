@@ -53,6 +53,9 @@ src/
     month.js             endMonth(S) -> report; inspect
     enquiries.js         clients asking for research you haven't done (with a date), and advice(S) for quiet months
     plots.js             refreshPlots: which clients talk to you, and new tenders
+    footfall.js          footfall between buildings (FLOWS in content/town.js): settled at the month end, a crowd
+                         multiplier for new work (opts.footfall), a little on upkeep, and 'crowds' street changes
+    townday.js           the town day: a cheap flow model of one street's day for the month report (ui/townday.js draws it)
     state.js             freshState, migrate, the seeded random stream (S.rng)
   ui/                    the page. Every module that touches the DOM exposes an init function called from main.js.
     main.js              boot order and the frame loop
@@ -120,6 +123,10 @@ Five branches (`BRANCHES`): revolving doors, open doors, crowd science, inside w
 ## Streets and money
 
 Reputation (`rep`) is the stars from every job the firm has signed plus a star per mastered tech, so it grows however you play. Each job's stars also count as standing on its street (`S.standing`). A street opens (`streetOpen`, `STREET_GATES` in `content/balance.js`) on standing on the street before it, after at least 6 months there, with a few techs from a short list mastered; once open it stays open (`S.marketOpen`, `S.marketOpenedAt`). Clients on a street that isn't open don't talk to you. `gateText` says what's missing (the street's "Not yet" list and the advice line). Advertising (`advertise` in `jobs.js`) buys work this month, dearer each time; the Sales network makes it cheaper. The sim plays in three styles (`simulate({ style })`: strong, weak, poor) and `npm run pacing` reports when each opens the streets.
+
+## The living town
+
+The street painting (`ui/scene.js`) shows the firm's work: visitors walking in through fitted doors, a crowd at work on the table, the rival's van outside what it won, a busier pavement the more of the street you serve (cosmetic, `Math.random` is fine). **Footfall** (`game/footfall.js`): each flow in `FLOWS` (`content/town.js`) sends part of a building's crowd to the ones it feeds, by how well its doors work (`sendsOn`: three stars +1, a callback or the rival −0.5, broken −1). `S.footfall[kind]` moves at most `FOOTFALL_STEP` a month towards its target and stays within `FOOTFALL_CAP` of 1; a building's target reads only its feeders' state, never their footfall, so nothing cascades. New work is drawn with `opts.footfall` (not first visits or inspection replays); upkeep moves by half the change; a rise to 1.1 or more at fitted clients puts a caused street change on the calendar (`crowds`, `caused: true`, landing only on `ch.plots`). The calendar shows the street's footfall now and next month (`streetFootfall`). **The town day** (`game/townday.js`): the month report plays a sped-up day on one street (the one a change landed on, else the one in view) from a flow model (rhythms in `DAY_RHYTHMS`, door pace from stars, wear and status), deterministic from the save's seed and the month on its own stream. Clients being checked carry both endings (`coped`, `short`) and a "?" until the surveyor is back (`townDayOutcome`); nothing is said about them before that.
 
 ## Callbacks
 

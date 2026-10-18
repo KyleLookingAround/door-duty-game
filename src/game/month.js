@@ -9,6 +9,7 @@ import { makeContract, runHeadless } from './contracts.js';
 import { random, randomInt } from './state.js';
 import { settleEnquiries, hasWork } from './enquiries.js';
 import { researchMonth } from './research.js';
+import { settleFootfall } from './footfall.js';
 import { monthlyIncome, needsMastery, techName, prem, insurance, wearRate, rivalActive, stepFreeOk, techOf, tierOf, streetOf, streetOpen } from './economy.js';
 
 export const CLAIM_EXCESS = 1200, INSPECTION_FINE = 2500;
@@ -25,12 +26,20 @@ export function inspect(S, p) {
 
 // Put a street change on the calendar two months ahead, now and then. Where it lands is decided now,
 // so the calendar can say where; who it touches is decided when it lands.
-export function scheduleChange(S) {
+export function scheduleChange(S, moved = []) {
   const at = S.month + 2;
+  if ((S.changes || []).some(x => x.month === at)) return null;
+  // a street your work made busier: its fitted clients whose footfall rose are checked against the crowd
+  const rose = moved.filter(m => m.to >= 1.1 && m.to > m.from && S.plots[m.i].status === 'fitted');
+  if (rose.length) {
+    const street = rose[0].street, ch = { key: 'crowds', month: at, street, plots: rose.filter(m => m.street === street).map(m => m.i) };
+    S.changes = [...(S.changes || []), ch];
+    return ch;
+  }
   // most months bring something; only a quiet month in five brings nothing
-  if ((S.changes || []).some(x => x.month === at) || random(S) > 0.85) return null;
+  if (random(S) > 0.85) return null;
   // no hot spells in a new firm's first summer
-  const pool = CHANGES.filter(d => (!d.months || d.months.includes(at % 12)) && !(d.reason === 'hot' && at < 12));
+  const pool = CHANGES.filter(d => !d.caused && (!d.months || d.months.includes(at % 12)) && !(d.reason === 'hot' && at < 12));
   const def = pool[randomInt(S, pool.length)];
   const ch = { key: def.key, month: at };
   if (def.street) { const open = STREETS.filter(st => streetOpen(S, st.key)); ch.street = open[randomInt(S, open.length)].key; }
@@ -54,6 +63,7 @@ export function landChange(S, ch) {
   const def = CHANGE[ch.key];
   let near = S.plots.filter(p => p.status === 'fitted');
   if (def.street) near = near.filter(p => streetOf(p) === ch.street);
+  if (ch.plots) near = near.filter(p => ch.plots.includes(p.i));
   if (def.near) { const a = S.plots[ch.at]; near = near.filter(p => streetOf(p) === streetOf(a) && Math.abs(p.i - ch.at) <= 2); }
   // weather and access are the doors' business; a client with only inside work is checked on crowds
   near = near.filter(p => p.install || def.reason === 'busier' || def.reason === 'older');
@@ -121,7 +131,9 @@ export function endMonth(S) {
     calls.push(...checked);
   }
   S.changes = (S.changes || []).filter(x => x.month > S.month);
-  scheduleChange(S);
+  // footfall: each building's crowd moves towards what the buildings feeding it send on (game/footfall.js)
+  const footfall = settleFootfall(S);
+  scheduleChange(S, footfall);
   // paradox callbacks: finished research reaches the clients it could help. If none is fitted yet,
   // the call waits until one is.
   // Mastery needs a lesson job, so one is guaranteed: a call that has waited two months for a fitted client
@@ -174,5 +186,5 @@ export function endMonth(S) {
     if ((p.contract.event || null) !== wantEv || (p.status === 'open' && (done.length || random(S) < 0.35))) p.contract = null;
   }
   const net = inc - rent - wageTotal - ins - research.cost - claims.length * CLAIM_EXCESS - (insp && !insp.pass ? INSPECTION_FINE : 0);
-  return { news, research, lessonTenders, moved, moving: S.moving ? { ...S.moving } : null, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry };
+  return { news, research, lessonTenders, moved, moving: S.moving ? { ...S.moving } : null, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry, footfall };
 }

@@ -3,6 +3,7 @@ import { makeContract } from './contracts.js';
 import { BUILDING } from '../content/buildings/index.js';
 import { eventOf } from '../content/events.js';
 import { randomInt } from './state.js';
+import { footfallOf } from './footfall.js';
 import { rep, needsMet, streetOf, streetOpen, rivalInstall, techOf, tierOf } from './economy.js';
 
 // A street-change check has been surveyed: if the client's setup still passes, it coped (and the client
@@ -60,7 +61,7 @@ export function refreshPlots(S) {
       // a failed inspection: the inspector's own day (no random twists; a step-free failure keeps its access goal)
       const day = p.status === 'callback' && (p.reason === 'safety' || p.reason === 'access') && p.inspection;
       if (day) p.contract = makeContract(p.kind, day.tier, day.month, day.seed, { ...opts, inspection: true, plain: true, tech: techOf(S) });
-      else p.contract = makeContract(p.kind, tierOf(S, p), S.month, seed, { ...opts, tech: techOf(S), event: ev && !opts.first ? ev.key : null });
+      else p.contract = makeContract(p.kind, tierOf(S, p), S.month, seed, { ...opts, tech: techOf(S), event: ev && !opts.first ? ev.key : null, ...(footfallOf(S, p) !== 1 ? { footfall: footfallOf(S, p) } : {}) });
     }
   }
   return notes;

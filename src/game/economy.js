@@ -27,7 +27,7 @@ export const feeOf = (S, c) => c.par.cost + Math.round((c.margin != null ? c.mar
 // what a fitted client pays each month: worn doors pay less, broken ones nothing; green stars and certificates pay more
 export const wearFactor = p => p.broken ? 0 : (p.wear || 0) < 0.5 ? 1 : 1 - ((p.wear || 0) - 0.5) * 0.8;
 export const loyalty = p => 1 + 0.05 * Math.min(3, p.coped || 0);   // each street change their doors coped with: +5%, up to 15%
-export const upkeep = (S, p) => Math.round((p.fee * 0.007 * p.stars + 100) * (S.staff && S.staff.engineer ? 1.4 : 1) * (p.green ? 1.15 : 1) * (p.cert ? 1.1 : 1) * loyalty(p) * wearFactor(p) / 50) * 50;
+export const upkeep = (S, p) => Math.round((p.fee * 0.007 * p.stars + 100) * (S.staff && S.staff.engineer ? 1.4 : 1) * (p.green ? 1.15 : 1) * (p.cert ? 1.1 : 1) * loyalty(p) * (1 + (((S.footfall || {})[p.kind] || 1) - 1) / 2) * wearFactor(p) / 50) * 50;   // footfall: half its change
 // a client calling about new research (a paradox callback) is still happy and still pays
 export const paying = p => p.status === 'fitted' || p.status === 'checking' || (p.status === 'callback' && (p.reason === 'paradox' || p.reason === 'study'));
 // maintenance coming in each month: the whole firm's, or one street's

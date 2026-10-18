@@ -98,6 +98,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
 .calm.ev b { color: var(--text); }
 .calm.now { border-color: var(--brass); }
 .calm.now.ev b { color: var(--brass); }
+.calm .calff { display: block; font-size: 11px; color: #6fcf97; margin-top: 2px; line-height: 1.25; }
 .calm .calch { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; font-size: 11px; color: #9cc4ec; margin-top: 2px; overflow: hidden; line-height: 1.25; }
 .calm.ch:not(.ev) b { display: none; }
 .mapbox { border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; overflow-y: hidden; background: #151a21; scrollbar-width: thin; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
@@ -246,6 +247,9 @@ details.more > div { display: grid; gap: 6px; }
 .list li.pass span:last-child { color: var(--ok); }
 .list li.fail span:last-child { color: var(--warn); }
 .progress { height: 6px; border-radius: 99px; background: var(--ink); overflow: hidden; }
+.townday { margin: 12px 0; position: relative; }
+.townday canvas { display: block; width: 100%; height: 172px; border-radius: 10px; border: 1px solid var(--line); }
+.townday { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .surveyor { margin: 14px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
 .svrow { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; margin-top: 8px; font-size: 14px; }
 .svrow .progress { grid-column: 1 / -1; }

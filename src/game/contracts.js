@@ -88,7 +88,8 @@ export function makeContract(kindKey, tier, month, seed, opts = {}) {
   let slots = k.slots;
   const mix = { ...k.mix };
   // a research call's twist too strong for any door (a surge no frontage can move): the retry calms the crowd
-  const calm = Math.pow(0.8, opts.calm || 0);
+  // footfall from the buildings that feed this one (game/footfall.js); a first visit is the client's usual day
+  const calm = Math.pow(0.8, opts.calm || 0) * (first ? 1 : opts.footfall || 1);
   let crowdIn = k.in * scale * calm, crowdOut = k.out * scale * calm;
   const c = { kind: kindKey, tier, month, seed, first, rules: {}, wind: 0, budgetCap: null, solved: false };
   const goals = { bumps: 0, minTemp: null, access: false, laps: null };

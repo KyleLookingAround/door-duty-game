@@ -8,6 +8,7 @@ import { benchesFilled } from '../game/research.js';
 import { MONTHS } from '../game/contracts.js';
 import { feeOf, gateText, monthlyIncome, needsMet, needsText, rep, rivalActive, rivalInstall, streetOf, streetOpen, techName, upkeep } from '../game/economy.js';
 import { advice } from '../game/enquiries.js';
+import { footfallNext, streetFootfall } from '../game/footfall.js';
 import { jobsLine } from '../game/briefs.js';
 import { refreshPlots } from '../game/plots.js';
 import { coach, coachDone, coachEl } from './coach.js';
@@ -50,11 +51,14 @@ export function renderStreet() {
   $('incomeLine').textContent = !S.marketOpen
     ? (all ? `${money(all)} a month in maintenance` : S.plots.some(p => p.status === 'fitted') ? 'No maintenance coming in' : 'No contracts fitted yet')
     : `${here ? `${money(here)} a month from here` : 'Nothing from this street yet'} · ${money(all)} in all`;
+  const next = footfallNext(S), st = S.street || 'high';
   $('cal').innerHTML = [0, 1, 2].map(k => {
     const m = S.month + k, ev = eventOf(m), ch = (S.changes || []).find(x => x.month === m);
     // a street change coming: what, and where (the clients there will have their doors checked)
     const chLine = ch ? `<small class="calch">${CHANGE[ch.key].label} · ${changeWhere(S, ch)}</small>` : '';
-    return `<div class="calm${k === 0 ? ' now' : ''}${ev ? ' ev' : ''}${ch ? ' ch' : ''}"><span>${k === 0 ? 'Now · ' : ''}${MONTHS[m % 12]}</span><b>${ev ? ev.label : ch ? '' : 'Quiet month'}</b>${chLine}</div>`;
+    // footfall on this street: now, and where it's heading next month (from the work feeding it)
+    const ff = k < 2 ? streetFootfall(S, st, k ? next : null) : null, ffLine = ff && (k === 0 || ff !== streetFootfall(S, st)) ? `<small class="calff">${ff}</small>` : '';
+    return `<div class="calm${k === 0 ? ' now' : ''}${ev ? ' ev' : ''}${ch ? ' ch' : ''}"><span>${k === 0 ? 'Now · ' : ''}${MONTHS[m % 12]}</span><b>${ev ? ev.label : ch || ff ? '' : 'Quiet month'}</b>${chLine}${ffLine}</div>`;
   }).join('');
   const tabs = $('streetTabs');
   tabs.hidden = !S.marketOpen;

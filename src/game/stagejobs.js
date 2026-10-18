@@ -31,6 +31,9 @@ export function makeStageContract(kindKey, tier, month, seed, opts = {}) {
   c.tunes = B.tune || {};
   c.tune = c.tunes[st.key];
   st.level(c, rng, tier);
+  // footfall from the buildings that feed this one (game/footfall.js)
+  const foot = c.first ? 1 : opts.footfall || 1;
+  if (foot !== 1) { c.crowd.rate = +(c.crowd.rate * foot).toFixed(3); for (const ph of c.crowd.phases || []) ph.rate = +(ph.rate * foot).toFixed(3); }
   c.arrivals = Math.round((c.crowd.rate || 0) * c.arrive);
   // a callback the current setup copes with gets stronger (see generateSolvedInner)
   const sev = Math.min(3, opts.severity || 0);
