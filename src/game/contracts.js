@@ -590,7 +590,10 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
     catch (err) { c.relaxed = true; c.par = c.par || { cost: 0, slots: [], through: 0, sig: '' }; c.broken = true; }
     const free = c.par.cost === 0 && !!c.existing;
     // first visits count too: two new clients in a row shouldn't have the same answer either
-    const repeat = !!recent && recent.includes(c.par.sig);
+    // (not a callback, a check or an inspection: those keep the frontage you built, so the fix is often one you've
+    // used before, and redrawing the client's problem to dodge it would make it a different job)
+    const own = !!(c.opts && (c.opts.check || c.opts.inspection || (c.opts.callback && c.opts.callback !== 'paradox')));
+    const repeat = !own && !!recent && recent.includes(c.par.sig);
     if (!c.relaxed && (!best || best.relaxed || best.free || best.repeat)) best = c;
     c.free = free; c.repeat = repeat;
     if (!c.relaxed && !free && !repeat) return c;
@@ -598,9 +601,9 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
     // a callback the old doors already pass: turn up the client's change before trying anything else.
     // These retries don't count against MAX: severity is capped, so this loop always ends.
     // (Not a street-change check or a failed inspection: those replay a real day, and if the doors cope with it,
-    // the client copes. Research calls, a client wanting more, and the rival's work do escalate: those clients
-    // are asking for something new.)
-    if (free && !c.relaxed && (opts.callback || c.stage) && !opts.check && !opts.inspection && severity < 3) {
+    // the client copes. A research call turns it up as far as it needs, since it must teach the research; a client
+    // wanting more or the rival's work get one step, then the doors coping is the answer: a false alarm.)
+    if (free && !c.relaxed && (opts.callback || c.stage) && !opts.check && !opts.inspection && severity < (opts.callback === 'paradox' ? 3 : 1)) {
       severity++;
       c = makeContract(c.kind, c.tier, c.month, c.seed, { ...opts, severity }); c.job = job;
       attempt--;
@@ -608,7 +611,7 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
     }
     // still nothing to fix even at its worst: the doors genuinely beat that problem, so the client calls
     // about a different one (a cold snap, an older crowd, a busier street) instead
-    if (free && !c.relaxed && opts.callback && !c.stage && !opts.check && !opts.inspection && (opts.switched || 0) < 2) {
+    if (free && !c.relaxed && opts.callback === 'paradox' && !c.stage && (opts.switched || 0) < 2) {
       const order = ['cold', 'older', 'busier', 'access'].filter(r => r !== opts.callback);
       const next = order[(opts.switched || 0) % order.length];
       severity = 0;
@@ -618,6 +621,8 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
     }
     if (attempt === MAX - 1) break;
     if ((opts.check || opts.inspection) && free) break;   // a street-change check or an inspection replay: the old setup copes, and that's the answer
+    // any other callback the doors still cope with: that's the answer (a false alarm), not a redraw
+    if (free && !c.relaxed && opts.callback && opts.callback !== 'paradox') return c;
     if (c.stage && !c.relaxed) { if (repeat) { opts.extra = []; c = makeContract(c.kind, c.tier, c.month, c.seed + 53 * (attempt + 1), opts); c.job = job; c.novelty = true; continue; } break; }
     // a research call whose own twist makes it unfair (a surge no frontage can move): calm the crowd and
     // try again, rather than settle for a goal of a handful of people. Doesn't count against MAX.

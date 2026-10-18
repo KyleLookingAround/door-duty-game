@@ -148,7 +148,7 @@ Other callbacks: paradox calls when research finishes (`content/paradoxes.js`), 
 
 The build plan is `docs/PLAN.md`: what's next, the tests each phase must pass, and the decisions already made.
 
-- Research calls, a client wanting more (`study`) and the rival's botched work still escalate if the doors already cope (generateSolvedInner): those clients ask for something new. Street-change checks and failed inspections don't: an inspection callback replays the inspector's day (`p.inspection`: seed, tier, month; `opts.inspection`), and if the doors cope, it's a false alarm.
+- Surveys are dear, so the surveyor redraws as little as it can (generateSolvedInner). A research call whose doors already cope escalates (up to 3 steps, then a different complaint) because it must teach the research; a client wanting more (`study`) or the rival's botched work gets one step, then it's a false alarm. Callbacks, checks and inspections skip the anti-repeat redraw (their frontage is fixed). A surveyed tender keeps its survey until the season's event changes or it's been on the table 3 months; a callback keeps its job until it's done. Street-change checks and failed inspections don't: an inspection callback replays the inspector's day (`p.inspection`: seed, tier, month; `opts.inspection`), and if the doors cope, it's a false alarm.
 - A research call with its lesson can take 15 to 30 seconds to survey (lesson checks and calm retries add runs); the Phase 3 worker pool is the fix.
 - About a third of research calls (in the lesson test's sample) still can't be given a fair lesson on some seeds and fall back to an ordinary job.
 - A chained level's survey takes 5 to 20 seconds (it improves the route one change at a time, not every combination).

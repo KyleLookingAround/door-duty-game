@@ -178,12 +178,13 @@ export function endMonth(S) {
     if (p.status !== 'open' || !p.contract || p.lessonTender || p.contract.first || p.contract.landmark || p.contract.stage || !p.contract.solved) continue;
     if (random(S) < 0.18) { p.status = 'rival'; p.rivalUntil = S.month + 3 + randomInt(S, 3); p.contract = null; lost.push(p); }
   }
-  // stale tenders refresh with the season; new tech means new kinds of tender
+  // a surveyed tender keeps its survey (surveys are dear): it's redrawn when the season's event changes (a sale
+  // tender is a sale tender) or after three months on the table. A callback keeps its job until it's done.
   const evNow = eventOf(S.month), evKey = evNow ? evNow.key : null;
   for (const p of S.plots) {
-    if (!p.contract || (p.status !== 'open' && p.status !== 'callback')) continue;
+    if (!p.contract || p.status !== 'open') continue;
     const wantEv = p.contract.first ? null : evKey;   // a new month's event replaces last month's tenders
-    if ((p.contract.event || null) !== wantEv || (p.status === 'open' && (done.length || random(S) < 0.35))) p.contract = null;
+    if ((p.contract.event || null) !== wantEv || S.month - p.contract.month >= 3) p.contract = null;
   }
   const net = inc - rent - wageTotal - ins - research.cost - claims.length * CLAIM_EXCESS - (insp && !insp.pass ? INSPECTION_FINE : 0);
   return { news, research, lessonTenders, moved, moving: S.moving ? { ...S.moving } : null, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry, footfall };
