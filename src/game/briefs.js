@@ -52,6 +52,14 @@ export function headline(S, rpt) {
   if (rpt.evNow) return { head: pick('event', { what: rpt.evNow.label }), text: '' };
   return null;
 }
+// the front page always has a lead: the month's big story, or else the firm's books
+export function leadline(S, rpt) {
+  const h = headline(S, rpt);
+  if (h) return h;
+  const up = rpt.net >= 0, amt = '£' + Math.abs(Math.round(rpt.net)).toLocaleString('en-GB');
+  const jobs = (rpt.booked || []).filter(b => b.kind === 'job').length;
+  return { head: up ? `DOOR FIRM ${jobs ? `SIGNS OFF ${jobs} JOB${jobs > 1 ? 'S' : ''},` : 'HAS A STEADY MONTH,'} UP ${amt}` : `A DEAR MONTH FOR THE DOOR FIRM: DOWN ${amt}`, text: '' };
+}
 // the paradox journal: every mastered tech's lesson, in the order they were mastered
 export const journal = S => Object.keys(S.mastered || {}).filter(k => JOURNAL[k] && S.unlocks[k]).map(k => ({ key: k, title: JOURNAL[k][0], text: JOURNAL[k][1], tech: techName(k) }));
 

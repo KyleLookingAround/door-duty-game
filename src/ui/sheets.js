@@ -12,7 +12,7 @@ import { playTownDay, replayTownDay, townDayOutcome } from './townday.js';
 import { footfallLine, footfallOf, footfallReport } from '../game/footfall.js';
 import { advertCost, charge, costMult, feeOf, insurance, isMastered, jobsLeft, jobsPerMonth, monthlyIncome, overheads, prem, rep, rivalActive, serviceCost, techName, techOf, upkeep, loyalty } from '../game/economy.js';
 import { advice, hasWork } from '../game/enquiries.js';
-import { bookedText, callText, headline, isResearchCall, jobLabel, journal, movingText, stageTwist } from '../game/briefs.js';
+import { bookedText, callText, isResearchCall, jobLabel, journal, leadline, movingText, stageTwist } from '../game/briefs.js';
 import { advertise, fire, hire, movePremises, service } from '../game/jobs.js';
 import { benches, freeBenches, benchesFilled, instalment, levelOf, nextLevel, researchOut, startResearch, techOrStudy, unqueue } from '../game/research.js';
 import { CLAIM_EXCESS, INSPECTION_FINE, endMonth, changeWhere } from '../game/month.js';
@@ -353,48 +353,64 @@ export function initSheets() {
   $('monthBtn').onclick = guarded(() => {
   // research never stops: a free bench has to be given a project (or a market study) first
   if (!benchesFilled(S)) { openCompany('research'); toast('A bench is free: choose research, or run a market study', true); return; }
-  const rpt = endMonth(S), paper = headline(S, rpt);
+  const rpt = endMonth(S);
   const { research, lessonTenders, moved, moving, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry, footfall, booked } = rpt;
   save();
   renderStreet();   // starts surveying the month's new work in the background
   const surveyingNow = surveying();
-  sheet(`<div class="eyebrow">${MONTHS[S.month % 12]} ${S.year}</div><h3>${net >= 0 ? 'Up ' + money(net) : 'Down ' + money(-net)} this month</h3>
-    ${paper ? `<div class="paper"><small>The ${S.marketOpen ? 'Town' : 'High Street'} Herald · ${MONTHS[S.month % 12]} ${S.year}</small><b>${paper.head}</b>${paper.text ? `<p>${paper.text}</p>` : ''}</div>` : ''}
-    <ul class="list">
-      ${booked.filter(b => b.kind === 'job').map(b => `<li class="pass"><span>Job signed off · ${b.label}</span><span>${b.amount < 0 ? '−' : '+'}${money(Math.abs(b.amount))}</span></li>`).join('')}
-      <li class="pass"><span>Maintenance fees</span><span>+${money(inc)}</span></li>
-      ${booked.filter(b => b.kind === 'spend').map(b => `<li><span>${b.label}</span><span>−${money(-b.amount)}</span></li>`).join('')}
-      <li><span>Rent · ${premName.toLowerCase()}</span><span>−${money(rent)}</span></li>
-      ${wages.map(s => `<li><span>${s.name}</span><span>−${money(s.wage)}</span></li>`).join('')}
-      ${research.cost ? `<li><span>Research</span><span>−${money(research.cost)}</span></li>` : ''}
-      ${ins ? `<li><span>Insurance${ins > 60 ? ' · loaded for bumps on your record' : ''}</span><span>−${money(ins)}</span></li>` : ''}
-      ${claims.map(p => `<li class="fail"><span>Claim: someone clipped at ${p.name}</span><span>−${money(CLAIM_EXCESS)}</span></li>`).join('')}
-      ${insp && !insp.pass ? `<li class="fail"><span>Inspection fine · ${insp.p.name}</span><span>−${money(INSPECTION_FINE)}</span></li>` : ''}
-      <li><span><b>Cash now</b></span><span class="${S.cash < 0 ? 'neg' : ''}">${money(S.cash)}</span></li>
-    </ul>
-    <div class="townday"><canvas id="tdCanvas" aria-label="A day on the street, sped up"></canvas><button class="ghost small" type="button" id="tdAgain">Watch the day again</button></div>
-    ${surveyorPanel(surveyingNow)}
-    ${insp ? `<p><strong style="color:${insp.pass ? 'var(--ok)' : 'var(--warn)'}">Inspection at ${insp.p.name}:</strong> ${insp.pass ? 'passed. They get a certificate of compliance, and pay you 10% more maintenance.' : !insp.access ? 'failed. There is no step-free way in. You have a callback to fix it.' : `failed on safety: ${insp.bumps} people clipped, the limit is ${insp.limit}. You have a callback to fix it.`}</p>` : ''}
-    ${lost.length ? `<p><span class="hot">${RIVAL} won ${lost.map(p => p.name).join(' and ')}.</span> Tenders you leave sitting are fair game. Their work rarely lasts: expect the client back.</p>` : ''}
-    ${broke.length ? `<p><span class="hot">Broken down:</span> ${broke.map(p => p.name).join(', ')}. No maintenance fee until you send someone. Tap the building on the street to service it.</p>` : ''}
-    ${moved ? `<p><strong style="color:var(--brass)">You've moved into the ${moved.toLowerCase()}.</strong> Research picks up again this month.</p>` : moving ? `<p><span class="hot">${movingText(S)}</span></p>` : ''}
-    ${done.length ? `<p><strong style="color:var(--brass)">Research complete:</strong> ${done.map(techName).join(', ')}.${done.some(k => TECH.find(t => t.key === k).opens) ? ' New specialist tenders may appear.' : ''}</p>
-      <div class="learn">${done.filter(k => LESSONS[k]).map(k => `<button class="ghost small" type="button" data-lesson="${k}">How to use ${techName(k)}</button>`).join('')}</div>` : ''}
-    ${research.paused.length ? `<p><span class="hot">Research waiting:</span> you were overdrawn, so ${research.paused.map(techName).join(', ')} waits (keeping its progress) and the bench ran a market study instead.</p>` : ''}
-    ${research.studies.map(x => x.kind === 'enquiry' ? '' : x.kind === 'more' ? `<p><strong style="color:var(--brass)">Market study:</strong> ${x.p.name} want more: a bigger, busier entrance. They keep paying while you quote.</p>` : '<p><strong style="color:var(--brass)">Market study:</strong> nothing new this month. Fit more clients and studies find more work.</p>').join('')}
-    ${lessonTenders.map(p => `<p><strong style="color:var(--brass)">${p.name} have heard about your ${techName(p.callTech)}.</strong> ${p.callText} Sign it off to master it.</p>`).join('')}
-    ${walked.length ? `<p><span class="hot">Your staff walked out</span> over unpaid wages: ${walked.join(', ')}.</p>` : S.cash < 0 ? '<p><span class="hot">You\'re overdrawn.</span> Win jobs or let staff go. Below −£15k your crew will walk out.</p>' : ''}
-    ${paradox.length ? `<p><strong style="color:var(--brass)">Your research has clients calling:</strong></p><ul class="list">${paradox.map(p => `<li style="display:block"><span style="font-family:inherit;color:var(--text);font-weight:600">${p.name}</span><br><span style="font-family:inherit;color:var(--mute)">${p.callText} They keep paying while you quote.${p.enquiry && p.enquiry.ready ? ` <b style="color:var(--brass)">They waited for you: ${kmoney(p.enquiry.bonus)} bonus on sign-off.</b>` : ''}</span></li>`).join('')}</ul>` : ''}
-    ${enquiry.lapsed.map(x => `<p><span class="hot">${x.p.name} stopped waiting</span> for ${techName(x.tech)}. ${x.rival ? `They've gone to ${RIVAL}. Expect them back when it goes wrong.` : 'They\'re a little less loyal for it.'}</p>`).join('')}
-    ${enquiry.fresh ? (() => { const p = enquiry.fresh, e = p.enquiry, t = TECH.find(x => x.key === e.tech); return `<p><strong style="color:var(--brass)">Enquiry from ${p.name}.</strong> ${e.text} They need ${t.name} within ${e.by - S.month} months (${t.months} to research, ${kmoney(t.price)}). Have it ready and the job is yours, with a ${kmoney(e.bonus)} bonus.</p><div class="learn"><button class="ghost small" type="button" data-co="research">Open research</button></div>`; })() : ''}
-    ${changes.map(ch => `<p><strong style="color:var(--text)">${CHANGE[ch.key].label}.</strong> ${changeText(ch, changeWhere(S, ch))} ${ch.checked.length ? `The surveyor is checking how your doors cope at ${ch.checked.map(p => p.name).join(', ')}. Only those that fall short will call.` : 'None of your clients is affected.'}</p>`).join('')}
-    ${(() => { const t = footfallReport(S, footfall); return t ? `<p><strong style="color:var(--text)">The town.</strong> ${t}</p>` : ''; })()}
-    ${(() => { if (hasWork(S)) return calls.length ? '' : `<p>${inc ? 'Every fitted client is happy.' : 'Win a tender to start earning maintenance fees.'}</p>`; if (enquiry.fresh) return ''; const a = advice(S); return `<p><strong style="color:var(--text)">Nothing on the table.</strong> ${a ? a.text : 'Every fitted client is happy.'}</p>${a && a.tab ? `<div class="learn"><button class="ghost small" type="button" data-co="${a.tab}">Open ${a.tab}</button></div>` : ''}`; })()}
-    ${evNow ? `<p><strong style="color:var(--brass)">${evNow.label} this month.</strong> ${evNow.text} Tenders pay 25% more margin.</p>` : ''}
-    ${(() => { const nx = eventOf(S.month + 1); return nx ? `<p class="note">Next month: ${nx.label}.</p>` : ''; })()}
-    ${(() => { const nx = (S.changes || []).find(x => x.month > S.month); return nx ? `<p class="note">Coming up in ${MONTHS[nx.month % 12]}: ${CHANGE[nx.key].label.toLowerCase()}, ${changeWhere(S, nx)}.</p>` : ''; })()}
-    ${winter ? '<p class="note">Winter: colder tenders.</p>' : ''}
-    <button class="go" type="button" id="mClose">Back to the street</button>`);
+  const lead = leadline(S, rpt), jobsIn = booked.filter(b => b.kind === 'job').reduce((a, b) => a + b.amount, 0);
+  const moneyIn = jobsIn + inc, moneyOut = moneyIn - net;
+  // the news, as short articles: a kicker in bold, then the story
+  const art = (kick, body, cls = '') => `<article class="${cls}"><p><b>${kick}</b> ${body}</p></article>`;
+  const news = [
+    insp ? art(`Inspection at ${insp.p.name}.`, insp.pass ? 'Passed. They get a certificate of compliance, and pay you 10% more maintenance.' : !insp.access ? 'Failed: there is no step-free way in. You have a callback to fix it.' : `Failed on safety: ${insp.bumps} people clipped, the limit is ${insp.limit}. You have a callback to fix it.`, insp.pass ? '' : 'bad') : '',
+    lost.length ? art(`${RIVAL} won ${lost.map(p => p.name).join(' and ')}.`, 'Tenders you leave sitting are fair game. Their work rarely lasts: expect the client back.', 'bad') : '',
+    broke.length ? art('Broken down.', `${broke.map(p => p.name).join(', ')}. No maintenance fee until you send someone. Tap the building on the street to service it.`, 'bad') : '',
+    moved ? art(`Into the ${moved.toLowerCase()}.`, 'Research picks up again this month.') : moving ? art('On the move.', movingText(S)) : '',
+    done.length ? art('Research complete.', `${done.map(techName).join(', ')}.${done.some(k => TECH.find(t => t.key === k).opens) ? ' New specialist tenders may appear.' : ''}`) + `<div class="learn">${done.filter(k => LESSONS[k]).map(k => `<button class="ghost small" type="button" data-lesson="${k}">How to use ${techName(k)}</button>`).join('')}</div>` : '',
+    research.paused.length ? art('Research waiting.', `You were overdrawn, so ${research.paused.map(techName).join(', ')} waits (keeping its progress) and the bench ran a market study instead.`, 'bad') : '',
+    ...research.studies.map(x => x.kind === 'enquiry' ? '' : x.kind === 'more' ? art('Market study.', `${x.p.name} want more: a bigger, busier entrance. They keep paying while you quote.`) : art('Market study.', 'Nothing new this month. Fit more clients and studies find more work.')),
+    ...lessonTenders.map(p => art(`${p.name} have heard about your ${techName(p.callTech)}.`, `${p.callText} Sign it off to master it.`)),
+    walked.length ? art('Staff walk out.', `Over unpaid wages: ${walked.join(', ')}.`, 'bad') : S.cash < 0 ? art('Overdrawn.', 'Win jobs or let staff go. Below −£15k your crew will walk out.', 'bad') : '',
+    ...paradox.map(p => art(`${p.name} call about your research.`, `${p.callText} They keep paying while you quote.${p.enquiry && p.enquiry.ready ? ` They waited for you: ${kmoney(p.enquiry.bonus)} bonus on sign-off.` : ''}`)),
+    ...enquiry.lapsed.map(x => art(`${x.p.name} stopped waiting`, `for ${techName(x.tech)}. ${x.rival ? `They've gone to ${RIVAL}. Expect them back when it goes wrong.` : 'They\'re a little less loyal for it.'}`, 'bad')),
+    enquiry.fresh ? (() => { const p = enquiry.fresh, e = p.enquiry, t = TECH.find(x => x.key === e.tech); return art(`Enquiry from ${p.name}.`, `${e.text} They need ${t.name} within ${e.by - S.month} months (${t.months} to research, ${kmoney(t.price)}). Have it ready and the job is yours, with a ${kmoney(e.bonus)} bonus.`) + '<div class="learn"><button class="ghost small" type="button" data-co="research">Open research</button></div>'; })() : '',
+    ...changes.map(ch => art(`${CHANGE[ch.key].label}.`, `${changeText(ch, changeWhere(S, ch))} ${ch.checked.length ? `The surveyor is checking how your doors cope at ${ch.checked.map(p => p.name).join(', ')}. Only those that fall short will call.` : 'None of your clients is affected.'}`)),
+    (() => { const t = footfallReport(S, footfall); return t ? art('Around town.', t) : ''; })(),
+    (() => { if (hasWork(S)) return calls.length ? '' : art('All quiet.', inc ? 'Every fitted client is happy.' : 'Win a tender to start earning maintenance fees.'); if (enquiry.fresh) return ''; const a = advice(S); return art('Nothing on the table.', a ? a.text : 'Every fitted client is happy.') + (a && a.tab ? `<div class="learn"><button class="ghost small" type="button" data-co="${a.tab}">Open ${a.tab}</button></div>` : ''); })(),
+    evNow ? art(`${evNow.label} this month.`, `${evNow.text} Tenders pay 25% more margin.`) : '',
+  ].filter(Boolean);
+  const ahead = [
+    (() => { const nx = eventOf(S.month + 1); return nx ? `<li>Next month: ${nx.label}.</li>` : ''; })(),
+    (() => { const nx = (S.changes || []).find(x => x.month > S.month); return nx ? `<li>${MONTHS[nx.month % 12]}: ${CHANGE[nx.key].label.toLowerCase()}, ${changeWhere(S, nx)}.</li>` : ''; })(),
+    winter ? '<li>Winter: colder tenders.</li>' : '',
+  ].filter(Boolean);
+  sheet(`<div class="herald">
+    <header class="mast"><h2>The ${S.marketOpen ? 'Town' : 'High Street'} Herald</h2><div class="dateline"><span>${MONTHS[S.month % 12]} ${S.year}</span><span>Price 10p</span></div></header>
+    <section class="lead"><h3>${lead.head}</h3>${lead.text ? `<p class="stand">${lead.text}</p>` : ''}</section>
+    <figure class="townday"><canvas id="tdCanvas" aria-label="A day on the street, sped up"></canvas><figcaption>A day on the street, as the surveyor saw it. <button class="ghost small" type="button" id="tdAgain">Watch again</button></figcaption></figure>
+    <div class="cols">
+      <section class="books"><h4>Your books</h4>
+        <div class="big ${net >= 0 ? 'up' : 'down'}">${net >= 0 ? 'Up ' + money(net) : 'Down ' + money(-net)}</div>
+        <div class="totals"><div><span>In</span><b>${money(moneyIn)}</b></div><div><span>Out</span><b>${money(moneyOut)}</b></div><div><span>Cash now</span><b class="${S.cash < 0 ? 'neg' : ''}">${money(S.cash)}</b></div></div>
+        <details><summary>Every line</summary><ul class="list">
+          ${booked.filter(b => b.kind === 'job').map(b => `<li class="pass"><span>Job signed off · ${b.label}</span><span>${b.amount < 0 ? '−' : '+'}${money(Math.abs(b.amount))}</span></li>`).join('')}
+          <li class="pass"><span>Maintenance fees</span><span>+${money(inc)}</span></li>
+          ${booked.filter(b => b.kind === 'spend').map(b => `<li><span>${b.label}</span><span>−${money(-b.amount)}</span></li>`).join('')}
+          <li><span>Rent · ${premName.toLowerCase()}</span><span>−${money(rent)}</span></li>
+          ${wages.map(s => `<li><span>${s.name}</span><span>−${money(s.wage)}</span></li>`).join('')}
+          ${research.cost ? `<li><span>Research</span><span>−${money(research.cost)}</span></li>` : ''}
+          ${ins ? `<li><span>Insurance${ins > 60 ? ' · loaded for bumps on your record' : ''}</span><span>−${money(ins)}</span></li>` : ''}
+          ${claims.map(p => `<li class="fail"><span>Claim: someone clipped at ${p.name}</span><span>−${money(CLAIM_EXCESS)}</span></li>`).join('')}
+          ${insp && !insp.pass ? `<li class="fail"><span>Inspection fine · ${insp.p.name}</span><span>−${money(INSPECTION_FINE)}</span></li>` : ''}
+        </ul></details>
+      </section>
+      ${surveyorPanel(surveyingNow)}
+      ${news.length ? `<section class="news"><h4>News</h4>${news.join('')}</section>` : ''}
+      ${ahead.length ? `<section class="ahead"><h4>Coming up</h4><ul>${ahead.join('')}</ul></section>` : ''}
+    </div>
+  </div>
+  <button class="go" type="button" id="mClose">Back to the street</button>`);
   $('mClose').onclick = closeSheet;
   playTownDay($('tdCanvas'), townDay(S, rpt));
   wireSurveyor(surveyingNow);

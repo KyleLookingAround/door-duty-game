@@ -201,10 +201,40 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--brass); out
   padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); padding-top: max(12px, env(safe-area-inset-top, 0px));
 }
 .bprow { display: flex; gap: 8px; align-items: center; justify-content: space-between; font-size: 13px; color: var(--mute); }
-.paper { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #ece6d8; color: #1c1a17; display: grid; gap: 4px; }
-.paper small { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #6b6458; border-bottom: 1px solid #c9c0ae; padding-bottom: 4px; }
-.paper b { font-family: var(--f-display); font-size: 18px; line-height: 1.15; }
-.paper p { margin: 0; font-size: 13px; color: #3a362f; }
+/* the month report: The Town Herald, a newspaper on the desk */
+.herald { --news: #1c1a17; --newsrule: #b9ae98; --newsmute: #5e574b; background: #efe8d8; color: var(--news); border-radius: 4px; padding: 14px 14px 16px; margin-bottom: 12px; font-family: Georgia, "Times New Roman", serif; box-shadow: 0 2px 0 #d8cfbb, 0 6px 18px rgba(0,0,0,.35); }
+.herald .mast { text-align: center; border-bottom: 3px double var(--news); padding: 0 30px 4px; }   /* room for the sheet's close button */
+.herald .mast h2 { font-family: var(--f-display); font-weight: 400; font-size: clamp(24px, 7.5vw, 40px); margin: 0; line-height: 1.05; color: var(--news); }
+.herald .dateline { display: flex; justify-content: space-between; font: 600 10px var(--f-body); letter-spacing: .14em; text-transform: uppercase; color: var(--newsmute); border-top: 1px solid var(--news); margin-top: 6px; padding-top: 4px; }
+.herald .lead h3 { font-family: var(--f-display); font-weight: 400; font-size: clamp(20px, 5.6vw, 30px); line-height: 1.12; margin: 12px 0 6px; color: var(--news); }
+.herald .lead .stand { margin: 0 0 6px; font-size: 15px; line-height: 1.45; font-style: italic; color: #3a362f; }
+.herald figure { margin: 10px 0 12px; }
+.herald figcaption { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; font-style: italic; color: var(--newsmute); margin-top: 5px; }
+.herald .cols { columns: 2 250px; column-gap: 20px; column-rule: 1px solid var(--newsrule); border-top: 1px solid var(--news); padding-top: 8px; }
+.herald .cols > section, .herald .cols > .surveyor { break-inside: avoid; margin: 0 0 14px; }
+.herald h4, #sheet .herald h4 { font: 700 11px var(--f-body); letter-spacing: .16em; text-transform: uppercase; margin: 0 0 6px; padding-bottom: 3px; border-bottom: 1px solid var(--news); color: var(--news); }
+.herald article { break-inside: avoid; }
+.herald article p { margin: 0 0 9px; font-size: 14px; line-height: 1.45; color: #2b2822; }
+.herald article b { color: var(--news); }
+.herald article.bad b { color: #a3281c; }
+.herald .books .big { font-family: var(--f-display); font-size: 24px; margin: 2px 0 6px; }
+.herald .books .big.up { color: #1f6b3c; } .herald .books .big.down { color: #a3281c; }
+.herald .books .totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 6px; }
+.herald .books .totals span { display: block; font: 600 10px var(--f-body); letter-spacing: .1em; text-transform: uppercase; color: var(--newsmute); }
+.herald .books .totals b { font: 500 13px var(--f-mono); color: var(--news); white-space: nowrap; }
+.herald .books .totals b.neg { color: #a3281c; }
+.herald details summary { cursor: pointer; font: 600 12px var(--f-body); color: var(--newsmute); padding: 4px 0; }
+.herald .list li { border-color: var(--newsrule); color: var(--news); font-size: 13px; }
+.herald .list li span:last-child { color: var(--news); }
+.herald .list li.pass span:last-child { color: #1f6b3c; } .herald .list li.fail span:last-child { color: #a3281c; }
+.herald .surveyor { border-color: var(--newsrule); }
+.herald .surveyor .eyebrow { color: #7a5a14; }
+.herald .svrow { color: var(--news); }
+.herald .svst { color: var(--newsmute); }
+.herald .progress { background: #d8cfbb; }
+.herald .ahead ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; }
+.herald .ghost { background: transparent; color: var(--news); border-color: var(--newsmute); }
+.herald .learn { margin: -4px 0 10px; }
 .sheet { width: 100%; max-width: 520px; max-height: 100%; overflow: auto; overscroll-behavior: contain; box-sizing: border-box; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: grid; gap: 14px; }
 /* the close button floats in the top corner; the last row of buttons stays pinned while the sheet scrolls */
 .sheetx { position: sticky; top: -6px; justify-self: end; margin: -8px -8px -44px 0; z-index: 2; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--raised); color: var(--mute); font-size: 20px; line-height: 1; cursor: pointer; }
@@ -247,9 +277,7 @@ details.more > div { display: grid; gap: 6px; }
 .list li.pass span:last-child { color: var(--ok); }
 .list li.fail span:last-child { color: var(--warn); }
 .progress { height: 6px; border-radius: 99px; background: var(--ink); overflow: hidden; }
-.townday { margin: 12px 0; position: relative; }
-.townday canvas { display: block; width: 100%; height: 172px; border-radius: 10px; border: 1px solid var(--line); }
-.townday { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.townday canvas { display: block; width: 100%; height: 172px; border-radius: 2px; border: 1px solid #1c1a17; }
 .surveyor { margin: 14px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
 .svrow { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; margin-top: 8px; font-size: 14px; }
 .svrow .progress { grid-column: 1 / -1; }
