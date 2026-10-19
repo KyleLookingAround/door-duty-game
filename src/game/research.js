@@ -28,9 +28,11 @@ export const benchesFilled = S => freeBenches(S) === 0;
 const inHand = (S, key) => S.research.some(r => r.key === key) || (S.queue || []).some(q => q.key === key);
 // research the firm could take on: not owned (or a refinement with a level to go), not already running or queued,
 // within the premises' tier, with what it needs mastered (research builds on what you've used on a job, not just
-// on what you've paid for) and, for the sales network, enough market studies behind it
+// on what you've paid for; first-tier research only needs it owned, so a new firm isn't held up) and, for the
+// sales network, enough market studies behind it
+export const reqMet = (S, t, k) => t.tier <= 1 ? !!S.unlocks[k] : isMastered(S, k);
 export const canResearch = (S, t) => (t.kind === 'refine' ? !!nextLevel(S, t) : !S.unlocks[t.key]) && !inHand(S, t.key) && t.tier <= prem(S).tier
-  && (t.req || []).every(k => isMastered(S, k)) && (S.studiesDone || 0) >= (t.studies || 0);
+  && (t.req || []).every(k => reqMet(S, t, k)) && (S.studiesDone || 0) >= (t.studies || 0);
 export const researchingOrQueued = (S, key) => inHand(S, key);
 
 // Start a project on a free bench, or put it in the queue. Returns 'started', 'queued' or false.

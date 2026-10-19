@@ -135,12 +135,14 @@ test('tier 3 research needs what it builds on mastered, not just owned', () => {
   assert.equal(startResearch(S, 'wide'), 'started');
 });
 
-test('every tier: research needs what it builds on mastered', () => {
+test('from tier 2, research needs what it builds on mastered; tier 1 only owned', () => {
   const S = freshState(9); S.cash = 1e6; S.premises = 2;
   S.unlocks.mouth = true; S.mastered = {};
-  assert.equal(startResearch(S, 'core'), false, 'mouth adjusters owned but not mastered');
-  S.mastered.mouth = true;
-  assert.equal(startResearch(S, 'core'), 'started');
+  assert.equal(startResearch(S, 'core'), 'started', 'first-tier research: owned is enough');
+  S.unlocks.padded = true;
+  assert.equal(startResearch(S, 'sensor'), false, 'padded edges owned but not mastered');
+  S.mastered.padded = true;
+  assert.ok(['started', 'queued'].includes(startResearch(S, 'sensor')));
   // a refinement is mastered at its first level, and research no client could teach is mastered on finish
   S.unlocks.zoning = true; S.mastered.zoning = true;
   assert.ok(['started', 'queued'].includes(startResearch(S, 'paternoster')));

@@ -15,7 +15,7 @@ import { advertCost, charge, costMult, feeOf, insurance, isMastered, jobsLeft, j
 import { advice, hasWork } from '../game/enquiries.js';
 import { bookedText, callText, isResearchCall, jobLabel, journal, leadline, movingText, stageTwist } from '../game/briefs.js';
 import { advertise, buyYard, fire, hire, movePremises, service } from '../game/jobs.js';
-import { benches, freeBenches, benchesFilled, instalment, levelOf, nextLevel, researchOut, startResearch, techOrStudy, unqueue } from '../game/research.js';
+import { benches, reqMet, freeBenches, benchesFilled, instalment, levelOf, nextLevel, researchOut, startResearch, techOrStudy, unqueue } from '../game/research.js';
 import { CLAIM_EXCESS, INSPECTION_FINE, endMonth, changeWhere } from '../game/month.js';
 import { CHANGE, changeText } from '../content/changes.js';
 import { coach } from './coach.js';
@@ -207,7 +207,7 @@ export function openCompany(tab) {
         const owned = refine ? !step : S.unlocks[t.key], doing = S.research.find(r => r.key === t.key), queued = queue.some(q => q.key === t.key);
         const mastered = owned && isMastered(S, t.key);
         const missing = (t.req || []).filter(r => !S.unlocks[r]);
-        const unmastered = (t.req || []).filter(r => S.unlocks[r] && !isMastered(S, r));
+        const unmastered = (t.req || []).filter(r => S.unlocks[r] && !reqMet(S, t, r));
         const tierOk = t.tier <= P.tier;
         let state, action = '';
         const how = LESSONS[t.key] ? `<button class="ghost small" type="button" data-lesson="${t.key}">How to use</button>` : '';
