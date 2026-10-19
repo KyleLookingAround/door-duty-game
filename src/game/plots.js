@@ -2,6 +2,7 @@
 import { makeContract } from './contracts.js';
 import { BUILDING } from '../content/buildings/index.js';
 import { eventOf } from '../content/events.js';
+import { STREETS } from '../content/town.js';
 import { randomInt } from './state.js';
 import { footfallOf } from './footfall.js';
 import { rep, needsMet, streetOf, streetOpen, rivalInstall, techOf, tierOf } from './economy.js';
@@ -30,8 +31,7 @@ export function falseAlarm(S, p) {
 export function refreshPlots(S) {
   const notes = [];
   const r = rep(S);
-  if (!S.marketOpen && streetOpen(S, 'market')) { S.marketOpen = true; S.marketOpenedAt = S.month; notes.push('market'); }
-  if (!S.riversideOpen && streetOpen(S, 'riverside')) { S.riversideOpen = true; S.riversideOpenedAt = S.month; notes.push('riverside'); }
+  for (const st of STREETS.slice(1)) if (!S[st.key + 'Open'] && streetOpen(S, st.key)) { S[st.key + 'Open'] = true; S[st.key + 'OpenedAt'] = S.month; notes.push(st.key); }
   for (const k of notes) S.news = [...(S.news || []), { kind: 'street', key: k }];
   for (const p of S.plots) {
     if (p.status === 'locked' && r >= p.rep && needsMet(S, p) && streetOpen(S, streetOf(p))) p.status = 'open';

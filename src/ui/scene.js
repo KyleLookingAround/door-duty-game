@@ -165,7 +165,8 @@ export function streetSVG() {
   // lay the buildings out along the street
   const plots = S.plots.filter(p => streetOf(p) === (S.street || 'high'));
   const home = (S.street || 'high') === 'high', firmW = [130, 170, 214][S.premises || 0];
-  let x = X0 + (home ? firmW + GAP : 0); const placed = plots.map(p => { const at = x; x += BUILDING[p.kind].look.w + GAP; return at; });
+  const docks = S.street === 'docks', yardW = 120;   // on the Docks, your yard comes first
+  let x = X0 + (home ? firmW + GAP : docks ? yardW + GAP : 0); const placed = plots.map(p => { const at = x; x += BUILDING[p.kind].look.w + GAP; return at; });
   const W = x + 10;
   const o = [];
   o.push(`<svg viewBox="0 0 ${W} ${SC_H}" width="${W}" height="${SC_H}" class="scene" role="group" aria-label="${(STREETS.find(x => x.key === (S.street || 'high')) || {}).name} in ${MONTHS[m]}">`);
@@ -182,8 +183,14 @@ export function streetSVG() {
   let sx = 0, sk = 'M0 ' + G;
   while (sx < W) { const bw = 40 + RND(sx, 7) * 70, bh = 60 + RND(sx, 8) * 110; sk += ` L${sx} ${G - bh} L${sx + bw} ${G - bh}`; if (RND(sx, 9) > 0.6) sk += ` L${sx + bw - 10} ${G - bh} L${sx + bw - 10} ${G - bh - 14} L${sx + bw - 4} ${G - bh - 14} L${sx + bw - 4} ${G - bh}`; sx += bw; }
   o.push(`<path d="${sk} L${W} ${G} Z" fill="${sky[2]}" opacity=".9"/>`);
+  // the Docks: cranes and a ship's hull behind the sheds
+  if (docks) for (let cx = 160; cx < W; cx += 420) {
+    o.push(`<g opacity=".85" fill="none" stroke="#3b4656" stroke-width="5"><path d="M${cx} ${G} V${G - 190} M${cx - 30} ${G - 190} H${cx + 120} M${cx} ${G - 150} L${cx + 90} ${G - 190}"/></g><line x1="${cx + 100}" y1="${G - 190}" x2="${cx + 100}" y2="${G - 120}" stroke="#3b4656" stroke-width="1.5"/><rect x="${cx + 88}" y="${G - 120}" width="24" height="14" fill="#c44536" opacity=".8"/>`);
+    o.push(`<path d="M${cx + 180} ${G - 60} H${cx + 380} L${cx + 360} ${G - 20} H${cx + 196} Z" fill="#2a3340" opacity=".9"/><rect x="${cx + 250} " y="${G - 92}" width="60" height="32" fill="#2a3340" opacity=".9"/>`);
+  }
   // your own firm, first on the High Street: it grows with your premises, staff and record
   if (home) o.push(firmArt(X0, firmW));
+  if (docks) o.push(`<g aria-label="Your yard"><rect x="${X0}" y="${G - 96}" width="${yardW}" height="96" fill="#5a4a36"/><path d="M${X0 - 6} ${G - 96} L${X0 + yardW / 2} ${G - 124} L${X0 + yardW + 6} ${G - 96} Z" fill="#3a2f22"/><rect x="${X0 + 4}" y="${G - 70}" width="${yardW - 8}" height="16" fill="#14171d"/><text x="${X0 + yardW / 2}" y="${G - 58.5}" text-anchor="middle" class="sc-sign" style="fill:#d4a94f">YOUR YARD</text><rect x="${X0 + 20}" y="${G - 48}" width="${yardW - 40}" height="48" fill="#2a2f38" stroke="#d4a94f" stroke-width="1.5"/></g>`);
   // buildings (clickable)
   plots.forEach((p, i) => {
     const a = buildingArt(p, placed[i]), st = p.status, bx = placed[i], bw = a.w;

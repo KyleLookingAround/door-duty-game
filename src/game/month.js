@@ -10,7 +10,7 @@ import { random, randomInt } from './state.js';
 import { settleEnquiries, hasWork } from './enquiries.js';
 import { researchMonth } from './research.js';
 import { settleFootfall } from './footfall.js';
-import { monthlyIncome, needsMastery, techName, prem, insurance, wearRate, rivalActive, stepFreeOk, techOf, tierOf, streetOf, streetOpen } from './economy.js';
+import { monthlyIncome, needsMastery, techName, prem, insurance, wearRate, rivalActive, stepFreeOk, techOf, tierOf, streetOf, streetOpen, yardRent } from './economy.js';
 
 export const CLAIM_EXCESS = 1200, INSPECTION_FINE = 2500;
 
@@ -83,11 +83,11 @@ export function endMonth(S) {
   // what came in and went out during the month (game/jobs.js book): jobs signed off, adverts, servicing, a move
   const booked = S.monthBook || []; S.monthBook = [];
   const news = S.news || []; S.news = [];   // what happened this month, for the local paper
-  const inc = monthlyIncome(S), rent = prem(S).rent, ins = insurance(S);
+  const inc = monthlyIncome(S), rent = prem(S).rent, yards = yardRent(S), ins = insurance(S);
   const premName = prem(S).name;
   const wages = STAFF.filter(s => S.staff[s.key]);
   const wageTotal = wages.reduce((a, s) => a + s.wage, 0);
-  S.cash += inc - rent - wageTotal - ins;
+  S.cash += inc - rent - yards - wageTotal - ins;
   // claims: someone clipped by one of your doors sues; you pay the excess
   const claims = [];
   for (const p of S.plots) if (p.status === 'fitted' && p.bumpRec > 0 && random(S) < Math.min(0.15, 0.02 * p.bumpRec)) { claims.push(p); S.cash -= CLAIM_EXCESS; }
@@ -188,6 +188,6 @@ export function endMonth(S) {
     const wantEv = p.contract.first ? null : evKey;   // a new month's event replaces last month's tenders
     if ((p.contract.event || null) !== wantEv || S.month - p.contract.month >= 3) p.contract = null;
   }
-  const net = booked.reduce((a, b) => a + b.amount, 0) + inc - rent - wageTotal - ins - research.cost - claims.length * CLAIM_EXCESS - (insp && !insp.pass ? INSPECTION_FINE : 0);
-  return { news, research, lessonTenders, moved, moving: S.moving ? { ...S.moving } : null, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry, footfall, booked };
+  const net = booked.reduce((a, b) => a + b.amount, 0) + inc - rent - yards - wageTotal - ins - research.cost - claims.length * CLAIM_EXCESS - (insp && !insp.pass ? INSPECTION_FINE : 0);
+  return { news, research, lessonTenders, moved, moving: S.moving ? { ...S.moving } : null, inc, rent, yards, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry, footfall, booked };
 }

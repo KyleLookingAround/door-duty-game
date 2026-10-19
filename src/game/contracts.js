@@ -640,8 +640,10 @@ export async function generateSolvedInner(contract, unlocks, recent, onProgress,
       const firstSummer = c.month < 12 && SEASON_T[c.month % 12] >= 12;
       const ct = (c.opts && c.opts.tech) || unlocks, allowed = t => !c.twists.includes(t) && !banned.includes(t) && !(firstSummer && (t === 'cold' || t === 'wind')) && !clashes(c.twists, t, ct) && (!TWIST_REQ[t] || TWIST_REQ[t](ct));
       // the twist that breaks this particular answer, strongest first
-      const pool = answerBreakers(c.par.sig, firstSummer).filter(allowed);
-      const rest = TWIST_POOL.filter(allowed);
+      // (only twists this client can have: its own pool, if it has one)
+      const own = BUILDING[c.kind].twistPool, mine = t => !own || own.includes(t);
+      const pool = answerBreakers(c.par.sig, firstSummer).filter(t => allowed(t) && mine(t));
+      const rest = (own || TWIST_POOL).filter(allowed);
       if (!pool.length && !rest.length) break;
       opts.extra = [...(opts.extra || []), pool.length ? pool[0] : rest[Math.floor(makeRng(c.seed + attempt)() * rest.length)]];
       c = makeContract(c.kind, c.tier, c.month, c.seed, opts); c.job = job;

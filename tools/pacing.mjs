@@ -38,19 +38,19 @@ if (!isMainThread) {
   const spread = xs => { const v = xs.filter(x => x != null); if (!v.length) return '–'; const lo = Math.min(...v), hi = Math.max(...v); return (lo === hi ? `${lo}` : `${lo}–${hi}`) + (v.length < xs.length ? ` (${xs.length - v.length} never)` : ''); };
   const report = styles.map(style => {
     const rs = out.filter(r => r.style === style);
-    const market = rs.map(r => opened(r.rows, 'market')), river = rs.map(r => opened(r.rows, 'riverside'));
+    const market = rs.map(r => opened(r.rows, 'market')), river = rs.map(r => opened(r.rows, 'riverside')), docks = rs.map(r => opened(r.rows, 'docks'));
     let worstQuiet = 0;
     for (const r of rs) { let run = 0; for (const row of r.rows) { run = row.calls || row.jobs ? 0 : run + 1; worstQuiet = Math.max(worstQuiet, run); } }
     return {
-      style, market, riverside: river, onMarket: rs.map((r, i) => market[i] && river[i] ? river[i] - market[i] : null),
+      style, market, riverside: river, docks, cash24: rs.map(r => r.rows[23] ? Math.round(r.rows[23].cash / 1000) : null), onMarket: rs.map((r, i) => market[i] && river[i] ? river[i] - market[i] : null),
       jobsPerMonth: rs.map(r => +(r.jobs / r.rows.length).toFixed(1)), cash12: rs.map(r => r.rows[11] ? Math.round(r.rows[11].cash / 1000) : null),
       idleBench: rs.map(r => r.rows.filter(x => x.research === 0).length), parFails: rs.reduce((a, r) => a + r.parFails, 0), adverts: rs.map(r => r.adverts),
     };
   });
   console.log(`\nPacing: ${seeds.length} seeds × ${months} months (month of play; targets in brackets)`);
-  console.log('  style    Market Square   Riverside   months on Market   jobs/month   cash at 12 (£k)   idle benches');
+  console.log('  style    Market Square   Riverside   months on Market   The Docks   jobs/month   cash at 12 / 24 (£k)   idle benches');
   const target = { strong: '(about 6)', weak: '(about 12)', poor: '(no limit)' };
-  for (const r of report) console.log(`  ${r.style.padEnd(8)} ${spread(r.market).padStart(8)} ${target[r.style].padEnd(11)} ${spread(r.riverside).padStart(9)}   ${spread(r.onMarket).padStart(10)}       ${spread(r.jobsPerMonth).padStart(8)}   ${spread(r.cash12).padStart(12)}      ${spread(r.idleBench).padStart(6)}`);
+  for (const r of report) console.log(`  ${r.style.padEnd(8)} ${spread(r.market).padStart(8)} ${target[r.style].padEnd(11)} ${spread(r.riverside).padStart(9)}   ${spread(r.onMarket).padStart(10)}       ${spread(r.docks).padStart(9)}   ${spread(r.jobsPerMonth).padStart(8)}   ${(spread(r.cash12) + ' / ' + spread(r.cash24)).padStart(20)}      ${spread(r.idleBench).padStart(6)}`);
   console.log(`\n${runs.length} games · ${((Date.now() - t0) / 1000).toFixed(0)}s on ${availableParallelism()} threads`);
   if (opt('--out')) writeFileSync(opt('--out'), JSON.stringify(report, null, 1) + '\n');
   if (report.some(r => r.parFails)) process.exit(1);

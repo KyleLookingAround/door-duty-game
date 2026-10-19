@@ -1,9 +1,9 @@
-// Riverside Stadium: the football ground at the far end of Riverside, a landmark (it may move to a street of its
-// own later). Match day: fans come through the turnstiles (a door stage of ticket gates), the bag search and the
+// Riverside Stadium: the football ground down on the Docks, a landmark (it moved there from the end of Riverside
+// when the Docks opened; the name stays, it's still by the river). Match day: fans come through the turnstiles (a door stage of ticket gates), the bag search and the
 // concourse to the stands, all as one chain. More turnstiles fill the space behind them faster.
 export default {
   key: 'stadium',
-  plot: { name: 'Riverside Stadium', rep: 42, street: 'riverside', needs: ['turnstiles', 'stewarding'], why: 'Match days need turnstiles, a bag search and trained stewards' },
+  plot: { name: 'Riverside Stadium', rep: 42, street: 'docks', needs: ['turnstiles', 'stewarding'], why: 'Match days need turnstiles, a bag search and trained stewards' },
   kind: { label: 'Football stadium', slots: 4, in: 1, out: 1, mix: {}, hook: { twists: [], temp: 10 } },
   landmark: true,
   jobs: [{ chain: ['doors', 'queue', 'bottleneck'] }, { stage: 'doors' }],

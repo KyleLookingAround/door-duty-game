@@ -1,5 +1,11 @@
 // The town: streets, the rival firm, and why clients call back.
-export const STREETS = [{ key: 'high', name: 'High Street', rep: 0 }, { key: 'market', name: 'Market Square', rep: 18 }, { key: 'riverside', name: 'Riverside', rep: 30 }];
+// opens: what the toast says when the street opens
+export const STREETS = [
+  { key: 'high', name: 'High Street', rep: 0 },
+  { key: 'market', name: 'Market Square', rep: 18, opens: 'Market Square is open: five new clients, and a rival firm' },
+  { key: 'riverside', name: 'Riverside', rep: 30, opens: 'Riverside is open: three new clients, all inside work' },
+  { key: 'docks', name: 'The Docks', rep: 42, opens: 'Your yard on the Docks is open: four big clients, and the Stadium' },
+];
 // a rival firm starts bidding once the town is big enough to share
 export const RIVAL = 'Brassworks Ltd';
 export const CALLBACKS = {
@@ -27,6 +33,8 @@ export const FLOWS = [
   { from: 'skyport', to: ['galleria', 'arena'], share: 0.1, who: 'travellers with time to kill' },
   { from: 'stadium', to: ['galleria', 'arena'], share: 0.15, who: 'match-day crowds' },
   { from: 'galleria', to: ['arena'], share: 0.06, who: 'shoppers staying on for a show' },
+  { from: 'ferry', to: ['expo', 'hospital'], share: 0.1, who: 'foot passengers off the ferry' },
+  { from: 'expo', to: ['ferry'], share: 0.05, who: 'visitors heading home by ferry' },
 ];
 export const FOOTFALL_CAP = 0.2, FOOTFALL_STEP = 0.1;
 
@@ -40,4 +48,4 @@ export const DAY_RHYTHMS = {
   evening: [[13, 2, 0.3], [18.25, 0.7, 1]],
   match: [[17.75, 0.6, 1]],
 };
-export const DAY_RHYTHM = { station: 'commute', office: 'commute', towers: 'commute', skyport: 'commute', cafe: 'lunch', pharmacy: 'lunch', bank: 'lunch', clinic: 'lunch', cinema: 'evening', arena: 'evening', stadium: 'match' };
+export const DAY_RHYTHM = { station: 'commute', office: 'commute', towers: 'commute', skyport: 'commute', cafe: 'lunch', pharmacy: 'lunch', bank: 'lunch', clinic: 'lunch', cinema: 'evening', arena: 'evening', stadium: 'match', ferry: 'commute', hospital: 'lunch' };

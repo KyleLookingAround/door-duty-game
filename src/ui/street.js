@@ -6,7 +6,9 @@ import { changeWhere } from '../game/month.js';
 import { CALLBACKS, RIVAL, STREETS } from '../content/town.js';
 import { benchesFilled } from '../game/research.js';
 import { MONTHS } from '../game/contracts.js';
-import { feeOf, gateText, monthlyIncome, needsMet, needsText, rep, rivalActive, rivalInstall, streetOf, streetOpen, techName, upkeep } from '../game/economy.js';
+import { feeOf, gateText, monthlyIncome, needsMet, needsText, rep, rivalActive, rivalInstall, streetOf, streetOpen, techName, upkeep, yardToBuy } from '../game/economy.js';
+import { STREET_GATES } from '../content/balance.js';
+import { buyYard } from '../game/jobs.js';
 import { advice } from '../game/enquiries.js';
 import { footfallNext, streetFootfall } from '../game/footfall.js';
 import { jobsLine } from '../game/briefs.js';
@@ -27,6 +29,7 @@ export function frontHTML(slots, n) {
 // "Lark Café · Café" says the same thing twice; only show the kind when it adds something
 const sameWord = (name, label) => name.toLowerCase().includes(label.toLowerCase().split(' ')[0]);
 // clients who won't talk to you yet: one compact line each, the nearest first
+const streetName = k => (STREETS.find(x => x.key === k) || STREETS[0]).name;
 function laterList(list) {
   const r = rep(S);
   const sorted = [...list].sort((a, b) => a.rep - b.rep);
@@ -34,15 +37,14 @@ function laterList(list) {
   return `<div class="later">${sorted.map(p => {
     // what each client is waiting for, all of it from the start: the street opening, the stars, the research (D7)
     const research = !needsMet(S, p), shut = !streetOpen(S, streetOf(p));
-    const req = [shut ? `When ${streetOf(p) === 'market' ? 'Market Square' : 'Riverside'} opens` : r < p.rep ? `${p.rep}★` : '', research ? `Research ${needsText(S, p)}` : ''].filter(Boolean).join(' · ');
+    const req = [shut ? `When ${streetName(streetOf(p))} opens` : r < p.rep ? `${p.rep}★` : '', research ? `Research ${needsText(S, p)}` : ''].filter(Boolean).join(' · ');
     const k = KINDS[p.kind];
-    return `<div><span><b>${p.name}</b>${sameWord(p.name, k.label) ? '' : ` · ${k.label}`}${streetOf(p) === 'market' ? ' · Market Square' : streetOf(p) === 'riverside' ? ' · Riverside' : ''}</span><span class="req${research || p === nextAt ? ' next' : ''}${research ? ' wide' : ''}">${req}</span></div>`;
+    return `<div><span><b>${p.name}</b>${sameWord(p.name, k.label) ? '' : ` · ${k.label}`}${streetOf(p) === 'high' ? '' : ' · ' + streetName(streetOf(p))}</span><span class="req${research || p === nextAt ? ' next' : ''}${research ? ' wide' : ''}">${req}</span></div>`;
   }).join('')}</div>`;
 }
 export function renderStreet() {
   const notes = refreshPlots(S);
-  if (notes.includes('market')) setTimeout(() => toast('Market Square is open: five new clients, and a rival firm'), 600);
-  if (notes.includes('riverside')) setTimeout(() => toast('Riverside is open: three new clients, all inside work'), 600);
+  for (const k of notes) { const st = STREETS.find(x => x.key === k); if (st && st.opens) setTimeout(() => toast(st.opens), 600); }
   $('sCash').textContent = kmoney(S.cash);
   $('sRep').textContent = rep(S) + '★';
   $('sMonth').textContent = `${MONTHS[S.month % 12]} ${String(S.year).slice(2)}`;
@@ -104,7 +106,7 @@ export function renderStreet() {
     else if (p.status === 'callback') { pill = `<span class="pill call">${p.reason === 'botched' ? 'Rescue' : 'Callback'}</span>`; line = `${p.change && CHANGE[p.change] ? CHANGE[p.change].label + ': ' + (CALLBACKS[p.reason] || '').charAt(0).toLowerCase() + (CALLBACKS[p.reason] || '').slice(1) : CALLBACKS[p.reason] || 'Something has changed'}. No maintenance fee until fixed.`; }
     else if (p.status === 'rival') { pill = `<span class="pill lock">${RIVAL}</span>`; line = `Fitted by the rival firm · back in ${Math.max(1, (p.rivalUntil || 0) - S.month)} mo`; }
     else { pill = `<span class="pill done">${'★'.repeat(p.stars)}</span>`; line = p.broken ? '<span style="color:var(--warn)">Broken down</span> · tap to service' : `Fitted · <b>${money(upkeep(S, p))}</b>/month${(p.wear || 0) >= 0.5 ? ` · wear ${Math.round(p.wear * 100)}%` : ''}${p.green ? ' · 🌿' : ''}${p.cert ? ' · certified' : ''}`; if (p.enquiry && !p.enquiry.ready) { pill = `<span class="pill open">Enquiry</span>`; line += ` · <b style="color:var(--brass)">wants ${techName(p.enquiry.tech)} within ${p.enquiry.by - S.month} mo</b>`; } }
-    const where = streetOf(p) === 'market' ? ' · Market Square' : streetOf(p) === 'riverside' ? ' · Riverside' : '';
+    const where = streetOf(p) === 'high' ? '' : ' · ' + streetName(streetOf(p));
     return `<button class="plot${p.status === 'locked' || p.status === 'rival' ? ' locked' : ''}" type="button" data-i="${p.i}" ${p.status === 'locked' || p.status === 'rival' ? 'disabled' : ''}>
       ${frontHTML(p.status === 'rival' ? rivalInstall(p) : p.install, p.contract ? p.contract.slots : k.slots)}
       <span><span class="name">${p.name}</span>${(() => { const bits = [sameWord(p.name, k.label) ? '' : k.label, where ? where.slice(3) : ''].filter(Boolean); return bits.length ? ` <span class="kind">· ${bits.join(' · ')}</span>` : ''; })()}<span class="stline" style="display:block">${line}</span></span>
@@ -119,7 +121,8 @@ export function renderStreet() {
   $('street').innerHTML = live.map(row).join('') + (tip ? `<p class="note ledtip">${tip.text}${tip.tab ? ` <button class="ghost small" type="button" data-co="${tip.tab}">Open ${tip.tab}</button>` : ''}</p>` : '');
   $('street').querySelectorAll('[data-co]').forEach(b => b.onclick = guarded(() => openCompany(b.dataset.co)));
   $('ledgerRest').innerHTML = (fitted.length ? `<div class="eyebrow ledhead">Your clients · ${fitted.filter(p => p.status === 'fitted').length}</div>${fitted.map(row).join('')}` : '')
-    + (later.length ? `<div class="eyebrow ledhead">Not yet · you have ${rep(S)}★</div>${(() => { const k = ['market', 'riverside'].find(x => !streetOpen(S, x)); return k && (k === 'market' || streetOpen(S, 'market')) ? `<p class="note ledtip">${gateText(S, k)}</p>` : ''; })()}${laterList(later)}` : '');
+    + (later.length ? `<div class="eyebrow ledhead">Not yet · you have ${rep(S)}★</div>${(() => { const k = STREETS.slice(1).map(x => x.key).find(x => !streetOpen(S, x)), g = k && STREET_GATES[k]; if (!g || !streetOpen(S, g.from)) return ''; const buy = yardToBuy(S); return `<p class="note ledtip">${gateText(S, k)}${buy && buy.key === k ? ` <button class="go small" type="button" data-yard="${k}" ${S.cash < g.buy ? 'disabled' : ''}>Buy ${g.yard} · ${kmoney(g.buy)}</button>` : ''}</p>`; })()}${laterList(later)}` : '');
+  $('ledger').querySelectorAll('[data-yard]').forEach(b => b.onclick = guarded(() => { if (buyYard(S, b.dataset.yard)) { save(); renderStreet(); } }));
   $('ledger').querySelectorAll('.plot').forEach(b => b.addEventListener('click', guarded(() => { const p = S.plots[+b.dataset.i]; if (p.status === 'fitted' || p.status === 'checking') openClient(p.i); else if (p.status === 'open' || p.status === 'callback') openBrief(p.i); })));
   save();
   for (const p of S.plots) if ((p.status === 'open' || p.status === 'callback' || p.status === 'checking') && p.contract && !p.contract.solved) survey(p);

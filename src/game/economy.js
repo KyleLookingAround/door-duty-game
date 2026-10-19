@@ -43,7 +43,7 @@ export function wearRate(S, p) {
 export const serviceCost = p => Math.round((300 + p.fee * 0.05 * (p.wear || 0) + (p.broken ? 800 : 0)) / 50) * 50;
 // insurance: a base premium plus a loading for every bump and safety stop on your record
 export const insurance = S => S.plots.filter(p => p.status === 'fitted' || p.status === 'callback').reduce((a, p) => a + 45 * (p.bumpRec || 0) + 25 * (p.stopRec || 0), S.jobs ? 60 : 0);
-export const overheads = S => prem(S).rent + STAFF.reduce((a, s) => a + (S.staff[s.key] ? s.wage : 0), 0) + insurance(S);
+export const overheads = S => prem(S).rent + yardRent(S) + STAFF.reduce((a, s) => a + (S.staff[s.key] ? s.wage : 0), 0) + insurance(S);
 
 // research a client insists on before it will take bids (a landmark needs several at once)
 export const plotNeeds = p => { const n = (PLOTS[p.i] || {}).needs; return n ? [].concat(n) : []; };
@@ -74,11 +74,17 @@ export function streetGate(S, k) {
   if (!g) return null;
   return { ...g, have: standing(S, g.from), months: monthsOn(S, g.from), needMonths: g.months, gotMastered: gateMastered(S, g) };
 }
-export const streetOpen = (S, k) => {
+// earned: everything but the buy-in. A street with a yard to buy (`buy`) opens once it's earned and bought.
+export const streetEarned = (S, k) => {
   if (k === 'high' || S[k + 'Open']) return true;
   const g = streetGate(S, k);
   return !!g && (g.from === 'high' || streetOpen(S, g.from)) && g.have >= g.standing && g.months >= g.needMonths && g.gotMastered >= g.mastered;
 };
+export const streetOpen = (S, k) => k === 'high' || !!S[k + 'Open'] || (streetEarned(S, k) && (!(STREET_GATES[k] || {}).buy || !!(S.yards || {})[k]));
+// the yard you can buy now: a street earned but not yet bought into, or null
+export const yardToBuy = S => STREETS.find(st => (STREET_GATES[st.key] || {}).buy && !streetOpen(S, st.key) && streetEarned(S, st.key)) || null;
+// the rent on every yard the firm has bought
+export const yardRent = S => Object.keys(S.yards || {}).reduce((a, k) => a + ((STREET_GATES[k] || {}).rent || 0), 0);
 // what still stands between the firm and a street, in words (for the street and the advice line)
 export function gateText(S, k) {
   const g = streetGate(S, k), name = (STREETS.find(x => x.key === k) || {}).name, from = (STREETS.find(x => x.key === g.from) || {}).name;
@@ -86,6 +92,7 @@ export function gateText(S, k) {
   if (g.have < g.standing) want.push(`${g.standing - g.have} more ★ of standing on ${from} (stars from every job you sign there)`);
   if (g.gotMastered < g.mastered) want.push(`${g.mastered - g.gotMastered} more of these mastered: ${g.list.filter(x => !isMastered(S, x)).map(techName).join(', ')}`);
   if (g.months < g.needMonths) want.push(`${g.needMonths - g.months} more month${g.needMonths - g.months === 1 ? '' : 's'} on ${from}`);
+  if (g.buy && !(S.yards || {})[k]) want.push(`buying ${g.yard} (${'£' + g.buy.toLocaleString('en-GB')}, then ${'£' + g.rent.toLocaleString('en-GB')} a month)`);
   return want.length ? `${name} opens after ${want.join('; ')}.` : `${name} is open.`;
 }
 export const rivalActive = S => streetOpen(S, 'market');

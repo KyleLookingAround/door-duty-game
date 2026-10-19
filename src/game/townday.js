@@ -62,10 +62,10 @@ export function townDay(S, rpt = {}) {
   });
   // what happened when, for the caption: the rushes, the change, queues spilling over
   const rhythms = new Set(out.map(o => DAY_RHYTHM[o.kind] || 'shop'));
-  if (rhythms.has('commute')) moments.push({ k: stepOf(8.25), text: street === 'riverside' ? 'The first flights: the morning rush' : 'The morning rush off the trains' });
+  if (rhythms.has('commute')) moments.push({ k: stepOf(8.25), text: street === 'riverside' ? 'The first flights: the morning rush' : street === 'docks' ? 'The first ferry: the morning rush' : 'The morning rush off the trains' });
   if (rhythms.has('lunch')) moments.push({ k: stepOf(12.5), text: 'Lunchtime' });
   if (def) moments.push({ k: stepOf(at), text: `${def.label}: ${def.reason === 'busier' ? 'more people on the street' : def.reason === 'older' ? 'an older crowd' : def.reason === 'access' ? 'the council\'s access audit' : 'the weather turns'}`, change: ch.key });
-  if (rhythms.has('commute')) moments.push({ k: stepOf(17.25), text: 'The evening rush home' });
+  if (rhythms.has('commute')) moments.push({ k: stepOf(17.25), text: street === 'docks' ? 'The evening ferry home' : 'The evening rush home' });
   if (rhythms.has('match')) moments.push({ k: stepOf(17.25), text: 'Match day: the crowd heads for kick-off' });
   else if (rhythms.has('evening')) moments.push({ k: stepOf(18), text: 'The evening shows' });
   // queues spilling over (not at clients being checked: the surveyor says how that went), the worst three

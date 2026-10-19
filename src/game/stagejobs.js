@@ -115,7 +115,7 @@ export function stageRows(contract, r) {
   const st = STAGES[contract.stage], g = contract.goals;
   const rows = [
     [st.throughLabel || 'Through', r.through, `≥ ${g.through}`, r.through >= g.through],
-    [st.waitLabel, r.wait.toFixed(1) + 's', `≤ ${g.wait}s`, r.wait <= g.wait],
+    [(contract.tune && contract.tune.waitLabel) || st.waitLabel, r.wait.toFixed(1) + 's', `≤ ${g.wait}s`, r.wait <= g.wait],
   ];
   if (st.bumps) rows.push([st.bumpLabel || 'Bumps', r.bumps, `≤ ${g.bumps}`, r.bumps <= g.bumps]);
   return rows;

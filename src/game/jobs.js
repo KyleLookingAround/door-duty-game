@@ -5,7 +5,8 @@ import { STAGES, stageName } from '../engine/stages/index.js';
 import { TECH } from '../content/tech.js';
 import { PREMISES, STAFF } from '../content/company.js';
 import { money } from '../util/format.js';
-import { advertCost, feeOf, charge, isLandmarkPlot, prem, rep, serviceCost, standing, streetOf } from './economy.js';
+import { advertCost, feeOf, charge, isLandmarkPlot, prem, rep, serviceCost, standing, streetOf, yardToBuy } from './economy.js';
+import { STREET_GATES } from '../content/balance.js';
 import { masterFrom, studyResult } from './research.js';
 
 // "a, b or c"
@@ -140,6 +141,14 @@ export function advertise(S) {
   if (got.kind === 'none') return false;   // nobody to reach yet: nothing charged
   S.cash -= cost; S.adverts = (S.adverts || 0) + 1; book(S, 'spend', 'Advert in the local paper', -cost);
   return { ...got, cost };
+}
+// buy into a street (the Docks): once it's earned, a yard to work from. Returns false if it can't be bought now.
+export function buyYard(S, key) {
+  const st = yardToBuy(S), g = STREET_GATES[key];
+  if (!st || st.key !== key || S.cash < g.buy) return false;
+  S.cash -= g.buy; S.yards = { ...(S.yards || {}), [key]: S.month };
+  book(S, 'spend', `Buying ${g.yard}`, -g.buy);
+  return true;
 }
 export function hire(S, key) { S.staff[key] = true; return true; }
 export function fire(S, key) { S.staff[key] = false; return true; }

@@ -2,14 +2,14 @@
 import { PLOTS } from '../content/buildings/index.js';
 
 export const SAVE_KEY = 'doorduty-tycoon-v2';
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 
 const newPlot = (p, i) => ({ ...p, i, status: 'locked', contract: null, install: null, stars: 0, fee: 0, tier: 0 });
 
 export function freshState(seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0) {
   return {
     version: SAVE_VERSION, upg: 1, seed: seed || 1, rng: seed || 1,
-    cash: 20000, month: 4, year: 2026, jobs: 0, monthJobs: 0, moving: null, unlocks: {}, log: [], recent: [], premises: 0, research: [], queue: [], mastered: {}, standing: {}, adverts: 0, blueprints: [], staff: {}, footfall: {}, monthBook: [],
+    cash: 20000, month: 4, year: 2026, jobs: 0, monthJobs: 0, moving: null, unlocks: {}, log: [], recent: [], premises: 0, research: [], queue: [], mastered: {}, standing: {}, adverts: 0, blueprints: [], staff: {}, footfall: {}, monthBook: [], yards: {},
     plots: PLOTS.map(newPlot),
   };
 }
@@ -48,6 +48,11 @@ export function migrate(S) {
   S.footfall = S.footfall || {};
   // v11: the month's own book of jobs and spending, for the month report
   S.monthBook = S.monthBook || [];
+  // v12: the Docks, bought into with a yard. The Stadium moved there from Riverside: a firm already working
+  // with it keeps it, so the Docks count as open (and the yard as theirs) from today.
+  S.yards = S.yards || {};
+  const stadium = S.plots.find(p => p.kind === 'stadium');
+  if ((S.version || 0) < 12 && stadium && stadium.status !== 'locked' && !S.docksOpen) { S.docksOpen = true; S.docksOpenedAt = S.month; S.yards.docks = S.month; }
   S.version = SAVE_VERSION;
   return S;
 }

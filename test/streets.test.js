@@ -60,3 +60,37 @@ test('an old save keeps its open streets and starts standing from its stars', ()
   assert.equal(standing(S, 'high'), 5);
   assert.ok(streetOpen(S, 'market'));
 });
+
+test('the Docks open on Riverside standing and a yard you buy, which then costs rent', async () => {
+  const { buyYard } = await import('../src/game/jobs.js');
+  const { endMonth } = await import('../src/game/month.js');
+  const { yardToBuy } = await import('../src/game/economy.js');
+  const S = freshState(7), g = STREET_GATES.docks;
+  S.marketOpen = S.riversideOpen = true; S.riversideOpenedAt = S.month - g.months;
+  S.standing = { riverside: g.standing };
+  for (const k of g.list.slice(0, g.mastered)) { S.unlocks[k] = true; S.mastered[k] = true; }
+  assert.ok(!streetOpen(S, 'docks'), 'earned is not enough: the yard has to be bought');
+  assert.equal(yardToBuy(S).key, 'docks');
+  assert.match(gateText(S, 'docks'), /yard on the Docks/);
+  S.cash = g.buy - 1;
+  assert.equal(buyYard(S, 'docks'), false, 'not without the money');
+  S.cash = g.buy + 50000;
+  assert.ok(buyYard(S, 'docks'));
+  assert.equal(S.cash, 50000);
+  assert.ok(streetOpen(S, 'docks'));
+  refreshPlots(S);
+  assert.ok(S.docksOpen && S.docksOpenedAt === S.month);
+  const rpt = endMonth(S);
+  assert.equal(rpt.yards, g.rent, 'the yard costs rent every month');
+  assert.equal(rpt.booked[0].amount, -g.buy, 'and the purchase is in the month\'s books');
+});
+
+test('an old save already working with the Stadium keeps it: the Docks count as open', () => {
+  const S = freshState(8); S.version = 11;
+  S.plots.find(p => p.kind === 'stadium').status = 'fitted';
+  migrate(S);
+  assert.ok(streetOpen(S, 'docks'));
+  assert.ok(S.plots.some(p => p.kind === 'hospital'), 'the new clients are added to the save');
+  const T = freshState(9); T.version = 11; migrate(T);
+  assert.ok(!streetOpen(T, 'docks'), 'a firm that never reached the Stadium has to earn the Docks');
+});

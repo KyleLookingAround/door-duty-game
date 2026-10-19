@@ -4,9 +4,9 @@
 // Each entry: kinds (which fitted clients might call), and one of twist / stage / chain, plus what they say.
 // fits(p), if given, says whether what they say is true of that client (a call about "the revolving door"
 // only comes from a client who has one).
-const DOOR_CLIENTS = ['cafe', 'pharmacy', 'bank', 'office', 'hotel', 'library', 'store', 'townhall', 'museum', 'cinema', 'gym', 'clinic'];
-const OLDER = ['pharmacy', 'library', 'townhall', 'museum', 'clinic', 'hotel'];
-const WINDY = ['bank', 'office', 'hotel', 'store', 'gym', 'cinema'];
+const DOOR_CLIENTS = ['cafe', 'pharmacy', 'bank', 'office', 'hotel', 'library', 'store', 'townhall', 'museum', 'cinema', 'gym', 'clinic', 'ferry', 'hospital'];
+const OLDER = ['pharmacy', 'library', 'townhall', 'museum', 'clinic', 'hotel', 'hospital'];
+const WINDY = ['bank', 'office', 'hotel', 'store', 'gym', 'cinema', 'ferry'];
 const fitted = (p, f) => (p.install || []).some(f);
 const hasRevolving = p => fitted(p, s => s.type === 'revolve');
 const hasOpenDoors = p => fitted(p, s => s.type === 'swing' || s.type === 'slider');

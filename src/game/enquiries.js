@@ -5,7 +5,8 @@
 import { TECH } from '../content/tech.js';
 import { PREMISES } from '../content/company.js';
 import { PARADOX_CALLS, callFits } from '../content/paradoxes.js';
-import { prem, rep, rivalActive, missingNeeds, gateText, streetGate, streetOpen } from './economy.js';
+import { prem, rep, rivalActive, missingNeeds, gateText, streetGate, streetOpen, yardToBuy } from './economy.js';
+import { STREETS } from '../content/town.js';
 import { random, randomInt } from './state.js';
 import { canResearch, freeBenches, researchingOrQueued } from './research.js';
 import { kmoney } from '../util/format.js';
@@ -84,9 +85,11 @@ export function advice(S) {
   if (bigger && r >= (next.rep || 0)) return { tab: 'premises', text: `${S.cash >= next.price ? 'Move' : `Save ${kmoney(next.price - S.cash)} more and move`} to the ${next.name.toLowerCase()}: ${free <= 0 ? 'more research benches' : `tier ${next.tier} research`} brings in new kinds of work.` };
   if (free <= 0 && S.research.length) { const x = S.research[0], t = TECH.find(y => y.key === x.key); return { tab: 'research', text: `${t.name} finishes in ${x.left} month${x.left > 1 ? 's' : ''}. New research brings clients calling.` }; }
   // the next street: what still stands in the way
-  const nextStreet = ['market', 'riverside'].find(k => !streetOpen(S, k));
+  const nextStreet = STREETS.slice(1).map(s => s.key).find(k => !streetOpen(S, k));
   if (nextStreet) {
     const g = streetGate(S, nextStreet);
+    // earned, with only the yard to buy: say so, and where (Company › Premises)
+    if (yardToBuy(S)) return { tab: 'premises', text: gateText(S, nextStreet) };
     if (g && (g.from === 'high' || streetOpen(S, g.from))) return { tab: g.gotMastered < g.mastered ? 'research' : null, text: gateText(S, nextStreet) };
   }
   const nextPlot = S.plots.filter(p => p.status === 'locked' && p.rep > r).sort((a, b) => a.rep - b.rep)[0];

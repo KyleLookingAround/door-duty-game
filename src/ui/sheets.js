@@ -3,17 +3,18 @@ import { PREMISES, STAFF } from '../content/company.js';
 import { EVENTS, eventOf } from '../content/events.js';
 import { BASICS, STARS, STARS_INSIDE } from '../content/guides.js';
 import { BRANCHES, LESSONS, TECH } from '../content/tech.js';
-import { RIVAL } from '../content/town.js';
+import { RIVAL, STREETS } from '../content/town.js';
+import { STREET_GATES } from '../content/balance.js';
 import { TWISTS } from '../content/twists.js';
 import { STAGES, stageName, stageAbout } from '../engine/stages/index.js';
 import { MONTHS, candidates } from '../game/contracts.js';
 import { townDay } from '../game/townday.js';
 import { playTownDay, replayTownDay, townDayOutcome } from './townday.js';
 import { footfallLine, footfallOf, footfallReport } from '../game/footfall.js';
-import { advertCost, charge, costMult, feeOf, insurance, isMastered, jobsLeft, jobsPerMonth, monthlyIncome, overheads, prem, rep, rivalActive, serviceCost, techName, techOf, upkeep, loyalty } from '../game/economy.js';
+import { advertCost, charge, costMult, feeOf, insurance, isMastered, jobsLeft, jobsPerMonth, monthlyIncome, overheads, prem, rep, rivalActive, serviceCost, techName, techOf, upkeep, loyalty, gateText, streetOpen, yardToBuy } from '../game/economy.js';
 import { advice, hasWork } from '../game/enquiries.js';
 import { bookedText, callText, isResearchCall, jobLabel, journal, leadline, movingText, stageTwist } from '../game/briefs.js';
-import { advertise, fire, hire, movePremises, service } from '../game/jobs.js';
+import { advertise, buyYard, fire, hire, movePremises, service } from '../game/jobs.js';
 import { benches, freeBenches, benchesFilled, instalment, levelOf, nextLevel, researchOut, startResearch, techOrStudy, unqueue } from '../game/research.js';
 import { CLAIM_EXCESS, INSPECTION_FINE, endMonth, changeWhere } from '../game/month.js';
 import { CHANGE, changeText } from '../content/changes.js';
@@ -149,7 +150,7 @@ function briefStage(p, c, i, fromWorkshop) {
     <h4>To pass</h4>
     <ul class="list">
       <li><span>${st.throughLabel || 'People through'}</span><span>≥ ${g.through}</span></li>
-      <li><span>${st.waitLabel}</span><span>${g.wait}s</span></li>
+      <li><span>${(c.tune && c.tune.waitLabel) || st.waitLabel}</span><span>${g.wait}s</span></li>
       ${st.bumps ? `<li><span>${st.bumpLabel || 'Bumps'}</span><span>≤ ${g.bumps}</span></li>` : ''}
       <li><span>Surveyor's par: the cheapest pass they found</span><span>${money(c.par.cost)}</span></li>
     </ul>
@@ -254,6 +255,12 @@ export function openCompany(tab) {
           : next ? (repOk ? `<div style="display:grid;gap:4px;justify-items:end"><button class="go" type="button" data-move="${i}" ${broke || S.moving || S.cash < p.price ? 'disabled' : ''}>Move · ${kmoney(p.price)} · ${p.moveMonths} mo</button>${S.cash < p.price ? `<span class="why">Need ${kmoney(p.price - S.cash)} more</span>` : ''}</div>` : `<span class="pill lock">${p.rep}★ rep</span>`)
           : '<span class="pill lock">Later</span>';
         return `<div class="node ${cur ? 'owned' : next && repOk ? 'avail' : 'locked'}"><div><b>${p.name} · ${money(p.rent)}/mo rent</b><p>${p.text} Research tier ${p.tier}, ${p.labs} bench${p.labs > 1 ? 'es' : ''}, ${p.staff} staff, ${p.jobs} jobs a month.</p></div>${btn}</div>`;
+      }).join('') +
+      // yards: a street you buy into (the Docks), once you've earned it
+      STREETS.filter(st => (STREET_GATES[st.key] || {}).buy).map(st => {
+        const g = STREET_GATES[st.key], have = (S.yards || {})[st.key] != null || streetOpen(S, st.key), can = yardToBuy(S) && yardToBuy(S).key === st.key;
+        const btn = have ? '<span class="pill done">Yours</span>' : can ? `<div style="display:grid;gap:4px;justify-items:end"><button class="go" type="button" data-yard="${st.key}" ${broke || S.cash < g.buy ? 'disabled' : ''}>Buy · ${kmoney(g.buy)}</button>${S.cash < g.buy ? `<span class="why">Need ${kmoney(g.buy - S.cash)} more</span>` : ''}</div>` : '<span class="pill lock">Not yet</span>';
+        return `<div class="node ${have ? 'owned' : can ? 'avail' : 'locked'}"><div><b>${g.yard.charAt(0).toUpperCase() + g.yard.slice(1)} · ${money(g.rent)}/mo rent</b><p>${g.text}${have ? '' : ' ' + gateText(S, st.key)}</p></div>${btn}</div>`;
       }).join('');
   }
   sheet(`<div class="eyebrow">Company</div><h3>${P.name}</h3>
@@ -278,6 +285,7 @@ export function openCompany(tab) {
   sh.querySelectorAll('[data-unq]').forEach(b => b.onclick = () => { unqueue(S, b.dataset.unq); save(); keepScroll(() => openCompany()); });
   sh.querySelectorAll('[data-hire]').forEach(b => b.onclick = () => { hire(S, b.dataset.hire); save(); renderStreet(); keepScroll(() => openCompany()); toast(`${STAFF.find(s => s.key === b.dataset.hire).name} hired`); });
   sh.querySelectorAll('[data-fire]').forEach(b => b.onclick = () => { fire(S, b.dataset.fire); save(); renderStreet(); keepScroll(() => openCompany()); });
+  sh.querySelectorAll('[data-yard]').forEach(b => b.onclick = () => { if (buyYard(S, b.dataset.yard)) { save(); renderStreet(); openCompany('premises'); } });
   sh.querySelectorAll('[data-move]').forEach(b => b.onclick = () => {
     const i = +b.dataset.move, p = PREMISES[i];
     if (!movePremises(S, i)) return;
@@ -354,7 +362,7 @@ export function initSheets() {
   // research never stops: a free bench has to be given a project (or a market study) first
   if (!benchesFilled(S)) { openCompany('research'); toast('A bench is free: choose research, or run a market study', true); return; }
   const rpt = endMonth(S);
-  const { research, lessonTenders, moved, moving, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry, footfall, booked } = rpt;
+  const { research, lessonTenders, moved, moving, inc, rent, yards, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry, footfall, booked } = rpt;
   save();
   renderStreet();   // starts surveying the month's new work in the background
   const surveyingNow = surveying();
@@ -398,6 +406,7 @@ export function initSheets() {
           <li class="pass"><span>Maintenance fees</span><span>+${money(inc)}</span></li>
           ${booked.filter(b => b.kind === 'spend').map(b => `<li><span>${b.label}</span><span>−${money(-b.amount)}</span></li>`).join('')}
           <li><span>Rent · ${premName.toLowerCase()}</span><span>−${money(rent)}</span></li>
+          ${yards ? `<li><span>Yard rent</span><span>−${money(yards)}</span></li>` : ''}
           ${wages.map(s => `<li><span>${s.name}</span><span>−${money(s.wage)}</span></li>`).join('')}
           ${research.cost ? `<li><span>Research</span><span>−${money(research.cost)}</span></li>` : ''}
           ${ins ? `<li><span>Insurance${ins > 60 ? ' · loaded for bumps on your record' : ''}</span><span>−${money(ins)}</span></li>` : ''}

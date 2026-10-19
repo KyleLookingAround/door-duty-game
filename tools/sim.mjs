@@ -8,10 +8,11 @@
 import { freshState } from '../src/game/state.js';
 import { falseAlarm, refreshPlots, settleCheck } from '../src/game/plots.js';
 import { generateSolved, runHeadless, designSig } from '../src/game/contracts.js';
-import { advertise, grade, signOff, service, hire, movePremises } from '../src/game/jobs.js';
+import { advertise, grade, signOff, service, hire, movePremises, buyYard } from '../src/game/jobs.js';
+import { STREET_GATES } from '../src/content/balance.js';
 import { startResearch, canResearch, benchesFilled, instalment } from '../src/game/research.js';
 import { endMonth } from '../src/game/month.js';
-import { advertCost, streetGate, rep, prem, techOf, feeOf, charge, serviceCost, plotNeeds, jobsLeft, jobsPerMonth } from '../src/game/economy.js';
+import { advertCost, streetGate, rep, prem, techOf, feeOf, charge, serviceCost, plotNeeds, jobsLeft, jobsPerMonth, yardToBuy } from '../src/game/economy.js';
 import { TECH } from '../src/content/tech.js';
 import { PREMISES, STAFF } from '../src/content/company.js';
 import { MONTHS } from '../src/game/contracts.js';
@@ -80,7 +81,7 @@ export async function simulate({ months = 24, seed = 1, style = 'strong', log = 
     // run the firm: fix what's broken, research what clients are waiting on, grow when there's money
     for (const p of S.plots) if (p.broken && S.cash > serviceCost(p) + 5000) service(S, p);
     // wanted: what clients are waiting for, what locked clients need, and what the next street's gate asks for
-    const gk = ['market', 'riverside'].find(k => !S[k + 'Open']), gate = gk && streetGate(S, gk);
+    const gk = ['market', 'riverside', 'docks'].find(k => !S[k + 'Open']), gate = gk && streetGate(S, gk);
     const wanted = [...S.plots.filter(p => p.enquiry && !p.enquiry.ready).map(p => p.enquiry.tech), ...S.plots.filter(p => p.status === 'locked').flatMap(p => plotNeeds(p)), ...(gate ? gate.list : [])].filter(k => !S.unlocks[k]);
     // research never stops: keep every bench busy and one project queued, wanted research first, then the
     // cheapest; pay-as-you-go, so only take on what the month's instalments allow (otherwise a market study)
@@ -94,6 +95,9 @@ export async function simulate({ months = 24, seed = 1, style = 'strong', log = 
     if (style === 'strong' && !S.plots.some(p => ['open', 'callback', 'checking'].includes(p.status)) && S.cash > advertCost(S) + 30000 && advertise(S)) tally.adverts = (tally.adverts || 0) + 1;
     const next = PREMISES[(S.premises || 0) + 1];
     if (next && S.cash > next.price + 40000) movePremises(S, (S.premises || 0) + 1);
+    // the Docks: buy the yard once it's earned and there's money to spare (not the poor firm, which hoards nothing)
+    const yard = yardToBuy(S);
+    if (yard && style !== 'poor' && S.cash > STREET_GATES[yard.key].buy + 40000) buyYard(S, yard.key);
     for (const s of STAFF) {
       const hired = STAFF.filter(x => S.staff[x.key]).length;
       if (!S.staff[s.key] && hired < prem(S).staff && (!s.req || S.unlocks[s.req]) && S.cash > s.wage * 12 + 20000) hire(S, s.key);
@@ -106,7 +110,7 @@ export async function simulate({ months = 24, seed = 1, style = 'strong', log = 
     if (!S.plots.some(p => ['open', 'callback', 'checking'].includes(p.status))) tally.quiet = (tally.quiet || 0) + 1;
     tally.asked = (tally.asked || 0) + (rpt.enquiry.fresh ? 1 : 0); tally.won = (tally.won || 0) + rpt.enquiry.won.length; tally.lapsed = (tally.lapsed || 0) + rpt.enquiry.lapsed.length;
     tally.studies = (tally.studies || 0) + rpt.research.studies.length; tally.mastered = Object.keys(S.mastered || {}).length;
-    const row = { month: label, cash: S.cash, rep: rep(S), jobs: S.jobs, fitted: S.plots.filter(p => p.status === 'fitted').length, net: rpt.net, calls: rpt.calls.length, market: !!S.marketOpen, riverside: !!S.riversideOpen, standing: { ...(S.standing || {}) }, mastered: Object.keys(S.mastered || {}).length };
+    const row = { month: label, cash: S.cash, rep: rep(S), jobs: S.jobs, fitted: S.plots.filter(p => p.status === 'fitted').length, net: rpt.net, calls: rpt.calls.length, market: !!S.marketOpen, riverside: !!S.riversideOpen, docks: !!S.docksOpen, standing: { ...(S.standing || {}) }, mastered: Object.keys(S.mastered || {}).length };
     tally.months.push(row);
     onMonth(S, row);
     log(`${row.month.padEnd(9)} cash ${String(Math.round(row.cash)).padStart(8)}  rep ${String(row.rep).padStart(3)}★  jobs ${String(row.jobs).padStart(3)}  fitted ${String(row.fitted).padStart(2)}  net ${String(row.net).padStart(7)}  callbacks ${row.calls}`);
