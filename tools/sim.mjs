@@ -85,7 +85,8 @@ export async function simulate({ months = 24, seed = 1, style = 'strong', log = 
     const wanted = [...S.plots.filter(p => p.enquiry && !p.enquiry.ready).map(p => p.enquiry.tech), ...S.plots.filter(p => p.status === 'locked').flatMap(p => plotNeeds(p)), ...(gate ? gate.list : [])].filter(k => !S.unlocks[k]);
     // research never stops: keep every bench busy and one project queued, wanted research first, then the
     // cheapest; pay-as-you-go, so only take on what the month's instalments allow (otherwise a market study)
-    const order = style === 'poor' ? [...TECH].sort(() => pick() - 0.5) : style === 'weak' ? [...TECH].sort((a, b) => a.price - b.price)
+    // (the weak firm reads the 'Not yet' line: what the next street asks for, then the cheapest)
+    const order = style === 'poor' ? [...TECH].sort(() => pick() - 0.5) : style === 'weak' ? [...TECH].sort((a, b) => ((gate && gate.list.includes(b.key)) - (gate && gate.list.includes(a.key))) || a.price - b.price)
       : [...TECH].sort((a, b) => ((gate && gate.list.includes(b.key)) - (gate && gate.list.includes(a.key))) || (wanted.includes(b.key) - wanted.includes(a.key)) || a.price - b.price);   // the next street's techs first
     for (const t of order) {
       if (!canResearch(S, t) || S.cash < instalment(t, S) * 2 + 10000 || (S.queue || []).length >= 1) continue;
