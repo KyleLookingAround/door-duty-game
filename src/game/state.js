@@ -2,14 +2,14 @@
 import { PLOTS } from '../content/buildings/index.js';
 
 export const SAVE_KEY = 'doorduty-tycoon-v2';
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 
 const newPlot = (p, i) => ({ ...p, i, status: 'locked', contract: null, install: null, stars: 0, fee: 0, tier: 0 });
 
 export function freshState(seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0) {
   return {
     version: SAVE_VERSION, upg: 1, seed: seed || 1, rng: seed || 1,
-    cash: 20000, month: 4, year: 2026, jobs: 0, monthJobs: 0, moving: null, unlocks: {}, log: [], recent: [], premises: 0, research: [], queue: [], mastered: {}, standing: {}, adverts: 0, blueprints: [], staff: {}, footfall: {},
+    cash: 20000, month: 4, year: 2026, jobs: 0, monthJobs: 0, moving: null, unlocks: {}, log: [], recent: [], premises: 0, research: [], queue: [], mastered: {}, standing: {}, adverts: 0, blueprints: [], staff: {}, footfall: {}, monthBook: [],
     plots: PLOTS.map(newPlot),
   };
 }
@@ -46,6 +46,8 @@ export function migrate(S) {
   S.blueprints = S.blueprints || [];
   // v10: footfall between buildings (game/footfall.js): everyone starts as usual
   S.footfall = S.footfall || {};
+  // v11: the month's own book of jobs and spending, for the month report
+  S.monthBook = S.monthBook || [];
   S.version = SAVE_VERSION;
   return S;
 }

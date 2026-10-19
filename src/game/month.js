@@ -80,6 +80,8 @@ export function landChange(S, ch) {
 }
 
 export function endMonth(S) {
+  // what came in and went out during the month (game/jobs.js book): jobs signed off, adverts, servicing, a move
+  const booked = S.monthBook || []; S.monthBook = [];
   const news = S.news || []; S.news = [];   // what happened this month, for the local paper
   const inc = monthlyIncome(S), rent = prem(S).rent, ins = insurance(S);
   const premName = prem(S).name;
@@ -186,6 +188,6 @@ export function endMonth(S) {
     const wantEv = p.contract.first ? null : evKey;   // a new month's event replaces last month's tenders
     if ((p.contract.event || null) !== wantEv || S.month - p.contract.month >= 3) p.contract = null;
   }
-  const net = inc - rent - wageTotal - ins - research.cost - claims.length * CLAIM_EXCESS - (insp && !insp.pass ? INSPECTION_FINE : 0);
-  return { news, research, lessonTenders, moved, moving: S.moving ? { ...S.moving } : null, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry, footfall };
+  const net = booked.reduce((a, b) => a + b.amount, 0) + inc - rent - wageTotal - ins - research.cost - claims.length * CLAIM_EXCESS - (insp && !insp.pass ? INSPECTION_FINE : 0);
+  return { news, research, lessonTenders, moved, moving: S.moving ? { ...S.moving } : null, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry, footfall, booked };
 }

@@ -160,3 +160,15 @@ test('an enquiry left too long lapses', () => {
   assert.equal(fresh.enquiry, null);
   assert.equal(fresh.coped, 1, 'no rival yet: just a little less loyal');
 });
+
+test('the month report counts jobs signed off and money spent during the month', async () => {
+  const { book } = await import('../src/game/jobs.js');
+  const S = freshState(31); S.cash = 50000;
+  const before = S.cash;
+  S.cash += 8000; book(S, 'job', 'Lark Café', 8000);
+  S.cash -= 1500; book(S, 'spend', 'Advert in the local paper', -1500);
+  const rpt = endMonth(S);
+  assert.deepEqual(rpt.booked.map(b => b.amount), [8000, -1500]);
+  assert.equal(rpt.net, S.cash - before, 'up or down this month is the real change in cash');
+  assert.deepEqual(S.monthBook, [], 'a fresh book for the new month');
+});

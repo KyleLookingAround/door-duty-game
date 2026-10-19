@@ -95,6 +95,12 @@ function gradeStage(S, c, design, r, cost) {
 // a lobby kept snug against the weather earns a green star
 export const isGreen = (c, r) => (c.goals.minTemp != null && c.outsideTemp < 12 && r.minTemp >= 19.5) || (c.goals.maxTemp != null && r.maxTemp <= 22.5);
 
+// The month's own book: money in and out between month ends (jobs signed off, adverts, servicing, a move), so the
+// month report can show it next to the month-end bills. endMonth reads it and starts a fresh one.
+export function book(S, kind, label, amount) {
+  S.monthBook = [...(S.monthBook || []), { kind, label, amount: Math.round(amount) }];
+}
+
 // Sign off a passed job. r: the result the stars were earned with.
 export function signOff(S, p, c, design, stars, r) {
   const cost = designCost(design, c.existing), profit = feeOf(S, c) - charge(S, cost);
@@ -104,6 +110,7 @@ export function signOff(S, p, c, design, stars, r) {
   const mastered = masterFrom(S, p, c);   // the job that teaches a tech masters it
   if (bonus) p.enquiry = null;
   S.cash += profit + bonus;
+  book(S, 'job', p.name, profit + bonus);
   if (c.stage) p.inside = { ...(p.inside || {}), [c.chain ? 'chain:' + c.chain.join('+') : c.stage]: JSON.parse(JSON.stringify(design)) };
   else p.install = design.map(s => ({ ...s }));
   p.stars = Math.max(p.stars, stars);
@@ -131,7 +138,7 @@ export function advertise(S) {
   if (S.cash < cost) return false;
   const got = studyResult(S);
   if (got.kind === 'none') return false;   // nobody to reach yet: nothing charged
-  S.cash -= cost; S.adverts = (S.adverts || 0) + 1;
+  S.cash -= cost; S.adverts = (S.adverts || 0) + 1; book(S, 'spend', 'Advert in the local paper', -cost);
   return { ...got, cost };
 }
 export function hire(S, key) { S.staff[key] = true; return true; }
@@ -141,11 +148,11 @@ export function movePremises(S, i) {
   if (!p || S.moving || i !== (S.premises || 0) + 1 || S.cash < p.price || rep(S) < (p.rep || 0)) return false;
   // a move takes months: you pay now and work from the old premises until it's done (endMonth), and the
   // research benches are packed up, so research waits
-  S.cash -= p.price; S.moving = { to: i, left: p.moveMonths || 1 }; return true;
+  S.cash -= p.price; S.moving = { to: i, left: p.moveMonths || 1 }; book(S, 'spend', `Moving to the ${p.name.toLowerCase()}`, -p.price); return true;
 }
 export function service(S, p) {
   const cost = serviceCost(p);
   if (S.cash < cost) return false;
-  S.cash -= cost; p.wear = 0; p.broken = false; return true;
+  S.cash -= cost; p.wear = 0; p.broken = false; book(S, 'spend', `Servicing · ${p.name}`, -cost); return true;
 }
 export { STAFF };

@@ -48,7 +48,8 @@ src/
     economy.js           fees, upkeep, wear, insurance, reputation (stars + mastery), unlock checks (landmarks need mastery),
                          jobs a month (jobsPerMonth: premises + research)
                          (a premises move takes PREMISES[i].moveMonths; S.moving pauses research, see endMonth)
-    jobs.js              grade a result, signOff, and the firm's decisions (hire, premises, service)
+    jobs.js              grade a result, signOff, and the firm's decisions (hire, premises, service); book() keeps the
+                         month's own ledger (S.monthBook: jobs signed off, adverts, servicing, a move) for the month report
     research.js          benches, the queue, monthly instalments, the market study, refinement levels, mastery
     month.js             endMonth(S) -> report; inspect
     enquiries.js         clients asking for research you haven't done (with a date), and advice(S) for quiet months

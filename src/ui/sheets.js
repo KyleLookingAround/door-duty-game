@@ -354,14 +354,16 @@ export function initSheets() {
   // research never stops: a free bench has to be given a project (or a market study) first
   if (!benchesFilled(S)) { openCompany('research'); toast('A bench is free: choose research, or run a market study', true); return; }
   const rpt = endMonth(S), paper = headline(S, rpt);
-  const { research, lessonTenders, moved, moving, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry, footfall } = rpt;
+  const { research, lessonTenders, moved, moving, inc, rent, premName, ins, wages, claims, broke, insp, done, walked, winter, calls, lost, evNow, net, paradox, changes, enquiry, footfall, booked } = rpt;
   save();
   renderStreet();   // starts surveying the month's new work in the background
   const surveyingNow = surveying();
   sheet(`<div class="eyebrow">${MONTHS[S.month % 12]} ${S.year}</div><h3>${net >= 0 ? 'Up ' + money(net) : 'Down ' + money(-net)} this month</h3>
     ${paper ? `<div class="paper"><small>The ${S.marketOpen ? 'Town' : 'High Street'} Herald · ${MONTHS[S.month % 12]} ${S.year}</small><b>${paper.head}</b>${paper.text ? `<p>${paper.text}</p>` : ''}</div>` : ''}
     <ul class="list">
+      ${booked.filter(b => b.kind === 'job').map(b => `<li class="pass"><span>Job signed off · ${b.label}</span><span>${b.amount < 0 ? '−' : '+'}${money(Math.abs(b.amount))}</span></li>`).join('')}
       <li class="pass"><span>Maintenance fees</span><span>+${money(inc)}</span></li>
+      ${booked.filter(b => b.kind === 'spend').map(b => `<li><span>${b.label}</span><span>−${money(-b.amount)}</span></li>`).join('')}
       <li><span>Rent · ${premName.toLowerCase()}</span><span>−${money(rent)}</span></li>
       ${wages.map(s => `<li><span>${s.name}</span><span>−${money(s.wage)}</span></li>`).join('')}
       ${research.cost ? `<li><span>Research</span><span>−${money(research.cost)}</span></li>` : ''}
