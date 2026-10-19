@@ -88,11 +88,12 @@ function designDirty() { if (W.mode === 'result') { W.mode = 'design'; } W.passe
 function updateCost() {
   const c = W.contract, cost = designCost(W.design, c.existing), paid = charge(S, cost);
   // list price, and what you actually pay once the fitting crew and supplier discounts come off
-  $('kCostL').textContent = c.stage ? 'Your setup' : 'Your doors';
+  $('kCostL').textContent = c.stage ? 'Your setup' : 'Your doors'; $('kBudgetL').textContent = c.stage ? 'Budget' : 'Door budget';
   $('kCost').innerHTML = money(cost) + (paid !== cost ? `<small>you pay ${kmoney(paid)}</small>` : ''); $('kCost').className = cost > c.budget ? 'over' : '';
   $('kBudget').textContent = money(c.budget); $('kPar').textContent = money(c.par.cost);
   const profit = feeOf(S, c) - paid;
-  $('kFee').textContent = money(profit); $('kFee').className = cost > c.budget || profit < 0 ? 'over' : cost <= c.par.cost ? 'good' : '';
+  // profit is what the client pays (the fee) less what the hardware costs you; the budget is only the client's cap
+  $('kFee').innerHTML = money(profit) + `<small>fee ${kmoney(feeOf(S, c))}<br>− ${c.stage ? 'setup' : 'doors'} ${kmoney(paid)}</small>`; $('kFee').className = cost > c.budget || profit < 0 ? 'over' : cost <= c.par.cost ? 'good' : '';
   const tb = $('testBtn');
   if (W.mode === 'test') tb.textContent = 'Stop test';
   else if (W.passed) tb.textContent = `Sign off · ${money(feeOf(S, c) - paid)} profit`;
