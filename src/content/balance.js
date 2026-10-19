@@ -7,7 +7,7 @@ export const STREET_GATES = {
   market: { from: 'high', standing: 20, months: 6, mastered: 2, list: ['mouth', 'core', 'padded', 'curtain', 'closer', 'barriers', 'autoswing'] },
   riverside: { from: 'market', standing: 18, months: 6, mastered: 2, list: ['sensor', 'vestibule', 'pillars', 'escalators', 'zoning', 'telescopic', 'doorman', 'wide'] },
   // the Docks also have to be bought into: a yard to work from (buy, once) that costs rent every month
-  docks: { from: 'riverside', standing: 15, months: 6, mastered: 2, list: ['travelator', 'permits', 'chains', 'stewarding', 'security', 'boarding', 'tidal', 'turnstiles'], buy: 200000, rent: 2500, yard: 'a yard on the Docks', text: 'Opens the Docks: a ferry terminal, an exhibition centre, a hospital and the Stadium, all bigger jobs than the town has seen.' },
+  docks: { from: 'riverside', standing: 15, months: 6, mastered: 2, list: ['travelator', 'permits', 'chains', 'stewarding', 'security', 'boarding', 'tidal', 'turnstiles'], buy: 400000, rent: 6000, yard: 'a yard on the Docks', text: 'Opens the Docks: a ferry terminal, an exhibition centre, a hospital and the Stadium, all bigger jobs than the town has seen.' },
 };
 
 // Advertising: pay to bring in work this month. Each advert in the same month costs more; the sales network
